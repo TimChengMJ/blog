@@ -1,0 +1,1462 @@
+---
+title: "ICCE 数字车钥匙 · BLE 完整实现设计文档"
+description: ""
+date: 2026-04-10T09:34:02+08:00
+categories: ["技术文档"]
+tags: []
+draft: false
+---
+
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=Source+Code+Pro:wght@400;600&family=Noto+Sans+SC:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg:        #f7f6f2;
+  --surface:   #ffffff;
+  --surface2:  #f0ede6;
+  --border:    #e0d9cf;
+  --border2:   #c8bfb2;
+  --text:      #2c2416;
+  --text2:     #5a4f3e;
+  --muted:     #9a8f7e;
+  --accent:    #2563eb;
+  --accent-bg: #eff6ff;
+  --teal:      #0d9488;
+  --teal-bg:   #f0fdf9;
+  --amber:     #b45309;
+  --amber-bg:  #fffbeb;
+  --red:       #dc2626;
+  --red-bg:    #fef2f2;
+  --purple:    #7c3aed;
+  --purple-bg: #faf5ff;
+  --green:     #16a34a;
+  --green-bg:  #f0fdf4;
+  --mono:      'Source Code Pro', monospace;
+  --serif:     'Lora', serif;
+  --sans:      'Noto Sans SC', sans-serif;
+  --radius:    8px;
+  --shadow:    0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.08);
+}/* ── HEADER ── */
+header {
+  background: var(--surface);
+  border-bottom: 2px solid var(--border);
+  padding: 40px 64px 32px;
+}
+.header-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+header h1 {
+  font-family: var(--serif);
+  font-size: clamp(22px, 3vw, 32px);
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.25;
+  margin-bottom: 12px;
+}
+.header-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.pill {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--text2);
+  background: var(--surface2);
+}
+.header-desc { font-size: 13px; color: var(--text2); max-width: 700px; line-height: 1.7; }
+
+/* ── NAV TABS ── */
+.tab-nav {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 64px;
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow);
+}
+.tab-btn {
+  padding: 14px 20px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: all .2s;
+  font-family: var(--sans);
+}
+.tab-btn:hover { color: var(--text2); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+/* ── LAYOUT ── */
+.container { max-width: 1140px; margin: 0 auto; padding: 40px 40px 80px; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── SECTION ── */
+.section { margin-bottom: 48px; }
+.section-head { margin-bottom: 20px; }
+.section-num { font-family: var(--mono); font-size: 10px; color: var(--accent); letter-spacing: 2px; }
+.section-title { font-family: var(--serif); font-size: 19px; font-weight: 700; color: var(--text); margin-top: 3px; }
+.section-desc { font-size: 13px; color: var(--text2); margin-top: 6px; max-width: 700px; }
+
+/* ── CARDS ── */
+.card-grid { display: grid; gap: 16px; }
+.card-grid-2 { grid-template-columns: repeat(2,1fr); }
+.card-grid-3 { grid-template-columns: repeat(3,1fr); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.card-/* ── ACCENT CARDS ── */
+.card.blue  { border-left: 3px solid var(--accent);  background: var(--accent-bg); }
+.card.teal  { border-left: 3px solid var(--teal);    background: var(--teal-bg);  }
+.card.amber { border-left: 3px solid var(--amber);   background: var(--amber-bg); }
+.card.red   { border-left: 3px solid var(--red);     background: var(--red-bg);   }
+.card.purple{ border-left: 3px solid var(--purple);  background: var(--purple-bg);}
+.card.green { border-left: 3px solid var(--green);   background: var(--green-bg); }
+
+/* ── ARCH DIAGRAM ── */
+.arch-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  box-shadow: var(--shadow);
+  overflow-x: auto;
+}
+.arch-grid {
+  display: grid;
+  grid-template-columns: 1fr 56px 1fr;
+  gap: 0;
+  min-width: 640px;
+}
+.arch-side { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.arch-title {
+  font-size: 12px; font-weight: 700; text-align: center;
+  padding: 6px 12px; border-radius: 6px; margin-bottom: 12px;
+}
+.arch-title.blue { background: var(--accent); color: #fff; }
+.arch-title.teal { background: var(--teal); color: #fff; }
+.arch-layer {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  font-size: 11.5px;
+}
+.arch-layer .lbl { font-size: 9px; color: var(--muted); font-family: var(--mono); letter-spacing: 1px; text-transform: uppercase; }
+.arch-layer .name { font-weight: 600; color: var(--text); margin-top: 1px; }
+.arch-layer.hl { border-color: var(--accent); background: var(--accent-bg); }
+.arch-layer.hl .name { color: var(--accent); }
+.arch-mid {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; padding: 0 4px;
+}
+.ble-badge {
+  background: var(--purple); color: #fff;
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  padding: 5px 10px; border-radius: 6px;
+}
+.ble-arrow { font-size: 20px; color: var(--purple); }
+.ble-sub { font-size: 9px; color: var(--muted); text-align: center; font-family: var(--mono); line-height: 1.6; }
+
+/* ── CLOUD ROW ── */
+.cloud-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+.cloud-box {
+  background: var(--surface);
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  font-size: 11.5px;
+}
+.cloud-box .c-title { font-weight: 600; color: var(--text); margin-bottom: 4px; font-size: 12px; }
+.cloud-box p { color: var(--text2); font-size: 11px; line-height: 1.6; }
+
+/* ── SEQUENCE ── */
+.seq-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.seq-header {
+  display: grid;
+  grid-template-columns: 200px 1fr 200px;
+  background: var(--surface2);
+  border-bottom: 2px solid var(--border);
+}
+.seq-entity {
+  padding: 12px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+.seq-entity.phone { color: var(--accent); }
+.seq-entity.car   { color: var(--teal); }
+
+.phase-hdr {
+  display: grid;
+  grid-template-columns: 200px 1fr 200px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+.phase-label {
+  grid-column: 1 / -1;
+  padding: 6px 16px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.seq-row {
+  display: grid;
+  grid-template-columns: 200px 1fr 200px;
+  min-height: 52px;
+  border-bottom: 1px solid var(--bg);
+  transition: background .12s;
+}
+.seq-row:hover { background: var(--surface2); }
+
+.seq-note {
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+}
+.seq-note.right { justify-content: flex-end; text-align: right; font-family: var(--mono); color: var(--muted); font-size: 10px; }
+
+.seq-arrow-cell {
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.arr-line {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 4px;
+}
+.arr-line.rtl { flex-direction: row-reverse; }
+.arr-label {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  font-family: var(--mono);
+}
+.arr-track {
+  flex: 1;
+  height: 1.5px;
+  background: currentColor;
+  opacity: .4;
+}
+.arr-tip { font-size: 12px; line-height: 1; }
+.arr-sub { font-size: 10px; color: var(--muted); text-align: center; max-width: 420px; }
+
+/* arrow colors */
+.c-blue   { color: var(--accent);  background: var(--accent-bg);  }
+.c-teal   { color: var(--teal);    background: var(--teal-bg);    }
+.c-amber  { color: var(--amber);   background: var(--amber-bg);   }
+.c-red    { color: var(--red);     background: var(--red-bg);     }
+.c-purple { color: var(--purple);  background: var(--purple-bg);  }
+.trk-blue  { color: var(--accent); }
+.trk-teal  { color: var(--teal);   }
+.trk-amber { color: var(--amber);  }
+.trk-red   { color: var(--red);    }
+.trk-purple{ color: var(--purple); }
+
+/* ── COMMAND TABLE ── */
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+table.cmd { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.cmd thead tr { background: var(--surface2); border-bottom: 2px solid var(--border); }
+table.cmd th {
+  padding: 10px 14px; text-align: left;
+  font-family: var(--mono); font-size: 10px; color: var(--muted);
+  letter-spacing: 1px; font-weight: 600; white-space: nowrap;
+}
+table.cmd td {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--bg);
+  vertical-align: top;
+  color: var(--text2);
+}
+table.cmd tbody tr:last-child td { border-bottom: none; }
+table.cmd tbody tr:hover td { background: var(--surface2); }
+
+.badge {
+  display: inline-block;
+  font-family: var(--mono); font-size: 10px;
+  padding: 2px 8px; border-radius: 4px;
+  font-weight: 600; white-space: nowrap;
+}
+.badge.auth   { background: var(--accent-bg);  color: var(--accent);  border: 1px solid #bfdbfe; }
+.badge.cmd-b  { background: var(--purple-bg); color: var(--purple); border: 1px solid #ddd6fe; }
+.badge.notif  { background: var(--teal-bg);   color: var(--teal);   border: 1px solid #99f6e4; }
+.badge.opt    { background: var(--amber-bg);  color: var(--amber);  border: 1px solid #fde68a; }
+.badge.req    { background: var(--red-bg);    color: var(--red);    border: 1px solid #fecaca; }
+
+.doc-ref { font-family: var(--mono); font-size: 10px; color: var(--accent); white-space: nowrap; }
+
+/* ── FRAME ── */
+.frame-row { display: flex; gap: 3px; overflow-x: auto; padding-bottom: 4px; margin: 16px 0; }
+.fc {
+  border-radius: 6px; padding: 10px 12px;
+  text-align: center; min-width: 76px;
+  border: 1px solid; flex-shrink: 0;
+}
+.fc .fn { font-family: var(--mono); font-size: 12px; font-weight: 700; }
+.fc .fs { font-size: 10px; margin-top: 2px; opacity: .7; }
+.fc .fv { font-family: var(--mono); font-size: 9px; margin-top: 2px; opacity: .55; }
+
+.fc-sof  { background: #fffbeb; border-color: #fde68a; color: var(--amber); }
+.fc-len  { background: #fffbeb; border-color: #fcd34d; color: var(--amber); }
+.fc-ctrl { background: var(--purple-bg); border-color: #c4b5fd; color: var(--purple); flex: 1.5; }
+.fc-fsn  { background: var(--purple-bg); border-color: #ddd6fe; color: var(--purple); }
+.fc-mid  { background: var(--accent-bg);  border-color: #bfdbfe; color: var(--accent); }
+.fc-cid  { background: var(--accent-bg);  border-color: #93c5fd; color: var(--accent); }
+.fc-pay  { background: var(--teal-bg);  border-color: #99f6e4; color: var(--teal);  flex: 2; }
+.fc-crc  { background: var(--red-bg);   border-color: #fca5a5; color: var(--red);   }
+
+.ctrl-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin: 16px 0; }
+.ctrl-bit {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+.ctrl-bit .cb-name { font-family: var(--mono); font-size: 10px; color: var(--purple); font-weight: 700; margin-bottom: 6px; }
+.ctrl-bit .cb-vals { font-size: 11px; color: var(--text2); line-height: 1.8; }
+.ctrl-bit .cb-vals b { color: var(--text); font-weight: 600; }
+
+/* ── APDU TABLE ── */
+.apdu-title {
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  color: var(--text2); margin: 16px 0 8px;
+  padding-bottom: 6px; border-bottom: 1px solid var(--border);
+}
+
+/* ── CODE BLOCK ── */
+.code-block {
+  background: #fafaf8;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.8;
+  overflow-x: auto;
+  margin: 12px 0;
+  position: relative;
+}
+.cb-lang { position: absolute; top: 10px; right: 14px; font-size: 10px; color: var(--muted); letter-spacing: 1px; }
+.kw  { color: #7c3aed; }
+.fn  { color: #2563eb; }
+.str { color: #16a34a; }
+.cmt { color: #9ca3af; font-style: italic; }
+.num { color: #b45309; }
+
+/* ── INFO BOX ── */
+.info-box {
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  font-size: 12.5px;
+  margin: 12px 0;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  line-height: 1.7;
+}
+.info-box.tip    { background: var(--teal-bg);  border: 1px solid #99f6e4; color: #065f46; }
+.info-box.warn   { background: var(--amber-bg); border: 1px solid #fde68a; color: #78350f; }
+.info-box.danger { background: var(--red-bg);   border: 1px solid #fca5a5; color: #7f1d1d; }
+.info-box.note   { background: var(--accent-bg);border: 1px solid #bfdbfe; color: #1e3a8a; }
+.info-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+
+/* ── CHECKLIST ── */
+.checklist { list-style: none; }
+.checklist li {
+  font-size: 12.5px; color: var(--text2); padding: 5px 0;
+  border-bottom: 1px solid var(--bg);
+  display: flex; gap: 8px; align-items: flex-start;
+}
+.checklist li:last-child { border-bottom: none; }
+.checklist li .ico { flex-shrink: 0; }
+.checklist li.ok .ico   { color: var(--green); }
+.checklist li.warn .ico { color: var(--amber); }
+.checklist li.must .ico { color: var(--red); }
+
+/* ── PERF GRID ── */
+.perf-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.perf-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+}
+.perf-label { font-size: 10px; color: var(--muted); font-family: var(--mono); letter-spacing: 1px; text-transform: uppercase; }
+.perf-val { font-size: 22px; font-weight: 700; color: var(--text); font-family: var(--serif); margin: 4px 0 2px; }
+.perf-unit { font-size: 11px; color: var(--text2); }
+
+/* ── COMPARE TABLE ── */
+table.compare { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.compare th { background: var(--surface2); padding: 10px 14px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 600; }
+table.compare td { padding: 9px 14px; border-bottom: 1px solid var(--bg); vertical-align: top; }
+table.compare tbody tr:hover td { background: var(--surface2); }
+
+/* ── DIVIDER ── */
+.divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+
+/* ── FOOTER ── */
+footer {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 20px 64px;
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--mono);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ── RESP ── */
+@media (max-width: 800px) {
+  header, .tab-nav, footer { padding-left: 20px; padding-right: 20px; }
+  .container { padding: 24px 16px 60px; }
+  .card-grid-2, .card-grid-3 { grid-template-columns: 1fr; }
+  .ctrl-grid { grid-template-columns: repeat(2,1fr); }
+  .perf-grid { grid-template-columns: repeat(2,1fr); }
+  .arch-grid { grid-template-columns: 1fr; }
+  .arch-mid { flex-direction: row; padding: 12px 0; }
+  .cloud-row { grid-template-columns: 1fr; }
+}
+
+.tag { display: inline-block; font-family: var(--mono); font-size: 10px; padding: 1px 6px; border-radius: 3px; background: var(--surface2); border: 1px solid var(--border); color: var(--text2); }
+
+</style>
+
+<!-- ══ HEADER ══ -->
+<header>
+  <div class="header-eyebrow">ICCE/T 001-2021 · 综合实现设计文档</div>
+  <h1>数字车钥匙 BLE 蓝牙交互<br>完整设计与实现指南</h1>
+  <div class="header-pills">
+    <span class="pill">标准号：ICCE/T 001-2021</span>
+    <span class="pill">发布 2021-04-19</span>
+    <span class="pill">BLE ≥ 4.2 / GATT</span>
+    <span class="pill">MTU 251B · 小端序</span>
+    <span class="pill">对称密钥 · JavaCard SE</span>
+    <span class="pill">国内市占率 > 45%</span>
+  </div>
+  <p class="header-desc">
+    本文档综合 ICCE/T 001-2021 规范原文及业界实现经验，覆盖系统架构、完整 BLE 交互时序、全量指令定义（含文档位置）、协议帧格式、APDU/SE 工作原理、安全设计与工程落地要点，适合开发、测试和架构评审使用。
+  </p>
+</header>
+
+<!-- ══ TABS ══ -->
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="show(0)">① 系统架构</button>
+  <button class="tab-btn" onclick="show(1)">② BLE 交互时序</button>
+  <button class="tab-btn" onclick="show(2)">③ 全量指令表</button>
+  <button class="tab-btn" onclick="show(3)">④ 协议帧格式</button>
+  <button class="tab-btn" onclick="show(4)">⑤ SE/APDU 原理</button>
+  <button class="tab-btn" onclick="show(5)">⑥ 安全设计</button>
+  <button class="tab-btn" onclick="show(6)">⑦ 工程实现</button>
+</nav>
+
+<div class="container">
+
+<!-- ════════════════ TAB 0: 架构 ════════════════ -->
+<div class="panel active" id="p0">
+
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">SECTION 01</div>
+      <div class="section-title">系统整体架构</div>
+      <div class="section-desc">ICCE 由华为主导、中汽协发起，采用对称密钥体系，国内商用覆盖超 26 家车企、200+ 车型，市占率超 45%。系统分三层：钥匙端（手机）、车辆端、云端服务。</div>
+    </div>
+
+    <div class="arch-wrap">
+      <div class="arch-grid">
+        <!-- Mobile -->
+        <div class="arch-side">
+          <div class="arch-title blue">📱 移动智能终端（钥匙端）</div>
+          <div class="arch-layer"><div class="lbl">应用层</div><div class="name">业务 App（OEM 开发）· Native App（手机厂商钱包）</div></div>
+          <div class="arch-layer hl"><div class="lbl">框架层 · 核心</div><div class="name">车钥匙系统框架层 CarKey Framework</div></div>
+          <div class="arch-layer"><div class="lbl">安全层</div><div class="name">安全单元 SE（eSE / inSE / SIM/UICC）</div></div>
+          <div class="arch-layer hl"><div class="lbl">SE 内 · JavaCard</div><div class="name">车钥匙 Applet（Select / GetProcessData / Auth / Encrypt）</div></div>
+          <div class="arch-layer"><div class="lbl">通信层</div><div class="name">BLE 低功耗蓝牙协议栈（≥ 4.2，GATT Client）</div></div>
+          <div class="arch-layer"><div class="lbl">可选</div><div class="name">UWB 测距模块 · NFC 备份通道 · 星闪</div></div>
+        </div>
+
+        <!-- Middle BLE -->
+        <div class="arch-mid">
+          <div class="ble-badge">BLE</div>
+          <div class="ble-arrow">⇅</div>
+          <div class="ble-sub">LE 1M PHY<br>MTU 251B<br>GATT/CCCD<br>0xFFFD/FFFE<br>─── 管理链路<br>· · · 认证链路</div>
+        </div>
+
+        <!-- Car -->
+        <div class="arch-side">
+          <div class="arch-title teal">🚗 车辆端</div>
+          <div class="arch-layer hl"><div class="lbl">主节点 · GATT Server</div><div class="name">BLE 主节点 Master（与手机建立连接）</div></div>
+          <div class="arch-layer"><div class="lbl">辅节点 × N</div><div class="name">BLE 辅节点 Anchor（RSSI / AoA / HADM 测距）</div></div>
+          <div class="arch-layer"><div class="lbl">认证系统</div><div class="name">DK 认证系统 · 鉴权控制模块</div></div>
+          <div class="arch-layer hl"><div class="lbl">密钥管理 · SE/HSM</div><div class="name">密钥管理模块 + 车端 Applet（IntAuth / ExternalAuth）</div></div>
+          <div class="arch-layer"><div class="lbl">整车总线</div><div class="name">整车控制模块（解锁 / 锁定 / 启动 / 车窗…）</div></div>
+          <div class="arch-layer"><div class="lbl">云端接口</div><div class="name">TSP 通信模块 · OBD 诊断模块</div></div>
+        </div>
+      </div>
+
+      <!-- Cloud Row -->
+      <div class="cloud-row">
+        <div class="cloud-box">
+          <div class="c-title">☁ 手机厂商云（TSM 服务器）</div>
+          <p>负责手机 SE 内 JavaCard Applet 的空中发卡（下载 / 更新 / 禁用 / 清除）。华为钱包侧 TSM 是典型实现。</p>
+        </div>
+        <div class="cloud-box">
+          <div class="c-title">☁ 主机厂云（OEM 服务器）</div>
+          <p>数字钥匙的激活 / 开通 / 撤销 / 分享 / 查询。生成密钥并下发至车端与手机端。同步车辆状态。</p>
+        </div>
+        <div class="cloud-box">
+          <div class="c-title">🔗 通信关系</div>
+          <p>手机↔车辆：BLE / NFC / UWB（直连）<br>OEM车端服务器↔OEM手机服务器：广域网<br>可选：车辆通过手机透传与 OEM 服务器通信</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">SECTION 02</div>
+      <div class="section-title">ICCE vs CCC 关键差异</div>
+    </div>
+    <div class="tbl-wrap">
+      <table class="compare">
+        <thead><tr><th>对比维度</th><th>ICCE（华为主导，国内）</th><th>CCC（苹果/宝马，国际）</th></tr></thead>
+        <tbody>
+          <tr><td><b>密钥体系</b></td><td>✅ <b>对称密钥</b>（AES）· 实现简单</td><td>非对称密钥（ECDSA）· 安全性更强</td></tr>
+          <tr><td><b>认证方式</b></td><td>挑战应答生成 SessionKey，双向认证</td><td>SPAKE2+ 协议建立安全通道，标准交易/快速交易</td></tr>
+          <tr><td><b>BLE 定位</b></td><td>BLE 主节点 + 多辅节点（RSSI/AoA/HADM）</td><td>BLE + UWB 融合，UWB 厘米级精度</td></tr>
+          <tr><td><b>车端规范</b></td><td>✅ 规范涵盖车端实现细节，推荐 SE</td><td>规范不含车端实现</td></tr>
+          <tr><td><b>开发难度</b></td><td>✅ 简单，开发成本低，协商空间大</td><td>复杂，规范完整详细，互操作性强</td></tr>
+          <tr><td><b>生态现状</b></td><td>✅ 国内 26+ 车企，200+ 车型，占比 45%+</td><td>宝马/奔驰等高端车型，国内渗透率低</td></tr>
+          <tr><td><b>换手机体验</b></td><td>✅ 云端同步，换手机较方便</td><td>需重新授权配对</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="info-box note">
+      <span class="info-icon">ℹ</span>
+      <span>ICCE 规范对部分关键流程（如车主首次配对细节、借车人首次交易）描述不够完整，各厂家实现存在差异，实际开发中需主机厂、手机厂商、云平台、卡商四方协商确定实现细节。</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">SECTION 03</div>
+      <div class="section-title">推荐技术组合方案</div>
+    </div>
+    <div class="card-grid card-grid-3">
+      <div class="card blue">
+        <div class="card-title">🥇 BLE + UWB（推荐）</div>
+        <div class="card-body">BLE 负责连接、认证、粗定位（RSSI）；靠近车辆约 10~15m 后启动 UWB 精确测距，厘米级定位，防中继能力最强。适合旗舰车型。问界 M9 首发此方案。</div>
+      </div>
+      <div class="card teal">
+        <div class="card-title">🥈 BLE（主流基础方案）</div>
+        <div class="card-body">纯 BLE 方案，基于 RSSI 多锚点定位，成本低，覆盖广。PEPS 精度约 0.5m 以内，遥控距离 ≥15m。上汽名爵 2021 年首发 ICCE 蓝牙无感数字钥匙。</div>
+      </div>
+      <div class="card amber">
+        <div class="card-title">🔒 NFC（备用降级方案）</div>
+        <div class="card-body">NFC 直接路由到 SE Applet，安全性极高，不依赖蓝牙连接。作为 BLE 故障备份。比亚迪 2020 年率先使用 ICCE NFC 数字车钥匙。</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════ TAB 1: 时序 ════════════════ -->
+<div class="panel" id="p1">
+
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">SECTION 04</div>
+      <div class="section-title">完整 BLE 交互时序</div>
+      <div class="section-desc">涵盖钥匙开通前提、BLE 配对、握手认证、测距定位、无感认证（PEPS）、遥控认证（RKE）全流程，对应规范 §5.2 ~ §5.5 及 §7.1 各场景。</div>
+    </div>
+
+    <div class="info-box tip">
+      <span class="info-icon">✅</span>
+      <span><b>前提条件（开通阶段）：</b>钥匙开通前，业务 App 需通过 OEM 云完成数字钥匙申请，OEM 下发密钥到手机 SE Applet（TSM 空中发卡）和车端 SE。BLE 配对码也在此阶段由 OEM 下发或由 App 生成。</span>
+    </div>
+
+    <div class="seq-wrap">
+      <!-- Entities -->
+      <div class="seq-header">
+        <div class="seq-entity phone">📱 手机<br><small style="font-weight:400;font-size:10px">Framework + SE Applet</small></div>
+        <div></div>
+        <div class="seq-entity car">🚗 车辆<br><small style="font-weight:400;font-size:10px">BLE 主节点 + DK 认证系统</small></div>
+      </div>
+
+      <!-- Phase 1: BLE Pairing -->
+      <div class="phase-hdr"><div class="phase-label">Phase 1 · BLE 配对与连接（§5.2.1 ~ §5.2.3）</div></div>
+
+      <div class="seq-row">
+        <div class="seq-note"></div>
+        <div class="seq-arrow-cell">
+          <div class="arr-line rtl">
+            <span class="arr-tip trk-amber">◀</span><span class="arr-track trk-amber"></span>
+            <span class="arr-label c-amber">BLE ADV 广播（持续）</span>
+          </div>
+          <div class="arr-sub">间隔 ≤100ms，含 VIN/蓝牙地址标识 · §5.2.3 Step1 · §7.2.1</div>
+        </div>
+        <div class="seq-note right">§5.2.3 Step1<br>§7.2.1</div>
+      </div>
+
+      <div class="seq-row">
+        <div class="seq-note">扫描广播，占空比≥10%<br>过滤目标车辆</div>
+        <div class="seq-arrow-cell">
+          <div class="arr-line">
+            <span class="arr-label c-blue">Connect Request</span>
+            <span class="arr-track trk-blue"></span>
+            <span class="arr-tip trk-blue">▶</span>
+          </div>
+          <div class="arr-sub">手机发起连接 → 双方建立 BLE 连接通道</div>
+        </div>
+        <div class="seq-note right">§5.2.3 Step3</div>
+      </div>
+
+      <div class="seq-row">
+        <div class="seq-note"></div>
+        <div class="seq-arrow-cell">
+          <div class="arr-line rtl">
+            <span class="arr-tip trk-red">◀</span><span class="arr-track trk-red"></span>
+            <span class="arr-label c-red">⚠ Security Request（车端主动）</span>
+          </div>
+          <div class="arr-sub">由车端主动发起，防止手机随意配对 · 车主用防MITM配对，借车人用Passkey Entry</div>
+        </div>
+        <div class="seq-note right">§5.2.1<br>§5.2.3 Step5</div>
+      </div>
+
+      <div class="seq-row">
+        <div class="seq-note">生成/获取动态 Passkey<br>（每次不同，防中间人）</div>
+        <div class="seq-arrow-cell">
+          <div class="arr-line">
+            <span class="arr-label c-blue">Pairing Request（Passkey Entry）</span>
+            <span class="arr-track trk-blue"></span>
+            <span class="arr-tip trk-blue">▶</span>
+          </div>
+          <div class="arr-sub">双方将 Passkey 传给蓝牙协议栈安全管理层</div>
+        </div>
+        <div class="seq-note right">§5.2.1<br>§5.2.2</div>
+      </div>
+
+      <div class="seq-row">
+        <div class="seq-note"></div>
+        <div class="seq-arrow-cell">
+          <div class="arr-line">
+            <span class="arr-label c-teal">✓ Pairing Confirm · LTK 保存 · 链路层 AES 加密</span>
+            <span class="arr-track trk-teal"></span>
+            <span class="arr-tip trk-teal">▶</span>
+          </div>
+          <div class="arr-sub">配对绑定成功，后续重连直接使用 LTK，无需再次配对</div>
+        </div>
+        <div class="seq-note right">§5.2.3 Step9</div>
+      </div>
+
+      <!-- Phase 2: Handshake Auth -->
+      <div class="phase-hdr"><div class="phase-label">Phase 2 · 版本协商 + 时钟校准（可选，§7.3.2.7/8）—— 可在握手认证前发送</div></div>
+
+      <div class="seq-row">
+        <div class="seq-note"></div>
+        <div class="seq-arrow-cell">
+          <div class="arr-line rtl">
+            <span class="arr-tip trk-amber">◀</span><span class="arr-track trk-amber"></span>
+            <span class="arr-label c-amber">获取协议版本 Msg=0x02 Cmd=0x08</span>
+          </div>
+          <div class="arr-sub">车辆获取手机支持的 ICCE 协议版本，格式：ICCE.DK.V2.XX.YY</div>
+        </div>
+        <div class="seq-note right">§7.3.2.8</div>
+      </div>
+
+      <div class="seq-row">
+        <div class="seq-note"></div>
+        <div class="seq-arrow-cell">
+          <div class="arr-line rtl">
+            <span class="arr-tip trk-amber">◀</span><span class="arr-track trk-amber"></span>
+            <span class="arr-label c-amber">获取时钟校准 Msg=0x02 Cmd=0x07（可选）</span>
+          </div>
+          <div class="arr-sub">车辆从手机获取时钟数据，保持时间同步，防重放</div>
+        </div>
+        <div class="seq-note right">§7.3.2.7</div>
+      </div>
+
+      <!-- Phase 3: Handshake Auth -->
+      <div class="phase-hdr"><div class="phase-label">Phase 3 · 握手认证（§5.4 Step1-2 · §7.1 场景1 · Msg=0x01）</div></div>
+
+      <div class="seq-row">
+        <div class="seq-note"></div>
+        <div class="seq-arrow-cell">
+          <div class="arr-line rtl">
+            <span class="arr-tip trk-purple">◀</span><span class="arr-track trk-purple"></span>
+            <span class="arr-label c-purple">Auth Request（APDU 封装）Msg=0x01 Cmd=0x01</span>
+          </div>
+          <div class="arr-sub">车端发起，Control=0x10（Request+同步），从 GetProcessData 开始，原子操作</div>
+        </div>
+        <div class="seq-note right">§7.3.1<br>§7.1 场景1</div>
+      </div>
+
+      <div class="seq-row">
+        <div class="seq-note">Framework 拆封 APDU<br>→ SE Applet 处理（挑战应答）<br>→ 生成 SessionKey</div>
+        <div class="seq-arrow-cell">
+          <div class="arr-line">
+            <span class="arr-label c-purple">Auth Response（APDU 响应回传）</span>
+            <span class="arr-track trk-purple"></span>
+            <span class="arr-tip trk-purple">▶</span>
+          </div>
+          <div class="arr-sub">SE 处理完成后 Framework 封装回传 · 多轮 APDU 往返直至双向认证完成</div>
+        </div>
+        <div class="seq-note right">§7.3.1<br>§7.1 场景1</div>
+      </div>
+
+      <div class="seq-row">
+        <div class="seq-note">SessionKey 生成，会话保持<br>Framework 通知业务 App</div>
+        <div class="seq-arrow-cell">
+          <div class="arr-line rtl">
+            <span class="arr-tip trk-teal">◀</span><span class="arr-track trk-teal"></span>
+            <span class="arr-label c-teal">Notification 认证结果 Msg=0x03 Cmd=0x02</span>
+          </div>
+          <div class="arr-sub">认证成功通知，会话正式建立 · SessionKey 在 SE 内保存，不对外导出</div>
+        </div>
+        <div class="seq-note right">§7.3.3.2<br>§7.1 场景1</div>
+      </div>
+
+      <!-- Phase 4: Ranging -->
+      <div class="phase-hdr"><div class="phase-label">Phase 4 · 测距定位（§5.3 · §7.1 场景2 · Msg=0x02 Cmd=0x01）</div></div>
+
+      <div class="seq-row">
+        <div class="seq-note"></div>
+        <div class="seq-arrow-cell">
+          <div class="arr-line rtl">
+            <span class="arr-tip trk-amber">◀</span><span class="arr-track trk-amber"></span>
+            <span class="arr-label c-amber">指示启动定位广播 Msg=0x02 Cmd=0x01</span>
+          </div>
+          <div class="arr-sub">Type=0x01(RSSI) / 0x02(UWB) / 0x03(HADM)，Timeout 指定广播持续时间</div>
+        </div>
+        <div class="seq-note right">§7.3.2.1<br>§5.3</div>
+      </div>
+
+      <div class="seq-row">
+        <div class="seq-note">以 100ms 周期发送定位广播<br>RPA 可解析私有地址<br>亮/熄/锁屏保持一致</div>
+        <div class="seq-arrow-cell">
+          <div class="arr-line">
+            <span class="arr-label c-blue">定位广播包（Beacon）× 持续</span>
+            <span class="arr-track trk-blue"></span>
+            <span class="arr-tip trk-blue">▶</span>
+          </div>
+          <div class="arr-sub">各辅节点采集 RSSI/AoA 上报主节点 · 主节点融合多点数据 → 定位算法判断手机区域</div>
+        </div>
+        <div class="seq-note right">§5.3<br>§6.1 条f/g</div>
+      </div>
+
+      <!-- Phase 5a: PEPS -->
+      <div class="phase-hdr"><div class="phase-label">Phase 5a · 无感认证 PEPS（§5.4）—— 用户靠近，自动触发</div></div>
+
+      <div class="seq-row">
+        <div class="seq-note"></div>
+        <div class="seq-arrow-cell">
+          <div class="arr-line rtl">
+            <span class="arr-tip trk-red">◀</span><span class="arr-track trk-red"></span>
+            <span class="arr-label c-red">指示防中继判断 Msg=0x02 Cmd=0x02</span>
+          </div>
+          <div class="arr-sub">PEPS 必须执行防中继 · 可选 Type(RSSI/UWB/HADM) 和车辆辅助信息</div>
+        </div>
+        <div class="seq-note right">§7.3.2.2<br>§5.4 Step4④</div>
+      </div>
+
+      <div class="seq-row">
+        <div class="seq-note">运行防中继算法<br>（手机侧或双端协同）</div>
+        <div class="seq-arrow-cell">
+          <div class="arr-line">
+            <span class="arr-label c-teal">防中继响应（校验结果）</span>
+            <span class="arr-track trk-teal"></span>
+            <span class="arr-tip trk-teal">▶</span>
+          </div>
+          <div class="arr-sub">0x01=有中继风险 · 0x02=无风险 · 0x03=数据不足继续判断</div>
+        </div>
+        <div class="seq-note right">§7.3.2.2</div>
+      </div>
+
+      <div class="seq-row">
+        <div class="seq-note"></div>
+        <div class="seq-arrow-cell">
+          <div class="arr-line rtl">
+            <span class="arr-tip trk-teal">◀</span><span class="arr-track trk-teal"></span>
+            <span class="arr-label c-teal">车控执行结果通知（可选）Msg=0x03 Cmd=0x02</span>
+          </div>
+          <div class="arr-sub">0x04=已解锁 / 0x06=引擎启动等 · 四项条件全部满足才执行车控</div>
+        </div>
+        <div class="seq-note right">§5.4 Step6<br>§7.3.3.2</div>
+      </div>
+
+      <!-- Phase 5b: RKE -->
+      <div class="phase-hdr"><div class="phase-label">Phase 5b · 遥控认证 RKE（§5.5）—— 用户手动触发</div></div>
+
+      <div class="seq-row">
+        <div class="seq-note">用户在 App 手动触发<br>车控操作</div>
+        <div class="seq-arrow-cell">
+          <div class="arr-line">
+            <span class="arr-label c-blue">获取 RKE 挑战随机数 Msg=0x02 Cmd=0x04（可选）</span>
+            <span class="arr-track trk-blue"></span>
+            <span class="arr-tip trk-blue">▶</span>
+          </div>
+          <div class="arr-sub">Type=0x01 Unlock / 0x02 Lock / 0x03 Alarm / 0x04 Engine start</div>
+        </div>
+        <div class="seq-note right">§7.3.2.4<br>§5.5 Step3</div>
+      </div>
+
+      <div class="seq-row">
+        <div class="seq-note"></div>
+        <div class="seq-arrow-cell">
+          <div class="arr-line rtl">
+            <span class="arr-tip trk-amber">◀</span><span class="arr-track trk-amber"></span>
+            <span class="arr-label c-amber">响应 Nonce 随机数</span>
+          </div>
+          <div class="arr-sub">车端产生随机数，手机将其嵌入车控指令，防重放攻击</div>
+        </div>
+        <div class="seq-note right">§7.3.2.4</div>
+      </div>
+
+      <div class="seq-row">
+        <div class="seq-note">调用 SE Applet Encrypt<br>用 SessionKey 加密<br>生成车控密文</div>
+        <div class="seq-arrow-cell">
+          <div class="arr-line">
+            <span class="arr-label c-red">RKE 车控指令密文 Msg=0x02 Cmd=0x03</span>
+            <span class="arr-track trk-red"></span>
+            <span class="arr-tip trk-red">▶</span>
+          </div>
+          <div class="arr-sub">车控密文 Body 由 SessionKey 加密 · RequestPayload 车厂自定义（建议 TLV）</div>
+        </div>
+        <div class="seq-note right">§7.3.2.3<br>§5.5 Step5-6</div>
+      </div>
+
+      <div class="seq-row">
+        <div class="seq-note"></div>
+        <div class="seq-arrow-cell">
+          <div class="arr-line rtl">
+            <span class="arr-tip trk-teal">◀</span><span class="arr-track trk-teal"></span>
+            <span class="arr-label c-teal">车控执行结果通知（可选）Msg=0x03 Cmd=0x02</span>
+          </div>
+          <div class="arr-sub">0x00 成功 / 0x01 失败 / 已解锁 / 已锁定 / 引擎启动等</div>
+        </div>
+        <div class="seq-note right">§5.5 Step10<br>§7.3.3.2</div>
+      </div>
+
+    </div><!-- /seq-wrap -->
+
+    <div class="info-box warn" style="margin-top:16px">
+      <span class="info-icon">⚠</span>
+      <span><b>PEPS 四项判断条件（§5.4 Step4）必须全部满足：</b>① BLE 连接+握手认证正常 ② 手机在可执行区域范围内 ③ 数字钥匙包含该功能权限 ④ 防中继判断已通过</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ TAB 2: 指令表 ════════════════ -->
+<div class="panel" id="p2">
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">SECTION 05</div>
+      <div class="section-title">全量指令清单（含文档位置）</div>
+      <div class="section-desc">共 3 类 Message、15 条指令。所有指令均基于 ICCE Data 透传文本帧传输，Payload 采用 TLV 格式。</div>
+    </div>
+
+    <h3 style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text)">Message 0x01 · Auth 认证类</h3>
+    <div class="tbl-wrap" style="margin-bottom:24px">
+      <table class="cmd">
+        <thead><tr><th>Msg</th><th>Cmd</th><th>名称</th><th>方向</th><th>类型</th><th>说明</th><th>文档位置</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="badge auth">0x01</span></td>
+            <td><code>0x01</code></td>
+            <td><b>握手认证 Auth</b></td>
+            <td>🚗→📱</td>
+            <td><span class="badge req">必须</span></td>
+            <td>透传握手认证 APDU（GetProcessData 为起点），单次携带单条 APDU，多轮往返完成双向认证。原子操作，超时或出错需从 GetProcessData 重新开始。</td>
+            <td><span class="doc-ref">§7.3.1<br>§7.1 场景1</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text)">Message 0x02 · Command 指令类</h3>
+    <div class="tbl-wrap" style="margin-bottom:24px">
+      <table class="cmd">
+        <thead><tr><th>Msg</th><th>Cmd</th><th>名称</th><th>方向</th><th>类型</th><th>说明与参数</th><th>文档位置</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="badge cmd-b">0x02</span></td><td><code>0x01</code></td><td><b>启动测距定位</b></td>
+            <td>🚗→📱</td><td><span class="badge req">PEPS必须</span></td>
+            <td>指示手机启动定位广播。Request: <code>Type(01)</code>=0x01 RSSI / 0x02 UWB / 0x03 HADM。Response: <code>Status(00)</code> + <code>Timeout(01)</code> 手机告知广播持续时间(ms)。</td>
+            <td><span class="doc-ref">§7.3.2.1<br>§5.3</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge cmd-b">0x02</span></td><td><code>0x02</code></td><td><b>启动防中继判断</b></td>
+            <td>🚗→📱</td><td><span class="badge req">PEPS必须</span></td>
+            <td>Request: <code>测距类别(01)</code> + <code>车辆信息(02)</code>（可选辅助数据）。Response: <code>Status(00)</code> + <code>校验结果(01)</code>=0x01 有风险/0x02 无风险/0x03 数据不足 + <code>设备信息(02)</code> 供车辆侧判断。</td>
+            <td><span class="doc-ref">§7.3.2.2<br>§5.4 Step4④</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge cmd-b">0x02</span></td><td><code>0x03</code></td><td><b>RKE 远程车控指令</b></td>
+            <td>📱→🚗</td><td><span class="badge req">RKE必须</span></td>
+            <td>车控密文由 SessionKey 加密，指令内容车厂自定义（建议 TLV）。Response: <code>Status(00)</code> + <code>响应数据(01)</code>。Body 的 Control.Bit3=1 可再套 AES-128-CBC 双重加密。</td>
+            <td><span class="doc-ref">§7.3.2.3<br>§5.5 Step5-6</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge cmd-b">0x02</span></td><td><code>0x04</code></td><td><b>获取 RKE 挑战信息</b></td>
+            <td>📱→🚗</td><td><span class="badge opt">可选</span></td>
+            <td>防重放。Request: <code>车控指令类型(01)</code>=0x01 Unlock / 0x02 Lock / 0x03 Alarm / 0x04 Engine start / 0x05 General。Response: <code>Status(00)</code> + <code>随机数(01)</code>（车端产生的 Nonce）。</td>
+            <td><span class="doc-ref">§7.3.2.4<br>§5.5 Step3</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge cmd-b">0x02</span></td><td><code>0x05</code></td><td><b>获取车辆信息</b></td>
+            <td>📱→🚗</td><td><span class="badge opt">按需</span></td>
+            <td>Request: <code>请求类型(01)</code>=0x01 上条指令执行情况 / 0x02 锁状态 / 0x03 引擎状态 / 0x04 窗状态。Response: <code>Status(00)</code> + <code>车辆信息(01)</code>（对应状态值）。</td>
+            <td><span class="doc-ref">§7.3.2.5</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge cmd-b">0x02</span></td><td><code>0x06</code></td><td><b>获取终端信息</b></td>
+            <td>🚗→📱</td><td><span class="badge opt">按需</span></td>
+            <td>Request: <code>请求类型(01)</code>=0x01 定位校准数据 / 0x02 防中继结果 / 0x03 厂商自定义。Response: <code>Status(00)</code> + <code>移动终端信息(01)</code>。</td>
+            <td><span class="doc-ref">§7.3.2.6</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge cmd-b">0x02</span></td><td><code>0x07</code></td><td><b>获取时钟校准信息</b></td>
+            <td>🚗→📱</td><td><span class="badge opt">可选</span></td>
+            <td>可在握手认证前发送（特殊性）。Request Payload 为空。Response: <code>Status(00)</code> + <code>时钟数据(01)</code>。用于车辆时钟同步，防止重放攻击。</td>
+            <td><span class="doc-ref">§7.3.2.7</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge cmd-b">0x02</span></td><td><code>0x08</code></td><td><b>获取协议版本号</b></td>
+            <td>🚗→📱</td><td><span class="badge opt">建议</span></td>
+            <td>可在握手认证前发送。Request: <code>车辆侧协议版本(01)</code>（可选）。Response: <code>Status(00)</code> + <code>终端侧版本(01)</code> 格式：<code>ICCE.DK.V2.XX.YY</code>。</td>
+            <td><span class="doc-ref">§7.3.2.8</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text)">Message 0x03 · Notification 通知类</h3>
+    <div class="tbl-wrap" style="margin-bottom:24px">
+      <table class="cmd">
+        <thead><tr><th>Msg</th><th>Cmd</th><th>名称</th><th>方向</th><th>类型</th><th>说明与事件值</th><th>文档位置</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="badge notif">0x03</span></td><td><code>0x01</code></td><td><b>终端状态通知</b></td>
+            <td>📱→🚗</td><td><span class="badge opt">主动推送</span></td>
+            <td><code>Event(01)</code>: 0x01=广播已降频 / 0x02=会话密钥丢失（触发重新握手）/ 0x03=蓝牙断开 / 0x04=手机停止运动 / 0x05=手机请求车辆定位 / 0x06=手机已离线 / 0x07=手机已在线</td>
+            <td><span class="doc-ref">§7.3.3.1</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge notif">0x03</span></td><td><code>0x02</code></td><td><b>车辆状态通知</b></td>
+            <td>🚗→📱</td><td><span class="badge opt">主动推送</span></td>
+            <td><code>车辆事件(01)</code>: 0x00=指令成功 / 0x01=失败 / 0x02=重发 / 0x03=已闭锁 / 0x04=已解锁 / 0x05=引擎停止 / 0x06=引擎启动 / 0x07=时钟已重置 / 0x08=蓝牙断开。可含 <code>异步响应结果(02)</code> + <code>车辆状态(03)</code>。</td>
+            <td><span class="doc-ref">§7.3.3.2</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge notif">0x03</span></td><td><code>0x03</code></td><td><b>车辆→App 透传</b></td>
+            <td>🚗→📱</td><td><span class="badge opt">可选</span></td>
+            <td>车辆通过 Framework 向 App 透传自定义数据 <code>透传数据(01)</code>，车厂自定义格式。</td>
+            <td><span class="doc-ref">§7.3.3.3</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge notif">0x03</span></td><td><code>0x04</code></td><td><b>车辆→服务器透传</b></td>
+            <td>🚗→📱</td><td><span class="badge opt">可选</span></td>
+            <td>通路：车辆→Framework→手机厂商服务器→车厂服务器。用于时钟 / 标定数据等更新。<code>透传数据(01)</code> 车厂自定义。</td>
+            <td><span class="doc-ref">§7.3.3.4<br>§7.1 场景5</span></td>
+          </tr>
+          <tr>
+            <td><span class="badge notif">0x03</span></td><td><code>0x05</code></td><td><b>服务器→车辆透传</b></td>
+            <td>📱→🚗</td><td><span class="badge opt">可选</span></td>
+            <td>通路：车厂服务器→手机厂商服务器→Framework→车辆。<code>透传数据(01)</code> 服务器下发内容。</td>
+            <td><span class="doc-ref">§7.3.3.5<br>§7.1 场景5</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text)">Status 状态码速查（§7.2.3.4）</h3>
+    <div class="tbl-wrap">
+      <table class="cmd">
+        <thead><tr><th>Status</th><th>分类</th><th>描述</th><th>处理建议</th></tr></thead>
+        <tbody>
+          <tr><td><code>0x00</code></td><td>—</td><td>成功</td><td>继续下一步流程</td></tr>
+          <tr><td><code>0x01</code></td><td>系统类</td><td>未知错误类型</td><td>记录日志，视情况重试</td></tr>
+          <tr><td><code>0x02</code></td><td>系统类</td><td>不支持该 Message</td><td>检查版本协商结果</td></tr>
+          <tr><td><code>0x03</code></td><td>系统类</td><td>不支持该 Command</td><td>检查版本协商结果</td></tr>
+          <tr><td><code>0x04</code></td><td>系统类</td><td>无权限</td><td>检查钥匙权限，重新开通</td></tr>
+          <tr><td><code>0x05</code></td><td>系统类</td><td>系统忙</td><td>延迟重试</td></tr>
+          <tr><td><code>0x06</code></td><td>系统类</td><td>请求格式错误</td><td>检查帧格式构建逻辑</td></tr>
+          <tr><td><code>0x07</code></td><td>系统类</td><td>PayloadTLV 参数解析错误</td><td>检查 TLV 编码</td></tr>
+          <tr><td><code>0x08</code></td><td>系统类</td><td>设备认证失败/状态失效</td><td>重新发起握手认证</td></tr>
+          <tr><td><code>0x10</code></td><td>通信类</td><td>帧序列错误</td><td>重发，检查 FSN 编号</td></tr>
+          <tr><td><code>0x11</code></td><td>通信类</td><td>传输超时</td><td>重试最多 3 次，否则重建连接</td></tr>
+          <tr><td><code>0x12</code></td><td>通信类</td><td>长度不符</td><td>检查 Length 字段计算</td></tr>
+          <tr><td><code>0x13</code></td><td>通信类</td><td>CRC 校验错误</td><td>重发，检查 CRC16-CCITT 实现</td></tr>
+          <tr><td><code>0x14</code></td><td>通信类</td><td>丢包，请求重发</td><td>重发对应帧</td></tr>
+          <tr><td><code>0x20~0xFF</code></td><td>业务类</td><td>预留给业务自定义</td><td>参考各厂商文档</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ TAB 3: 帧格式 ════════════════ -->
+<div class="panel" id="p3">
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">SECTION 06</div>
+      <div class="section-title">ICCE Data 透传文本帧格式（§7.2.3）</div>
+      <div class="section-desc">所有 BLE 数据均封装在此帧格式中，采用小端序。Request 和 Response 必须成对出现，超时最多重试 3 次（同步）。</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">帧结构（Header + Body + Checksum）</div>
+      <div class="frame-row">
+        <div class="fc fc-sof"><div class="fn">SOF</div><div class="fs">1 B</div><div class="fv">0x5A 固定</div></div>
+        <div class="fc fc-len"><div class="fn">Length</div><div class="fs">2 B 小端</div><div class="fv">Ctrl→Body总字节</div></div>
+        <div class="fc fc-ctrl"><div class="fn">Control</div><div class="fs">1 B · 8 flags</div><div class="fv">见下方详解</div></div>
+        <div class="fc fc-fsn"><div class="fn">FSN</div><div class="fs">1 B</div><div class="fv">0=不分包<br>0~255=分包</div></div>
+        <div class="fc fc-mid"><div class="fn">MessageID</div><div class="fs">1 B</div><div class="fv">0x01/02/03</div></div>
+        <div class="fc fc-cid"><div class="fn">CommandID</div><div class="fs">1 B</div><div class="fv">0x01~0xFF</div></div>
+        <div class="fc fc-pay"><div class="fn">Payload（TLV）</div><div class="fs">Variable</div><div class="fv">Tag-Length-Value</div></div>
+        <div class="fc fc-crc"><div class="fn">Checksum</div><div class="fs">2 B 小端</div><div class="fv">CRC16-CCITT<br>覆盖 Hdr+Body</div></div>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:8px">注：Length = Control(1B) + FSN(1B) + MessageID(1B) + CommandID(1B) + Payload(NB) 的总字节数，<b>不含</b> Checksum(2B)。Ack 类 Response 的 Body 为空。</p>
+    </div>
+
+    <div style="margin-top:20px">
+      <div class="card-title" style="font-size:13px;font-weight:700;margin-bottom:10px">Control 字段 8 bit 详解</div>
+      <div class="ctrl-grid">
+        <div class="ctrl-bit">
+          <div class="cb-name">Bit[1:0] · 分包指示</div>
+          <div class="cb-vals">
+            <b>00</b> 完整包（不分包）<br>
+            <b>01</b> 首帧（起始分帧）<br>
+            <b>10</b> 过程帧（中间帧）<br>
+            <b>11</b> 末帧（最后分帧）<br>
+            <br><span style="font-size:10px;color:var(--muted)">过程帧和末帧 Body 直接填分段数据，不含 MessageID/CommandID</span>
+          </div>
+        </div>
+        <div class="ctrl-bit">
+          <div class="cb-name">Bit[2] · 响应方式</div>
+          <div class="cb-vals">
+            <b>0</b> 同步响应<br>
+            Response 含处理结果<br>
+            超时最多重试 3 次<br><br>
+            <b>1</b> 异步响应<br>
+            先回 Ack 表示收到<br>
+            执行完成后再发 Notify
+          </div>
+        </div>
+        <div class="ctrl-bit">
+          <div class="cb-name">Bit[3] · 加密指示</div>
+          <div class="cb-vals">
+            <b>0</b> 不加密（BLE 链路层已加密）<br><br>
+            <b>1</b> 应用层二次加密<br>
+            算法：AES-128-CBC<br>
+            填充：ISO9797-M2<br>
+            固定 IV：session IV<br>
+            随机 IV：在FSN与MessageID间插入明文 TLV（首包）
+          </div>
+        </div>
+        <div class="ctrl-bit">
+          <div class="cb-name">Bit[4] · 方向指示</div>
+          <div class="cb-vals">
+            <b>0</b> Response（应答）<br><br>
+            <b>1</b> Request（请求）<br><br>
+            Bit[7:5] 预留 RFU<br><br>
+            <span style="font-size:10px;color:var(--muted)">示例：0x10 = Request + 同步 + 不加密 + 完整包</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px">
+      <div class="card-title" style="font-size:13px;font-weight:700;margin-bottom:6px">实战帧示例：Auth 握手（GetProcessData）</div>
+      <div class="code-block">
+<span class="cb-lang">hex</span>
+<span class="cmt"># 发送 GetProcessData APDU（55字节），Msg=0x01, Cmd=0x01</span>
+<span class="cmt"># Control = 0x10 → Bit4=1(Request) Bit2=0(同步) Bit3=0(不加密) Bit[1:0]=00(完整包)</span>
+
+<span class="num">5A</span>        <span class="cmt">→ SOF = 0x5A</span>
+<span class="num">3C 10</span>     <span class="cmt">→ Length = 0x003C = 60 (小端序: ctrl+fsn+body 共60字节)</span>
+<span class="num">10</span>        <span class="cmt">→ Control = 0x10 (Request, 同步, 不加密, 完整包)</span>
+<span class="num">00</span>        <span class="cmt">→ FSN = 0 (不分包)</span>
+<span class="num">01</span>        <span class="cmt">→ MessageID = 0x01 (Auth类)</span>
+<span class="num">01</span>        <span class="cmt">→ CommandID = 0x01</span>
+<span class="num">37 80CA0000329F35...</span>  <span class="cmt">→ Payload TLV: Tag=0x37(55dec), Value=完整APDU</span>
+<span class="num">XX XX</span>     <span class="cmt">→ CRC16-CCITT (Header+Body)</span>
+      </div>
+    </div>
+
+    <div style="margin-top:20px">
+      <div class="card-title" style="font-size:13px;font-weight:700;margin-bottom:6px">GATT 服务/特征定义（§7.2.2）</div>
+      <div class="tbl-wrap">
+        <table class="cmd">
+          <thead><tr><th>名称</th><th>UUID</th><th>属性</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>Service</td><td><code>车厂自定义</code></td><td>—</td><td>承载两个 Characteristic，UUID 由车厂分配</td></tr>
+            <tr><td>ICCE Data In</td><td><b>0xFFFD</b></td><td>Write / Write Without Response</td><td>手机 → 车辆（发送请求和响应）</td></tr>
+            <tr><td>ICCE Data Out</td><td><b>0xFFFE</b></td><td>Read / <b>Notify</b></td><td>车辆 → 手机（接收请求、响应和通知）<br><span style="color:var(--red);font-size:11px">⚠ Client 端必须开启 CCCD Notification 才能收到 Notify</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ TAB 4: SE/APDU ════════════════ -->
+<div class="panel" id="p4">
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">SECTION 07</div>
+      <div class="section-title">SE 安全单元与 APDU 工作原理</div>
+      <div class="section-desc">ICCE 认证本质上是基于智能卡技术（JavaCard / ISO7816-4）的对称密钥挑战应答方案。理解 SE 和 APDU 是实现握手认证的基础。</div>
+    </div>
+
+    <div class="card-grid card-grid-2">
+      <div class="card blue">
+        <div class="card-title">🔐 安全单元（SE）的形态</div>
+        <div class="card-body">
+          SE 是防篡改硬件安全部件，保证密钥的安全性与机密性。在 ICCE 体系中：<br><br>
+          <b>手机端：</b>eSE（嵌入式，最安全）/ inSE（集成 SoC）/ SIM/UICC（运营商）/ microSD。支持 GlobalPlatform 规范，运行 JavaCard Applet。<br><br>
+          <b>车端：</b>SE 或 HSM（硬件安全模块）。TEE 被视为软件密码模块，在国内商密认证中不等同于硬件密码模块，<b>推荐使用 SE</b>。
+        </div>
+      </div>
+      <div class="card teal">
+        <div class="card-title">☕ JavaCard Applet 角色</div>
+        <div class="card-body">
+          Applet 运行于 JavaCard VM 上，不能自启动，由外部终端通过 <b>SELECT(AID)</b> 命令激活。ICCE 方案中需两端各一个 Applet：<br><br>
+          <b>手机端 Applet 需实现：</b><br>
+          Select / GetProcessData / Auth / ReadBinary / UpdateBinary / Encrypt / Decrypt<br><br>
+          <b>车端 Applet 需实现：</b><br>
+          Select / IntAuth（内部认证）/ ExternalAuth（外部认证）/ Decrypt
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section-head" style="margin-top:0">
+      <div class="card-title" style="font-size:15px;font-weight:700">APDU 命令格式（ISO 7816-4）</div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table class="cmd">
+        <thead><tr><th>字段</th><th>长度</th><th>说明</th><th>示例值</th></tr></thead>
+        <tbody>
+          <tr><td><b>CLA</b></td><td>1B</td><td>命令类别字节：0x00=标准指令集，0x80=安全指令集</td><td><code>0x80</code></td></tr>
+          <tr><td><b>INS</b></td><td>1B</td><td>指令码，标识具体操作（如 0xCA=GetData，0xF2=Auth）</td><td><code>0xCA</code></td></tr>
+          <tr><td><b>P1</b></td><td>1B</td><td>参数1，指令的第一个限定参数</td><td><code>0x00</code></td></tr>
+          <tr><td><b>P2</b></td><td>1B</td><td>参数2，指令的第二个限定参数</td><td><code>0x00</code></td></tr>
+          <tr><td><b>Lc</b></td><td>0/1/3B</td><td>Data Field 长度（可选）</td><td><code>0x32</code>(50B)</td></tr>
+          <tr><td><b>Data</b></td><td>0~65535B</td><td>命令数据（可选）</td><td>TLV 格式数据</td></tr>
+          <tr><td><b>Le</b></td><td>0/1/3B</td><td>期望响应数据长度（可选）</td><td><code>0x00</code>=最大</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin:8px 0 16px">Response APDU = [Data Field] + SW1(1B) + SW2(1B)，其中 SW=9000 表示成功。</p>
+
+    <hr class="divider">
+
+    <div class="card-title" style="font-size:15px;font-weight:700;margin-bottom:12px">ICCE 密钥认证流程（对称挑战应答）</div>
+
+    <div class="info-box note">
+      <span class="info-icon">ℹ</span>
+      <span>ICCE 认证本质是最常见的对称密钥挑战应答方案：双端共享同一对称密钥（通过 OEM 云开通时下发），使用随机数作挑战码，对方用共享密钥计算应答，发起方验证应答值，完成<b>双向认证并生成 SessionKey</b>。</span>
+    </div>
+
+    <div class="code-block" style="margin-top:14px">
+<span class="cb-lang">APDU 流程（伪序列）</span>
+<span class="cmt">// Step 1: Framework → SE Applet 发送 SELECT 选中 Applet</span>
+<span class="fn">SELECT</span>(AID)  <span class="cmt">→ SW=9000 表示 Applet 就绪</span>
+
+<span class="cmt">// Step 2: 车端发 Auth Request（GetProcessData）</span>
+<span class="cmt">// C-APDU: CLA=0x80 INS=0xCA P1=0x00 P2=0x00 Le=0x32</span>
+<span class="cmt">// 封装在 ICCE 帧 Msg=0x01 Cmd=0x01 中发给手机 Framework</span>
+车端 → 手机: <span class="fn">GetProcessData</span>(APDU)  <span class="cmt">→ Framework 拆封 → SE 处理</span>
+
+<span class="cmt">// Step 3: SE Applet 处理，生成本端随机数 RND_ICC</span>
+SE Applet: 生成随机数 <span class="str">RND_ICC</span>，准备挑战数据
+手机 → 车端: <span class="fn">GetProcessData Response</span>(RND_ICC + 设备信息)
+
+<span class="cmt">// Step 4: 车端生成随机数 RND_IFD，用共享密钥 SK 计算认证码</span>
+车端: 生成 <span class="str">RND_IFD</span>，用 SK 计算 MAC(<span class="str">RND_IFD</span> || <span class="str">RND_ICC</span>)
+
+<span class="cmt">// Step 5: 车端发 External Auth（外部认证），携带 RND_IFD + MAC</span>
+车端 → 手机: <span class="fn">ExternalAuth</span>(RND_IFD, MAC_车端)
+SE Applet: 用 SK 验证 MAC_车端 → <span class="str">车端认证通过</span>
+SE Applet: 计算 MAC_手机(<span class="str">RND_ICC</span> || <span class="str">RND_IFD</span>) → 返回
+
+<span class="cmt">// Step 6: 车端验证手机端 MAC（双向认证完成）</span>
+车端: 验证 MAC_手机 → <span class="str">手机认证通过</span>
+
+<span class="cmt">// Step 7: 双端派生 SessionKey（用于后续加解密）</span>
+SessionKey = <span class="fn">KDF</span>(SK, <span class="str">RND_IFD</span>, <span class="str">RND_ICC</span>)  <span class="cmt">← 两端分别计算，结果相同</span>
+    </div>
+
+    <div class="info-box warn" style="margin-top:16px">
+      <span class="info-icon">⚠</span>
+      <span>ICCE 规范对认证流程中具体的密钥派生算法（KDF）、MAC 算法、APDU 具体格式等细节描述不完整，<b>各主机厂、手机厂商需四方协商确定</b>，这是 ICCE 落地时最大的挑战点之一。</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ TAB 5: 安全 ════════════════ -->
+<div class="panel" id="p5">
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">SECTION 08</div>
+      <div class="section-title">安全设计详解</div>
+    </div>
+
+    <div class="card-grid card-grid-2" style="margin-bottom:24px">
+      <div class="card">
+        <div class="card-title" style="color:var(--accent)">🔒 四层安全防护体系</div>
+        <div style="font-size:12.5px;color:var(--text2)">
+          <div style="padding:10px;background:var(--accent-bg);border-radius:6px;margin-bottom:6px;border-left:3px solid var(--accent)">
+            <b>层1 · BLE 链路层加密</b><br>
+            配对后 LTK 进行链路层 AES 加密，防窃听。对等所有 BLE 数据。§5.2.3 Step9
+          </div>
+          <div style="padding:10px;background:var(--purple-bg);border-radius:6px;margin-bottom:6px;border-left:3px solid var(--purple)">
+            <b>层2 · 应用层二次加密（可选）</b><br>
+            Control.Bit3=1，对 Body 内容进行 AES-128-CBC（ISO9797-M2 填充），关键业务指令建议开启。§7.2.3
+          </div>
+          <div style="padding:10px;background:var(--teal-bg);border-radius:6px;margin-bottom:6px;border-left:3px solid var(--teal)">
+            <b>层3 · SE 内密钥管理</b><br>
+            SessionKey 在 SE 内生成和使用，不对外导出，蓝牙会话断开立即销毁。§6.1 条e
+          </div>
+          <div style="padding:10px;background:var(--amber-bg);border-radius:6px;border-left:3px solid var(--amber)">
+            <b>层4 · APDU 业务级双向认证</b><br>
+            基于对称密钥挑战应答，通过 SE Applet 完成双向身份验证，生成 SessionKey。§7.3.1
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="color:var(--red)">⚠ 主要攻击威胁及防护</div>
+        <div class="tbl-wrap" style="border:none;box-shadow:none">
+          <table class="cmd" style="font-size:11.5px">
+            <thead><tr><th>攻击类型</th><th>防护手段</th><th>依据</th></tr></thead>
+            <tbody>
+              <tr><td><b style="color:var(--red)">中间人攻击</b></td><td>车主用防 MITM 配对模式；Passkey 每次动态生成</td><td><span class="doc-ref">§5.2.1/§5.2.2</span></td></tr>
+              <tr><td><b style="color:var(--red)">重放攻击</b></td><td>RKE 前获取车端随机数 Nonce（Cmd=0x04），嵌入指令中</td><td><span class="doc-ref">§7.3.2.4</span></td></tr>
+              <tr><td><b style="color:var(--red)">中继攻击</b></td><td>PEPS 场景必须执行防中继判断（Cmd=0x02），BLE+UWB 效果最佳</td><td><span class="doc-ref">§5.4 Step4④</span></td></tr>
+              <tr><td><b style="color:var(--red)">随意配对</b></td><td>由车端主动发起 Security Request（而非手机）</td><td><span class="doc-ref">§5.2.1</span></td></tr>
+              <tr><td><b style="color:var(--red)">密钥泄露</b></td><td>SessionKey 存 SE 不导出，断连即清除</td><td><span class="doc-ref">§6.1 条e</span></td></tr>
+              <tr><td><b style="color:var(--red)">广播伪造</b></td><td>VIN/已知蓝牙地址过滤 + 连接后 GATT 层认证</td><td><span class="doc-ref">§7.2.1</span></td></tr>
+              <tr><td><b style="color:var(--red)">地址追踪</b></td><td>定位广播使用 RPA（可解析私有地址），定期更换</td><td><span class="doc-ref">§6.1 条f</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <div class="section-title" style="font-size:16px">密钥生命周期管理</div>
+    </div>
+    <div class="card-grid card-grid-2">
+      <div class="card green">
+        <div class="card-title">LTK（长期密钥）生命周期</div>
+        <div class="card-body">
+          <b>生成：</b>配对时由双方 BLE 协议栈协商生成<br>
+          <b>保存：</b>绑定后持久保存（手机 BLE 协议栈 + 车端）<br>
+          <b>用途：</b>每次重连时直接用于链路层 AES 加密<br>
+          <b>销毁：</b>数字钥匙失效时，车辆可清除配对关系（§5.2.3）<br>
+          <b>注意：</b>若使用随机地址，配对和广播须使用相同 IRK（§6.2.1 条l）
+        </div>
+      </div>
+      <div class="card purple">
+        <div class="card-title">SessionKey（会话密钥）生命周期</div>
+        <div class="card-body">
+          <b>生成：</b>每次握手认证时在 SE 内部生成，两端各自派生<br>
+          <b>作用域：</b>仅当次 BLE 会话有效<br>
+          <b>用途：</b>RKE 车控指令加解密 + 可选的应用层二次加密<br>
+          <b>销毁：</b>蓝牙会话断开时立即清除（§6.1 条e）<br>
+          <b>丢失处理：</b>手机感知 SessionKey 丢失时，通过 Notification(0x01, Event=0x02) 通知车辆重新握手
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ TAB 6: 工程 ════════════════ -->
+<div class="panel" id="p6">
+  <div class="section">
+    <div class="section-head">
+      <div class="section-num">SECTION 09</div>
+      <div class="section-title">工程实现指南</div>
+    </div>
+
+    <div class="card-grid card-grid-2" style="margin-bottom:24px">
+      <div>
+        <div class="apdu-title">Android 手机端实现要点</div>
+        <ul class="checklist">
+          <li class="ok"><span class="ico">✓</span>BLE 扫描：BluetoothLeScanner，后台保活用 ForegroundService + WakeLock，占空比 ≥ 10%</li>
+          <li class="ok"><span class="ico">✓</span>GATT Client：BluetoothGatt，连接后立即 discoverServices，找到 0xFFFD/0xFFFE</li>
+          <li class="ok"><span class="ico">✓</span>开启通知：setCharacteristicNotification(0xFFFE, true) + 写入 CCCD Descriptor</li>
+          <li class="ok"><span class="ico">✓</span>SE 访问：OMAPI（StrongBox / eSE），通过 SEService 获取 Reader → Session → Channel</li>
+          <li class="ok"><span class="ico">✓</span>Passkey：BluetoothPairingCallback 处理 PAIRING_VARIANT_PASSKEY，车主也可自动填充但需用户确认</li>
+          <li class="ok"><span class="ico">✓</span>定位广播：AdvertisingSet API (Android 8+)，使用 AdvertisingSetParameters 设置 RPA</li>
+          <li class="warn"><span class="ico">⚠</span>后台 BLE 广播在 Android 12+ 需要 BLUETOOTH_ADVERTISE 权限，注意运行时申请</li>
+          <li class="must"><span class="ico">●</span>定位广播在亮屏/熄屏/锁屏场景必须行为一致，功率波动 ≤ ±2dB</li>
+        </ul>
+      </div>
+      <div>
+        <div class="apdu-title">iOS / watchOS 手机端实现要点</div>
+        <ul class="checklist">
+          <li class="ok"><span class="ico">✓</span>BLE Central：CBCentralManager，后台扫描需 CBCentralManagerOptionRestoreIdentifierKey</li>
+          <li class="ok"><span class="ico">✓</span>发现服务：peripheral.discoverServices，找 0xFFFD/0xFFFE Characteristic</li>
+          <li class="ok"><span class="ico">✓</span>安全存储：Secure Enclave（P-256），或 KeyChain + CryptoKit 进行 AES 加解密</li>
+          <li class="ok"><span class="ico">✓</span>背景广播：CBPeripheralManager，iOS 后台 advertise 有限制，需处理 truncated payload</li>
+          <li class="warn"><span class="ico">⚠</span>iOS 后台 BLE 扫描受限，需监听 CoreBluetooth 的 state restoration 回调</li>
+          <li class="warn"><span class="ico">⚠</span>iOS 不直接支持 Passkey Entry 配对的完整控制，BLE 配对流程需特殊处理</li>
+          <li class="must"><span class="ico">●</span>Apple Watch 可作为钥匙端，支持 BLE + NFC，需单独适配 watchOS API</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="apdu-title">帧构建与发送核心代码</div>
+    <div class="code-block">
+<span class="cb-lang">Python（伪码）</span>
+<span class="kw">import</span> struct, binascii
+
+<span class="kw">def</span> <span class="fn">crc16_ccitt</span>(data: <span class="fn">bytes</span>) -> <span class="fn">int</span>:
+    <span class="str">"""CRC16-CCITT (0xFFFF 初始值, 0x1021 多项式)"""</span>
+    crc = <span class="num">0xFFFF</span>
+    <span class="kw">for</span> byte <span class="kw">in</span> data:
+        crc ^= (byte << <span class="num">8</span>)
+        <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(<span class="num">8</span>):
+            crc = ((crc << <span class="num">1</span>) ^ <span class="num">0x1021</span>) <span class="kw">if</span> (crc & <span class="num">0x8000</span>) <span class="kw">else</span> (crc << <span class="num">1</span>)
+    <span class="kw">return</span> crc & <span class="num">0xFFFF</span>
+
+<span class="kw">def</span> <span class="fn">build_tlv</span>(tag: <span class="fn">int</span>, value: <span class="fn">bytes</span>) -> <span class="fn">bytes</span>:
+    <span class="str">"""构建 TLV 格式数据"""</span>
+    <span class="kw">return</span> <span class="fn">bytes</span>([tag, <span class="fn">len</span>(value)]) + value
+
+<span class="kw">def</span> <span class="fn">build_icce_frame</span>(msg_id: <span class="fn">int</span>, cmd_id: <span class="fn">int</span>, payload: <span class="fn">bytes</span>,
+                     is_req=<span class="kw">True</span>, encrypt=<span class="kw">False</span>, async_rsp=<span class="kw">False</span>) -> <span class="fn">bytes</span>:
+    body = <span class="fn">bytes</span>([msg_id, cmd_id]) + payload
+    ctrl = <span class="num">0x00</span>
+    <span class="kw">if</span> is_req:    ctrl |= (<span class="num">1</span> << <span class="num">4</span>)  <span class="cmt"># Bit4=1: Request</span>
+    <span class="kw">if</span> encrypt:  ctrl |= (<span class="num">1</span> << <span class="num">3</span>)  <span class="cmt"># Bit3=1: AES-128-CBC</span>
+    <span class="kw">if</span> async_rsp:ctrl |= (<span class="num">1</span> << <span class="num">2</span>)  <span class="cmt"># Bit2=1: 异步响应</span>
+    length = <span class="num">1</span> + <span class="num">1</span> + <span class="fn">len</span>(body)    <span class="cmt"># ctrl + fsn + body</span>
+    header = <span class="fn">bytes</span>([<span class="num">0x5A</span>]) + struct.<span class="fn">pack</span>(<span class="str">'&lt;H'</span>, length) + <span class="fn">bytes</span>([ctrl, <span class="num">0x00</span>])
+    raw = header + body
+    crc = <span class="fn">crc16_ccitt</span>(raw)
+    <span class="kw">return</span> raw + struct.<span class="fn">pack</span>(<span class="str">'&lt;H'</span>, crc)
+
+<span class="cmt"># 使用示例：发送 RKE 获取随机数请求</span>
+payload = <span class="fn">build_tlv</span>(<span class="num">0x01</span>, <span class="fn">bytes</span>([<span class="num">0x01</span>]))  <span class="cmt"># Type=Unlock</span>
+frame = <span class="fn">build_icce_frame</span>(<span class="num">0x02</span>, <span class="num">0x04</span>, payload)
+<span class="fn">ble_write</span>(char_uuid=<span class="num">0xFFFD</span>, data=frame)    <span class="cmt"># Write to ICCE Data In</span>
+    </div>
+
+    <div class="apdu-title" style="margin-top:20px">车端 BLE 模块选型建议</div>
+    <div class="card-grid card-grid-3">
+      <div class="card">
+        <div class="card-title">主节点芯片</div>
+        <div class="card-body" style="font-size:11.5px">
+          <b>Nordic：</b>nRF5340（双核，支持多角色）、nRF52840<br>
+          <b>TI：</b>CC2642R、CC2652P（高功率）<br>
+          <b>要求：</b>BLE 4.2+，GATT Server，支持 LE 1M PHY，MTU 251B
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">辅节点（Anchor）</div>
+        <div class="card-body" style="font-size:11.5px">
+          可与主节点使用同款芯片多实例，或独立低成本模组。<br>布置在车身多个位置（前门/后门/后备箱/车内），3~6 个辅节点可实现较精确区域判断。
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">UWB 扩展（HADM）</div>
+        <div class="card-body" style="font-size:11.5px">
+          需 BT 5.1+ Direction Finding（AoA/AoD）支持，或独立 UWB 芯片（NXP SR040/SR150，Qorvo DW3000）。与 BLE 配合：BLE 负责连接认证，UWB 负责精确测距。
+        </div>
+      </div>
+    </div>
+
+    <div class="apdu-title" style="margin-top:20px">性能指标要求（§6.2.2）</div>
+    <div class="perf-grid">
+      <div class="perf-card"><div class="perf-label">广播间隔</div><div class="perf-val">≤100ms</div><div class="perf-unit">正常工作 · §6.2.1a</div></div>
+      <div class="perf-card"><div class="perf-label">扫描占空比</div><div class="perf-val">≥10%</div><div class="perf-unit">手机背景扫描 · §6.1a</div></div>
+      <div class="perf-card"><div class="perf-label">定位广播周期</div><div class="perf-val">100ms</div><div class="perf-unit">亮/熄/锁屏一致 · §6.1f</div></div>
+      <div class="perf-card"><div class="perf-label">功率 TRP</div><div class="perf-val">≥2~4dBm</div><div class="perf-unit">最低值 · §6.1m</div></div>
+      <div class="perf-card"><div class="perf-label">灵敏度 TIS</div><div class="perf-val">≤-89dBm</div><div class="perf-unit">§6.1m</div></div>
+      <div class="perf-card"><div class="perf-label">PEPS 时延</div><div class="perf-val">≤1s</div><div class="perf-unit">BLE已连 · §6.2.2d</div></div>
+      <div class="perf-card"><div class="perf-label">RKE 时延</div><div class="perf-val">≤1.5s</div><div class="perf-unit">BLE已连 · §6.2.2e</div></div>
+      <div class="perf-card"><div class="perf-label">遥控距离</div><div class="perf-val">≥15m</div><div class="perf-unit">空旷无盲点 · §6.2.2c</div></div>
+      <div class="perf-card"><div class="perf-label">解锁精度</div><div class="perf-val">0.5m</div><div class="perf-unit">主驾/后备箱 · §6.2.2b</div></div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<footer>
+  <span>ICCE/T 001-2021 · 智慧车联产业生态联盟数字车钥匙系统 第2部分：蓝牙系统规范</span>
+  <span>牵头：中国信息通信研究院 · 中国汽车工业协会 · 华为终端 · 各整车企业联合参与</span>
+</footer>
+
+<script>
+function show(n) {
+  document.querySelectorAll('.panel').forEach((p,i) => p.classList.toggle('active', i===n));
+  document.querySelectorAll('.tab-btn').forEach((t,i) => t.classList.toggle('active', i===n));
+}
+</script>

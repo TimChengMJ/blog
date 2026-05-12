@@ -1,0 +1,1460 @@
+---
+title: "汽车诊断 UDS 参考手册"
+description: ""
+date: 2026-04-14T17:25:24+08:00
+categories: ["技术文档"]
+tags: []
+draft: false
+---
+
+<style>
+
+:root {
+  --bg:        #f5f6f8;
+  --surface:   #ffffff;
+  --surface2:  #f0f2f7;
+  --border:    #e2e6ee;
+  --border2:   #cdd3e0;
+  --text:      #1c2333;
+  --text2:     #4a5568;
+  --text3:     #8896aa;
+  --blue:      #1a5fb4;
+  --blue-l:    #e8f0fb;
+  --blue-m:    #2d6fd4;
+  --green:     #1d7a4a;
+  --green-l:   #e6f5ee;
+  --amber:     #b85c00;
+  --amber-l:   #fef3e2;
+  --red:       #c0392b;
+  --red-l:     #fdecea;
+  --purple:    #6b3fa0;
+  --purple-l:  #f0eafa;
+  --teal:      #0d7377;
+  --teal-l:    #e2f5f5;
+  --mono:      'IBM Plex Mono', monospace;
+  --sans:      'IBM Plex Sans SC', sans-serif;
+}/* ── Scrollbar ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#b0bac8}
+
+/* ── Layout ── */
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+
+/* ── Sidebar nav ── */
+.sidenav{background:var(--surface);border-right:1px solid var(--border);padding:0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.nav-logo{padding:1.4rem 1.2rem 1rem;border-bottom:1px solid var(--border)}
+.nav-logo-title{font-size:0.95rem;font-weight:600;color:var(--text);letter-spacing:0.02em}
+.nav-logo-sub{font-size:0.72rem;color:var(--text3);font-family:var(--mono);margin-top:2px}
+.nav-section{padding:1.2rem 0 0.4rem 1.2rem;font-size:0.65rem;font-weight:600;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 1.2rem;font-size:0.82rem;color:var(--text2);cursor:pointer;border-left:2px solid transparent;transition:all .15s;text-decoration:none}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--blue-l);color:var(--blue);border-left-color:var(--blue);font-weight:500}
+.nav-item .ni{font-size:0.75rem;width:18px;text-align:center;opacity:.7}
+.nav-dot{width:6px;height:6px;border-radius:50%;background:var(--border2);flex-shrink:0}
+.nav-item.active .nav-dot{background:var(--blue)}
+
+/* ── Main content ── */
+.main{padding:2rem 2.5rem;max-width:1200px}
+
+/* ── Page header ── */
+.page-header{margin-bottom:2rem;padding-bottom:1.2rem;border-bottom:1px solid var(--border)}
+.page-title{font-size:1.5rem;font-weight:600;color:var(--text);margin-bottom:0.3rem}
+.page-subtitle{font-size:0.85rem;color:var(--text3);font-family:var(--mono)}
+
+/* ── Panels ── */
+.panel{display:none}.panel.active{display:block}
+.panel-enter{animation:slideIn .2s ease both}
+@keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Section titles ── */
+.sec-title{font-size:1.05rem;font-weight:600;color:var(--text);margin-bottom:1rem;display:flex;align-items:center;gap:8px}
+.sec-title::before{content:'';width:3px;height:1.1em;background:var(--blue);border-radius:2px;display:inline-block}
+.sec-desc{font-size:0.82rem;color:var(--text2);margin-bottom:1.2rem;line-height:1.7;background:var(--blue-l);border:1px solid #c5d9f5;border-radius:6px;padding:0.8rem 1rem}
+
+/* ── Filter tags ── */
+.filter-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1.2rem}
+.ftag{padding:4px 12px;border-radius:20px;font-size:0.75rem;cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text2);transition:all .15s;font-family:var(--mono)}
+.ftag:hover{border-color:var(--blue-m);color:var(--blue)}
+.ftag.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* ── Search ── */
+.search-row{display:flex;gap:8px;margin-bottom:1.2rem;flex-wrap:wrap}
+.search-row input,.search-row select{padding:8px 12px;border:1px solid var(--border2);border-radius:6px;font-size:0.82rem;background:var(--surface);color:var(--text);font-family:var(--sans);flex:1;min-width:140px;transition:border-color .15s}
+.search-row input:focus,.search-row select:focus{outline:none;border-color:var(--blue-m);box-shadow:0 0 0 3px rgba(45,111,212,.12)}
+.btn{padding:8px 16px;border-radius:6px;border:1px solid var(--border2);background:var(--surface);color:var(--text2);font-size:0.82rem;cursor:pointer;font-family:var(--sans);transition:all .15s}
+.btn:hover{background:var(--surface2);color:var(--text)}
+.btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn.primary:hover{background:#154d96}
+
+/* ── Badges ── */
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.7rem;font-family:var(--mono);font-weight:500;white-space:nowrap;vertical-align:middle}
+.b-blue{background:var(--blue-l);color:#0c3d7a}
+.b-green{background:var(--green-l);color:#14532d}
+.b-amber{background:var(--amber-l);color:#7c3d00}
+.b-red{background:var(--red-l);color:#7b1d1d}
+.b-purple{background:var(--purple-l);color:#4c1d95}
+.b-teal{background:var(--teal-l);color:#134e4a}
+.b-gray{background:var(--surface2);color:var(--text2)}
+
+/* ── Table ── */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:0.8rem}
+thead tr{background:var(--surface2)}
+th{padding:10px 14px;text-align:left;font-size:0.7rem;font-weight:600;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:9px 14px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text2)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafbfd}
+.mono{font-family:var(--mono);font-size:0.78rem}
+
+/* ── Card ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.2rem;margin-bottom:1rem}
+.card-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.card-title{font-size:0.92rem;font-weight:500;color:var(--text)}
+.card-.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-top:10px}
+.card-field{background:var(--surface2);border-radius:6px;padding:8px 10px}
+.cf-label{font-size:0.68rem;color:var(--text3);margin-bottom:2px;font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+.cf-val{font-size:0.8rem;color:var(--text);font-family:var(--mono)}
+
+/* ── Flow / Sequence ── */
+.flow-container{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:1.5rem}
+.flow-header{background:var(--surface2);padding:0.8rem 1.2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.flow-header-title{font-size:0.88rem;font-weight:600;color:var(--text)}
+.flow-.flow-steps{display:flex;flex-direction:column;gap:0}
+.flow-step{display:flex;gap:12px;padding:10px 0;border-bottom:1px dashed var(--border);align-items:flex-start}
+.flow-step:last-child{border-bottom:none}
+.step-num{width:26px;height:26px;border-radius:50%;background:var(--blue-l);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:600;flex-shrink:0;margin-top:1px;font-family:var(--mono)}
+.step-content{flex:1}
+.step-title{font-size:0.82rem;font-weight:600;color:var(--text);margin-bottom:2px}
+.step-desc{font-size:0.78rem;color:var(--text2);line-height:1.6}
+.step-code{font-family:var(--mono);font-size:0.72rem;background:var(--surface2);border:1px solid var(--border);padding:3px 8px;border-radius:4px;color:var(--text);display:inline-flex;align-items:center;gap:4px;margin-top:5px;flex-wrap:wrap}
+.step-code .arrow{color:var(--blue);font-weight:600}
+.step-nrc{font-family:var(--mono);font-size:0.72rem;background:var(--red-l);border:1px solid #f5c5c0;padding:3px 8px;border-radius:4px;color:var(--red);display:inline-block;margin-top:5px}
+
+/* ── Timing diagram (SVG-based) ── */
+.timing-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.2rem;margin-bottom:1.5rem}
+.timing-wrap svg{display:block;min-width:700px}
+
+/* ── Command input ── */
+.cmd-textarea{width:100%;font-family:var(--mono);font-size:0.82rem;padding:10px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text);resize:vertical;min-height:72px;line-height:1.6}
+.cmd-textarea:focus{outline:none;border-color:var(--blue-m);box-shadow:0 0 0 3px rgba(45,111,212,.12)}
+.parse-result{margin-top:1rem}
+
+/* ── Info box ── */
+.info-box{background:var(--blue-l);border:1px solid #c5d9f5;border-radius:6px;padding:0.8rem 1rem;font-size:0.8rem;color:var(--text2);margin-bottom:1rem;line-height:1.7}
+.warn-box{background:var(--amber-l);border:1px solid #f5d8a0;border-radius:6px;padding:0.8rem 1rem;font-size:0.8rem;color:#7c3d00;margin-bottom:1rem;line-height:1.7}
+.info-box strong,.warn-box strong{color:var(--text);font-weight:600}
+
+/* ── Grid layouts ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center}
+.stat-num{font-size:1.4rem;font-weight:600;color:var(--blue);font-family:var(--mono)}
+.stat-label{font-size:0.72rem;color:var(--text3);margin-top:3px}
+
+/* ── Select dropdown ── */
+.flow-select-wrap{margin-bottom:1.2rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.flow-select-wrap select{padding:8px 12px;border:1px solid var(--border2);border-radius:6px;font-size:0.82rem;background:var(--surface);color:var(--text);font-family:var(--sans);cursor:pointer}
+.flow-select-wrap select:focus{outline:none;border-color:var(--blue-m)}
+
+/* ── Empty state ── */
+.empty{text-align:center;padding:2.5rem;color:var(--text3);font-size:0.85rem}
+
+/* ── Responsive ── */
+@media(max-width:800px){
+  .app{grid-template-columns:1fr}
+  .sidenav{display:none}
+  .main{padding:1rem}
+  .two-col,.three-col{grid-template-columns:1fr}
+}
+
+</style>
+
+<div class="app">
+
+<!-- ══════════ SIDENAV ══════════ -->
+<nav class="sidenav">
+  <div class="nav-logo">
+    <div class="nav-logo-title">UDS 诊断参考手册</div>
+    <div class="nav-logo-sub">ISO 14229 · CAN/DoIP</div>
+  </div>
+
+  <div class="nav-section">基础</div>
+  <a class="nav-item active" onclick="go('overview')">
+    <div class="nav-dot"></div>总览
+  </a>
+  <a class="nav-item" onclick="go('services')">
+    <div class="nav-dot"></div>服务列表
+  </a>
+  <a class="nav-item" onclick="go('dtc')">
+    <div class="nav-dot"></div>错误码解析
+  </a>
+  <a class="nav-item" onclick="go('cmd')">
+    <div class="nav-dot"></div>指令解析器
+  </a>
+
+  <div class="nav-section">交互流程</div>
+  <a class="nav-item" onclick="go('flow-session')">
+    <div class="nav-dot"></div>会话管理
+  </a>
+  <a class="nav-item" onclick="go('flow-security')">
+    <div class="nav-dot"></div>安全访问
+  </a>
+  <a class="nav-item" onclick="go('flow-dtcio')">
+    <div class="nav-dot"></div>DTC 读写清除
+  </a>
+  <a class="nav-item" onclick="go('flow-did')">
+    <div class="nav-dot"></div>DID 读写
+  </a>
+  <a class="nav-item" onclick="go('flow-routine')">
+    <div class="nav-dot"></div>例程控制
+  </a>
+  <a class="nav-item" onclick="go('flow-ota')">
+    <div class="nav-dot"></div>OTA 软件下载
+  </a>
+  <a class="nav-item" onclick="go('flow-comm')">
+    <div class="nav-dot"></div>通信控制
+  </a>
+  <a class="nav-item" onclick="go('flow-timing')">
+    <div class="nav-dot"></div>时序参数
+  </a>
+
+  <div class="nav-section">参考</div>
+  <a class="nav-item" onclick="go('nrc')">
+    <div class="nav-dot"></div>NRC 速查表
+  </a>
+</nav>
+
+<!-- ══════════ MAIN ══════════ -->
+<main class="main">
+
+<!-- ── OVERVIEW ── -->
+<div class="panel active" id="pnl-overview">
+  <div class="page-header">
+    <div class="page-title">汽车诊断通信 UDS 参考手册</div>
+    <div class="page-subtitle">ISO 14229-1 · Unified Diagnostic Services · 统一诊断服务</div>
+  </div>
+  <div class="three-col" style="margin-bottom:1.5rem">
+    <div class="stat-card"><div class="stat-num">27</div><div class="stat-label">标准诊断服务</div></div>
+    <div class="stat-card"><div class="stat-num">40+</div><div class="stat-label">NRC 负响应码</div></div>
+    <div class="stat-card"><div class="stat-num">5</div><div class="stat-label">传输协议</div></div>
+  </div>
+  <div class="info-box"><strong>UDS（统一诊断服务）</strong>是基于 ISO 14229 定义的汽车 ECU 诊断通信规范，运行于 ISO 15765（CAN）、DoIP（以太网）、K-Line 等传输层之上。它定义了诊断仪（Tester）与 ECU（Server）之间的请求/响应模型，覆盖数据读写、故障管理、安全控制和软件刷写等全流程。</div>
+
+  <div class="two-col">
+    <div>
+      <div class="sec-title">架构层次</div>
+      <div class="card">
+        <div class="card-body">
+          <table style="width:100%;font-size:0.8rem;border-collapse:collapse">
+            <tr style="border-bottom:1px solid var(--border)"><td style="padding:7px 0;font-weight:600;color:var(--text);width:40%">应用层</td><td style="padding:7px 0;color:var(--text2)">UDS 服务 (ISO 14229-1)</td></tr>
+            <tr style="border-bottom:1px solid var(--border)"><td style="padding:7px 0;font-weight:600;color:var(--text)">诊断会话层</td><td style="padding:7px 0;color:var(--text2)">ISO 14229-2 / OSEK</td></tr>
+            <tr style="border-bottom:1px solid var(--border)"><td style="padding:7px 0;font-weight:600;color:var(--text)">传输层</td><td style="padding:7px 0;color:var(--text2)">ISO 15765-2 (CAN TP) / ISO 13400 (DoIP)</td></tr>
+            <tr><td style="padding:7px 0;font-weight:600;color:var(--text)">物理层</td><td style="padding:7px 0;color:var(--text2)">CAN / LIN / FlexRay / Ethernet / K-Line</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="sec-title">诊断会话类型</div>
+      <div class="card">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px"><span class="badge b-gray mono">0x01</span><span style="font-size:.82rem;color:var(--text2)"><strong style="color:var(--text)">默认会话</strong> — 上电后默认，支持基础读取</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><span class="badge b-blue mono">0x02</span><span style="font-size:.82rem;color:var(--text2)"><strong style="color:var(--text)">编程会话</strong> — 开放 Flash 刷写功能</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><span class="badge b-amber mono">0x03</span><span style="font-size:.82rem;color:var(--text2)"><strong style="color:var(--text)">扩展会话</strong> — 开放标定、IO 控制</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><span class="badge b-purple mono">0x40-4F</span><span style="font-size:.82rem;color:var(--text2)"><strong style="color:var(--text)">安全会话</strong> — OEM 自定义安全级别</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-title" style="margin-top:1rem">快速导航</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
+    <div class="card" style="cursor:pointer;transition:box-shadow .15s" onmouseover="this.style.boxShadow='0 2px 12px rgba(26,95,180,.1)'" onmouseout="this.style.boxShadow=''" onclick="go('services')">
+      <div style="font-size:.85rem;font-weight:600;color:var(--blue);margin-bottom:4px">服务列表</div>
+      <div style="font-size:.75rem;color:var(--text3)">全部 27 项 UDS 服务的 SID、功能和会话支持</div>
+    </div>
+    <div class="card" style="cursor:pointer;transition:box-shadow .15s" onmouseover="this.style.boxShadow='0 2px 12px rgba(26,95,180,.1)'" onmouseout="this.style.boxShadow=''" onclick="go('dtc')">
+      <div style="font-size:.85rem;font-weight:600;color:var(--blue);margin-bottom:4px">错误码解析</div>
+      <div style="font-size:.75rem;color:var(--text3)">P/C/B/U DTC 故障码与 NRC 负响应码查询</div>
+    </div>
+    <div class="card" style="cursor:pointer;transition:box-shadow .15s" onmouseover="this.style.boxShadow='0 2px 12px rgba(26,95,180,.1)'" onmouseout="this.style.boxShadow=''" onclick="go('cmd')">
+      <div style="font-size:.85rem;font-weight:600;color:var(--blue);margin-bottom:4px">指令解析器</div>
+      <div style="font-size:.75rem;color:var(--text3)">输入十六进制帧，自动拆解 SID 与字段</div>
+    </div>
+    <div class="card" style="cursor:pointer;transition:box-shadow .15s" onmouseover="this.style.boxShadow='0 2px 12px rgba(26,95,180,.1)'" onmouseout="this.style.boxShadow=''" onclick="go('flow-ota')">
+      <div style="font-size:.85rem;font-weight:600;color:var(--blue);margin-bottom:4px">OTA 软件下载</div>
+      <div style="font-size:.75rem;color:var(--text3)">完整刷写流程与时序，含 34/36/37 报文</div>
+    </div>
+    <div class="card" style="cursor:pointer;transition:box-shadow .15s" onmouseover="this.style.boxShadow='0 2px 12px rgba(26,95,180,.1)'" onmouseout="this.style.boxShadow=''" onclick="go('flow-security')">
+      <div style="font-size:.85rem;font-weight:600;color:var(--blue);margin-bottom:4px">安全访问</div>
+      <div style="font-size:.75rem;color:var(--text3)">Seed & Key 握手流程与锁定机制</div>
+    </div>
+    <div class="card" style="cursor:pointer;transition:box-shadow .15s" onmouseover="this.style.boxShadow='0 2px 12px rgba(26,95,180,.1)'" onmouseout="this.style.boxShadow=''" onclick="go('nrc')">
+      <div style="font-size:.85rem;font-weight:600;color:var(--blue);margin-bottom:4px">NRC 速查表</div>
+      <div style="font-size:.75rem;color:var(--text3)">所有负响应码含义及常见触发场景</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SERVICES ── -->
+<div class="panel" id="pnl-services">
+  <div class="page-header">
+    <div class="page-title">UDS 服务列表</div>
+    <div class="page-subtitle">ISO 14229-1 全部标准诊断服务</div>
+  </div>
+  <div class="filter-row" id="svc-filters">
+    <button class="ftag on" onclick="filterSvc('all',this)">全部</button>
+    <button class="ftag" onclick="filterSvc('session',this)">会话管理</button>
+    <button class="ftag" onclick="filterSvc('data',this)">数据读写</button>
+    <button class="ftag" onclick="filterSvc('dtcmgr',this)">DTC 管理</button>
+    <button class="ftag" onclick="filterSvc('control',this)">控制执行</button>
+    <button class="ftag" onclick="filterSvc('upload',this)">上传下载</button>
+    <button class="ftag" onclick="filterSvc('comm',this)">通信控制</button>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>SID</th><th>正响应</th><th>服务名称</th><th>功能组</th><th>支持会话</th><th>需安全解锁</th><th>功能描述</th></tr></thead>
+      <tbody id="svc-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── DTC ── -->
+<div class="panel" id="pnl-dtc">
+  <div class="page-header">
+    <div class="page-title">故障码 DTC 解析</div>
+    <div class="page-subtitle">P / C / B / U 故障码 + NRC 负响应码</div>
+  </div>
+  <div class="search-row">
+    <input id="dtc-q" placeholder="搜索故障码或描述，如 P0300 / 0x22 / 失火..." oninput="searchDTC()">
+    <select id="dtc-type" onchange="searchDTC()">
+      <option value="all">全部类型</option>
+      <option value="P">P — 动力系统</option>
+      <option value="C">C — 底盘</option>
+      <option value="B">B — 车身</option>
+      <option value="U">U — 网络通信</option>
+      <option value="NRC">NRC 负响应码</option>
+    </select>
+    <select id="dtc-sev" onchange="searchDTC()">
+      <option value="all">全部严重度</option>
+      <option value="极高">极高</option>
+      <option value="高">高</option>
+      <option value="中">中</option>
+      <option value="低">低</option>
+    </select>
+  </div>
+  <div id="dtc-out"></div>
+</div>
+
+<!-- ── CMD ── -->
+<div class="panel" id="pnl-cmd">
+  <div class="page-header">
+    <div class="page-title">诊断指令解析器</div>
+    <div class="page-subtitle">输入十六进制 UDS 诊断帧，自动解析各字段含义</div>
+  </div>
+  <div class="info-box">支持空格分隔或连续十六进制，自动识别请求帧与响应帧（0x7F 否定响应）。<br>示例：<strong>22 F1 90</strong>（读 VIN）&nbsp;|&nbsp;<strong>10 03</strong>（进入扩展会话）&nbsp;|&nbsp;<strong>27 01</strong>（请求安全种子）&nbsp;|&nbsp;<strong>7F 22 31</strong>（否定响应）</div>
+  <textarea class="cmd-textarea" id="cmd-input" placeholder="输入诊断帧，如：22 F1 90" oninput="parseCmd()"></textarea>
+  <div class="parse-result" id="cmd-out"></div>
+</div>
+
+<!-- ── FLOW: SESSION ── -->
+<div class="panel" id="pnl-flow-session">
+  <div class="page-header">
+    <div class="page-title">会话管理交互流程</div>
+    <div class="page-subtitle">DiagnosticSessionControl (0x10) · TesterPresent (0x3E)</div>
+  </div>
+  <div class="flow-select-wrap">
+    <span style="font-size:.82rem;color:var(--text2)">选择流程：</span>
+    <select onchange="renderSessionFlow(this.value)">
+      <option value="enter-ext">进入扩展诊断会话</option>
+      <option value="enter-prog">进入编程会话</option>
+      <option value="keepalive">保活 TesterPresent</option>
+      <option value="exit">退出会话</option>
+    </select>
+  </div>
+  <div id="session-flow-out"></div>
+</div>
+
+<!-- ── FLOW: SECURITY ── -->
+<div class="panel" id="pnl-flow-security">
+  <div class="page-header">
+    <div class="page-title">安全访问流程</div>
+    <div class="page-subtitle">SecurityAccess (0x27) · Seed &amp; Key 双步握手</div>
+  </div>
+  <div id="security-flow-out"></div>
+</div>
+
+<!-- ── FLOW: DTC I/O ── -->
+<div class="panel" id="pnl-flow-dtcio">
+  <div class="page-header">
+    <div class="page-title">DTC 读写与清除流程</div>
+    <div class="page-subtitle">ReadDTCInformation (0x19) · ClearDiagnosticInformation (0x14)</div>
+  </div>
+  <div class="flow-select-wrap">
+    <span style="font-size:.82rem;color:var(--text2)">选择流程：</span>
+    <select onchange="renderDtcFlow(this.value)">
+      <option value="read-active">读取活跃故障码</option>
+      <option value="read-snapshot">读取快照数据</option>
+      <option value="read-ext">读取扩展数据</option>
+      <option value="clear">清除故障码</option>
+    </select>
+  </div>
+  <div id="dtcio-flow-out"></div>
+</div>
+
+<!-- ── FLOW: DID ── -->
+<div class="panel" id="pnl-flow-did">
+  <div class="page-header">
+    <div class="page-title">DID 读写流程</div>
+    <div class="page-subtitle">ReadDataByIdentifier (0x22) · WriteDataByIdentifier (0x2E)</div>
+  </div>
+  <div class="flow-select-wrap">
+    <span style="font-size:.82rem;color:var(--text2)">选择流程：</span>
+    <select onchange="renderDidFlow(this.value)">
+      <option value="read-single">读取单个 DID</option>
+      <option value="read-multi">读取多个 DID</option>
+      <option value="write">写入 DID（需安全解锁）</option>
+      <option value="periodic">周期性读取配置</option>
+    </select>
+  </div>
+  <div id="did-flow-out"></div>
+</div>
+
+<!-- ── FLOW: ROUTINE ── -->
+<div class="panel" id="pnl-flow-routine">
+  <div class="page-header">
+    <div class="page-title">例程控制流程</div>
+    <div class="page-subtitle">RoutineControl (0x31) · 启动 / 停止 / 查询结果</div>
+  </div>
+  <div class="flow-select-wrap">
+    <span style="font-size:.82rem;color:var(--text2)">选择流程：</span>
+    <select onchange="renderRoutineFlow(this.value)">
+      <option value="erase">Flash 擦除例程</option>
+      <option value="check">编程依赖检查</option>
+      <option value="calibrate">传感器校准</option>
+      <option value="selftest">ECU 自检</option>
+    </select>
+  </div>
+  <div id="routine-flow-out"></div>
+</div>
+
+<!-- ── FLOW: OTA ── -->
+<div class="panel" id="pnl-flow-ota">
+  <div class="page-header">
+    <div class="page-title">OTA 软件下载完整流程</div>
+    <div class="page-subtitle">UDS 刷写 · 0x34 RequestDownload / 0x36 TransferData / 0x37 RequestTransferExit</div>
+  </div>
+  <div id="ota-flow-out"></div>
+</div>
+
+<!-- ── FLOW: COMM ── -->
+<div class="panel" id="pnl-flow-comm">
+  <div class="page-header">
+    <div class="page-title">通信控制流程</div>
+    <div class="page-subtitle">CommunicationControl (0x28) · LinkControl (0x87)</div>
+  </div>
+  <div id="comm-flow-out"></div>
+</div>
+
+<!-- ── TIMING ── -->
+<div class="panel" id="pnl-flow-timing">
+  <div class="page-header">
+    <div class="page-title">时序参数说明</div>
+    <div class="page-subtitle">P2 / P2* / S3 超时参数与 0x78 待处理响应机制</div>
+  </div>
+  <div id="timing-out"></div>
+</div>
+
+<!-- ── NRC ── -->
+<div class="panel" id="pnl-nrc">
+  <div class="page-header">
+    <div class="page-title">NRC 负响应码速查</div>
+    <div class="page-subtitle">Negative Response Codes — 7F xx NRC</div>
+  </div>
+  <div class="search-row"><input id="nrc-q" placeholder="搜索 NRC 码或含义..." oninput="searchNRC()"></div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>NRC</th><th>名称</th><th>含义</th><th>常见触发场景</th></tr></thead>
+      <tbody id="nrc-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script>
+/* ── Data ── */
+const SVCS=[
+  {sid:'0x10',pos:'0x50',name:'DiagnosticSessionControl',grp:'session',session:'全部',sec:'否',desc:'切换诊断会话模式（默认/编程/扩展），控制可访问服务范围与超时参数。'},
+  {sid:'0x11',pos:'0x51',name:'ECUReset',grp:'session',session:'全部',sec:'否',desc:'请求 ECU 执行硬复位(01)、软复位(02)或关闭复位(03)。'},
+  {sid:'0x27',pos:'0x67',name:'SecurityAccess',grp:'session',session:'扩展/编程',sec:'自身即安全',desc:'Seed-Key 两步握手解锁受保护服务，支持多安全级别。'},
+  {sid:'0x28',pos:'0x68',name:'CommunicationControl',grp:'comm',session:'扩展/编程',sec:'否',desc:'启用/禁用正常报文和网络管理报文的收发，刷写前常用。'},
+  {sid:'0x29',pos:'0x69',name:'Authentication',grp:'session',session:'扩展/编程',sec:'是',desc:'基于证书的双向身份认证，ISO 14229-1:2020 新增，替代 0x27。'},
+  {sid:'0x3E',pos:'0x7E',name:'TesterPresent',grp:'session',session:'全部',sec:'否',desc:'定期发送保持当前诊断会话，防止 ECU 因 S3 超时退回默认会话。'},
+  {sid:'0x83',pos:'0xC3',name:'AccessTimingParameter',grp:'session',session:'默认/扩展',sec:'否',desc:'读取或修改 P2/P2* 超时参数。'},
+  {sid:'0x84',pos:'0xC4',name:'SecuredDataTransmission',grp:'comm',session:'全部',sec:'是',desc:'在加密安全通道中传输诊断数据，保护完整性与机密性。'},
+  {sid:'0x85',pos:'0xC5',name:'ControlDTCSetting',grp:'dtcmgr',session:'扩展/编程',sec:'否',desc:'启用(01)或禁用(02) ECU 内部 DTC 检测与存储。'},
+  {sid:'0x86',pos:'0xC6',name:'ResponseOnEvent',grp:'comm',session:'默认/扩展',sec:'否',desc:'配置 ECU 在特定事件发生时主动上报数据，实现事件驱动诊断。'},
+  {sid:'0x87',pos:'0xC7',name:'LinkControl',grp:'comm',session:'扩展/编程',sec:'否',desc:'切换诊断链路波特率（如由 500kbps 切至 2Mbps），加速刷写。'},
+  {sid:'0x22',pos:'0x62',name:'ReadDataByIdentifier',grp:'data',session:'全部',sec:'否',desc:'按 2 字节 DID 读取 ECU 数据，如 VIN、软件版本、传感器实时值等。'},
+  {sid:'0x23',pos:'0x63',name:'ReadMemoryByAddress',grp:'data',session:'扩展/编程',sec:'是',desc:'按内存起始地址和长度直接读取 ECU 内存内容。'},
+  {sid:'0x24',pos:'0x64',name:'ReadScalingDataByIdentifier',grp:'data',session:'默认/扩展',sec:'否',desc:'读取 DID 对应的数据定义（单位、缩放系数、偏移量）。'},
+  {sid:'0x2A',pos:'0x6A',name:'ReadDataByPeriodicIdentifier',grp:'data',session:'默认/扩展',sec:'否',desc:'配置 ECU 以慢/中/快速率自动周期上报指定 DID。'},
+  {sid:'0x2C',pos:'0x6C',name:'DynamicallyDefineDataIdentifier',grp:'data',session:'默认/扩展',sec:'否',desc:'动态组合多个 DID 或内存片段为一个新 DID，便于批量读取。'},
+  {sid:'0x2E',pos:'0x6E',name:'WriteDataByIdentifier',grp:'data',session:'扩展/编程',sec:'是',desc:'按 DID 向 ECU 写入数据，如标定参数、VIN 码、配置字等。'},
+  {sid:'0x3D',pos:'0x7D',name:'WriteMemoryByAddress',grp:'data',session:'编程',sec:'是',desc:'按内存地址直接写入 ECU 内存，高风险操作需谨慎。'},
+  {sid:'0x14',pos:'0x54',name:'ClearDiagnosticInformation',grp:'dtcmgr',session:'全部',sec:'否',desc:'清除指定 DTC 组（按系统分组或全部）的故障记录。'},
+  {sid:'0x19',pos:'0x59',name:'ReadDTCInformation',grp:'dtcmgr',session:'全部',sec:'否',desc:'读取 DTC 状态、快照、扩展数据、严重程度等（子功能 0x01~0x19）。'},
+  {sid:'0x2F',pos:'0x6F',name:'InputOutputControlByIdentifier',grp:'control',session:'扩展',sec:'是',desc:'强制控制 ECU 输入/输出（继电器、执行器等），用于功能验证。'},
+  {sid:'0x31',pos:'0x71',name:'RoutineControl',grp:'control',session:'扩展/编程',sec:'部分',desc:'启动(01)、停止(02)或请求结果(03)，用于自检、校准、Flash 擦除等。'},
+  {sid:'0x34',pos:'0x74',name:'RequestDownload',grp:'upload',session:'编程',sec:'是',desc:'发起下载请求，协商内存地址、数据长度、压缩/加密格式，ECU 返回 maxBlockLen。'},
+  {sid:'0x35',pos:'0x75',name:'RequestUpload',grp:'upload',session:'编程',sec:'是',desc:'发起上传请求，从 ECU 指定内存区域读取数据（逆向下载）。'},
+  {sid:'0x36',pos:'0x76',name:'TransferData',grp:'upload',session:'编程',sec:'是',desc:'分块传输数据，含块序号（0x01→0xFF→0x00 循环），每块含 CRC 校验。'},
+  {sid:'0x37',pos:'0x77',name:'RequestTransferExit',grp:'upload',session:'编程',sec:'是',desc:'结束传输，ECU 执行完整性验证，返回校验签名（可选）。'},
+  {sid:'0x38',pos:'0x78',name:'RequestFileTransfer',grp:'upload',session:'编程',sec:'是',desc:'基于文件路径的传输请求（ISO 14229-1:2020 新增），支持目录操作。'},
+];
+
+const DTCS=[
+  {code:'P0100',type:'P',sys:'发动机',sev:'中',desc:'空气流量传感器（MAF）A 电路故障',cause:'传感器失效或插头接触不良'},
+  {code:'P0171',type:'P',sys:'发动机',sev:'中',desc:'系统混合气过稀（Bank 1）',cause:'进气泄漏、燃油喷射不足或氧传感器老化'},
+  {code:'P0300',type:'P',sys:'发动机',sev:'高',desc:'随机/多缸失火检测',cause:'点火线圈故障、燃油压力低或缸压不足'},
+  {code:'P0301',type:'P',sys:'发动机',sev:'高',desc:'1 缸失火检测',cause:'火花塞、点火线圈或喷油器故障'},
+  {code:'P0420',type:'P',sys:'排放',sev:'中',desc:'催化转化器效率低于阈值（Bank 1）',cause:'催化器老化或后氧传感器异常'},
+  {code:'P0500',type:'P',sys:'传动',sev:'中',desc:'车速传感器 A 电路故障',cause:'传感器损坏或线束断路'},
+  {code:'P0700',type:'P',sys:'变速箱',sev:'高',desc:'变速箱控制系统故障指示',cause:'需进一步读取 TCM DTC'},
+  {code:'P1000',type:'P',sys:'排放',sev:'低',desc:'OBD 就绪度监测未完成',cause:'正常清码后出现，经行驶循环后自动消除'},
+  {code:'C0035',type:'C',sys:'制动',sev:'高',desc:'左前轮速传感器信号故障',cause:'传感器损坏、间隙过大或线束故障'},
+  {code:'C0110',type:'C',sys:'制动',sev:'高',desc:'ABS 电机泵电路故障',cause:'液压泵电机线圈断路或泵卡滞'},
+  {code:'C0200',type:'C',sys:'制动',sev:'高',desc:'右前轮速传感器信号故障',cause:'同 C0035，位置不同'},
+  {code:'C0710',type:'C',sys:'转向',sev:'中',desc:'转向角度传感器电路故障',cause:'传感器故障或方向盘角度未校准'},
+  {code:'B0001',type:'B',sys:'安全气囊',sev:'极高',desc:'驾驶侧安全气囊点火回路开路',cause:'气囊组件损坏或连接器脱落'},
+  {code:'B0090',type:'B',sys:'安全带',sev:'高',desc:'驾驶侧预紧安全带点火回路故障',cause:'预紧器组件失效'},
+  {code:'B1000',type:'B',sys:'车身控制',sev:'低',desc:'BCM 内部 EEPROM 故障',cause:'BCM 硬件故障，需更换'},
+  {code:'B1200',type:'B',sys:'空调',sev:'低',desc:'空调控制面板通信错误',cause:'面板与 BCM 间 LIN 通信故障'},
+  {code:'U0001',type:'U',sys:'CAN总线',sev:'高',desc:'高速 CAN 通信总线故障',cause:'总线短路、断路或终端电阻丢失'},
+  {code:'U0100',type:'U',sys:'CAN总线',sev:'高',desc:'与 ECM/PCM 失去通信',cause:'ECM 掉电、CAN 线束故障或 ECM 故障'},
+  {code:'U0155',type:'U',sys:'CAN总线',sev:'中',desc:'与仪表盘（IPC）失去通信',cause:'IPC 供电故障或 CAN 节点故障'},
+  {code:'U0416',type:'U',sys:'CAN总线',sev:'中',desc:'来自 TPMS 控制模块的数据无效',cause:'TPMS 模块固件异常或 RF 通信失败'},
+  {code:'NRC 0x10',type:'NRC',sys:'—',sev:'—',desc:'generalReject — 通用拒绝',cause:'服务器拒绝请求，但未给出具体原因'},
+  {code:'NRC 0x11',type:'NRC',sys:'—',sev:'—',desc:'serviceNotSupported — 服务不支持',cause:'该 SID 在此 ECU 配置中不存在'},
+  {code:'NRC 0x12',type:'NRC',sys:'—',sev:'—',desc:'subFunctionNotSupported — 子功能不支持',cause:'子功能参数值不在支持列表中'},
+  {code:'NRC 0x13',type:'NRC',sys:'—',sev:'—',desc:'incorrectMessageLengthOrInvalidFormat — 消息格式错误',cause:'数据长度与服务定义不符'},
+  {code:'NRC 0x14',type:'NRC',sys:'—',sev:'—',desc:'responseTooLong — 响应超长',cause:'响应超出 TP 层最大 PDU 长度'},
+  {code:'NRC 0x21',type:'NRC',sys:'—',sev:'—',desc:'busyRepeatRequest — ECU 忙，请重试',cause:'ECU 资源占用，稍后重发'},
+  {code:'NRC 0x22',type:'NRC',sys:'—',sev:'—',desc:'conditionsNotCorrect — 条件不满足',cause:'如发动机运行中拒绝写操作，或高压未就绪'},
+  {code:'NRC 0x24',type:'NRC',sys:'—',sev:'—',desc:'requestSequenceError — 请求顺序错误',cause:'未完成安全解锁就发写请求；0x36 前未发 0x34'},
+  {code:'NRC 0x25',type:'NRC',sys:'—',sev:'—',desc:'noResponseFromSubnetComponent — 子网无响应',cause:'网关转发的子节点未回复'},
+  {code:'NRC 0x26',type:'NRC',sys:'—',sev:'—',desc:'failurePreventsExecution — 故障阻止执行',cause:'当前 DTC 条件阻止目标操作'},
+  {code:'NRC 0x31',type:'NRC',sys:'—',sev:'—',desc:'requestOutOfRange — 请求超范围',cause:'DID/地址/例程ID 不在支持范围内'},
+  {code:'NRC 0x33',type:'NRC',sys:'—',sev:'—',desc:'securityAccessDenied — 安全访问被拒',cause:'未进行安全解锁或安全级别不足'},
+  {code:'NRC 0x35',type:'NRC',sys:'—',sev:'—',desc:'invalidKey — 无效密钥',cause:'0x27 02 发送的密钥与种子计算结果不符'},
+  {code:'NRC 0x36',type:'NRC',sys:'—',sev:'—',desc:'exceededNumberOfAttempts — 尝试次数超限',cause:'连续安全解锁失败次数达到上限（通常3次），进入锁定'},
+  {code:'NRC 0x37',type:'NRC',sys:'—',sev:'—',desc:'requiredTimeDelayNotExpired — 锁定期未到',cause:'在安全锁定期内（通常10~30s）再次尝试'},
+  {code:'NRC 0x70',type:'NRC',sys:'—',sev:'—',desc:'uploadDownloadNotAccepted — 上传/下载被拒',cause:'地址/长度/格式不被当前固件接受'},
+  {code:'NRC 0x71',type:'NRC',sys:'—',sev:'—',desc:'transferDataSuspended — 传输被暂停',cause:'数据传输期间发生错误，传输中断'},
+  {code:'NRC 0x72',type:'NRC',sys:'—',sev:'—',desc:'generalProgrammingFailure — 编程失败',cause:'Flash 写入/擦除失败，硬件故障或电压不足'},
+  {code:'NRC 0x73',type:'NRC',sys:'—',sev:'—',desc:'wrongBlockSequenceCounter — 块序号错误',cause:'0x36 数据块序号不连续或不匹配'},
+  {code:'NRC 0x78',type:'NRC',sys:'—',sev:'—',desc:'requestCorrectlyReceivedResponsePending — 处理中',cause:'ECU 已收到请求，正在执行，会继续发送 0x78 直到完成'},
+  {code:'NRC 0x7E',type:'NRC',sys:'—',sev:'—',desc:'subFunctionNotSupportedInActiveSession',cause:'当前会话不支持该子功能（需切换会话）'},
+  {code:'NRC 0x7F',type:'NRC',sys:'—',sev:'—',desc:'serviceNotSupportedInActiveSession',cause:'当前会话不支持该服务（如默认会话不支持0x2E）'},
+];
+
+const NRC_LIST=DTCS.filter(d=>d.type==='NRC');
+
+const SID_MAP={};
+SVCS.forEach(s=>{
+  SID_MAP[s.sid.replace('0x','').toUpperCase()]=s;
+  SID_MAP[s.pos.replace('0x','').toUpperCase()]=s;
+});
+
+/* ── Navigation ── */
+function go(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const pnl=document.getElementById('pnl-'+id);
+  if(pnl){pnl.classList.add('active');pnl.classList.add('panel-enter');setTimeout(()=>pnl.classList.remove('panel-enter'),300)}
+  const nav=document.querySelector(`.nav-item[onclick="go('${id}')"]`);
+  if(nav)nav.classList.add('active');
+  window.scrollTo(0,0);
+  // lazy render
+  if(id==='services')renderSvcTable('all');
+  if(id==='dtc')searchDTC();
+  if(id==='nrc')renderNRC('');
+  if(id==='flow-session')renderSessionFlow('enter-ext');
+  if(id==='flow-security')renderSecurityFlow();
+  if(id==='flow-dtcio')renderDtcFlow('read-active');
+  if(id==='flow-did')renderDidFlow('read-single');
+  if(id==='flow-routine')renderRoutineFlow('erase');
+  if(id==='flow-ota')renderOtaFlow();
+  if(id==='flow-comm')renderCommFlow();
+  if(id==='flow-timing')renderTiming();
+}
+
+/* ── Services table ── */
+let svcFilter='all';
+function filterSvc(f,btn){
+  svcFilter=f;
+  document.querySelectorAll('#svc-filters .ftag').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderSvcTable(f);
+}
+function renderSvcTable(f){
+  const grpLabel={session:'会话管理',data:'数据读写',dtcmgr:'DTC管理',control:'控制执行',upload:'上传下载',comm:'通信控制'};
+  const grpColor={session:'b-blue',data:'b-green',dtcmgr:'b-amber',control:'b-teal',upload:'b-red',comm:'b-gray'};
+  const rows=(f==='all'?SVCS:SVCS.filter(s=>s.grp===f));
+  document.getElementById('svc-tbody').innerHTML=rows.map(s=>`
+    <tr>
+      <td class="mono" style="font-weight:600;color:var(--blue)">${s.sid}</td>
+      <td class="mono" style="color:var(--green)">${s.pos}</td>
+      <td class="mono" style="font-size:.75rem">${s.name}</td>
+      <td><span class="badge ${grpColor[s.grp]}">${grpLabel[s.grp]}</span></td>
+      <td style="font-size:.78rem;color:var(--text2)">${s.session}</td>
+      <td style="font-size:.78rem;text-align:center">${s.sec==='否'?'<span style="color:var(--green)">—</span>':'<span style="color:var(--amber)">✓</span>'}</td>
+      <td style="font-size:.78rem;color:var(--text2)">${s.desc}</td>
+    </tr>`).join('');
+}
+
+/* ── DTC search ── */
+function searchDTC(){
+  const q=(document.getElementById('dtc-q')||{value:''}).value.trim().toUpperCase();
+  const tp=(document.getElementById('dtc-type')||{value:'all'}).value;
+  const sv=(document.getElementById('dtc-sev')||{value:'all'}).value;
+  let list=DTCS;
+  if(tp!=='all')list=list.filter(d=>d.type===tp);
+  if(sv!=='all')list=list.filter(d=>d.sev===sv);
+  if(q)list=list.filter(d=>d.code.toUpperCase().includes(q)||d.desc.toUpperCase().includes(q)||d.sys.toUpperCase().includes(q));
+  const el=document.getElementById('dtc-out');
+  if(!el)return;
+  if(!list.length){el.innerHTML='<div class="empty">未找到匹配项</div>';return;}
+  const sevColor={极高:'b-red',高:'b-amber',中:'b-blue',低:'b-green','—':'b-gray'};
+  const typeColor={P:'b-amber',C:'b-blue',B:'b-teal',U:'b-purple',NRC:'b-gray'};
+  el.innerHTML=list.slice(0,40).map(d=>`
+    <div class="card" style="margin-bottom:8px">
+      <div class="card-head">
+        <span class="badge b-gray mono" style="font-size:.75rem">${d.code}</span>
+        <span class="badge ${typeColor[d.type]}">${d.type==='NRC'?'NRC负响应':d.type+' — '+{P:'动力',C:'底盘',B:'车身',U:'网络'}[d.type]}</span>
+        ${d.sev!=='—'?`<span class="badge ${sevColor[d.sev]}">严重度：${d.sev}</span>`:''}
+        ${d.sys!=='—'?`<span class="badge b-gray">${d.sys}</span>`:''}
+      </div>
+      <div style="font-size:.82rem;color:var(--text);font-weight:500;margin-bottom:3px">${d.desc}</div>
+      ${d.cause?`<div style="font-size:.78rem;color:var(--text3)">常见原因：${d.cause}</div>`:''}
+    </div>`).join('');
+}
+
+/* ── Command parser ── */
+function parseCmd(){
+  const raw=document.getElementById('cmd-input').value.trim();
+  const el=document.getElementById('cmd-out');
+  if(!raw){el.innerHTML='';return;}
+  const bytes=raw.replace(/[^0-9a-fA-F]/g,' ').trim().split(/\s+/).filter(Boolean);
+  if(!bytes.length){el.innerHTML='';return;}
+  const b0=bytes[0].toUpperCase().padStart(2,'0');
+  const svc=SID_MAP[b0];
+  let html='';
+
+  if(b0==='7F'&&bytes.length>=3){
+    // Negative response
+    const rejSvc=SID_MAP[bytes[1].toUpperCase().padStart(2,'0')];
+    const nrcCode='NRC 0x'+bytes[2].toUpperCase().padStart(2,'0');
+    const nrc=DTCS.find(d=>d.code.toUpperCase()===nrcCode.toUpperCase());
+    html=`<div class="card" style="border-left:3px solid var(--red)">
+      <div class="card-head">
+        <span class="badge b-red">否定响应 Negative Response</span>
+        <span class="badge b-gray mono">7F</span>
+        ${rejSvc?`<span class="badge b-blue">${rejSvc.name}</span>`:''}
+      </div>
+      <div class="card-grid">
+        <div class="card-field"><div class="cf-label">被拒绝的 SID</div><div class="cf-val">0x${bytes[1].toUpperCase()}</div></div>
+        ${rejSvc?`<div class="card-field"><div class="cf-label">服务名称</div><div class="cf-val">${rejSvc.name}</div></div>`:''}
+        <div class="card-field"><div class="cf-label">NRC 码</div><div class="cf-val">0x${bytes[2].toUpperCase()}</div></div>
+        ${nrc?`<div class="card-field" style="grid-column:1/-1"><div class="cf-label">NRC 含义</div><div class="cf-val">${nrc.desc}</div></div>`:''}
+        ${nrc?`<div class="card-field" style="grid-column:1/-1"><div class="cf-label">常见原因</div><div class="cf-val" style="font-family:var(--sans);font-size:.8rem">${nrc.cause}</div></div>`:''}
+      </div></div>`;
+  } else {
+    html=`<div class="card" style="border-left:3px solid ${svc?'var(--blue)':'var(--border2)'}">
+      <div class="card-head">
+        <span class="badge b-gray mono">0x${b0}</span>
+        ${svc?`<span class="badge b-blue">${svc.name}</span>`:' <span class="badge b-gray">未知 SID</span>'}
+      </div>
+      ${svc?`<div style="font-size:.82rem;color:var(--text2);margin-bottom:10px">${svc.desc}</div>`:''}
+      <div class="card-grid">
+        <div class="card-field"><div class="cf-label">SID</div><div class="cf-val">0x${b0}</div></div>
+        ${svc?`<div class="card-field"><div class="cf-label">正响应 SID</div><div class="cf-val">${svc.pos}</div></div>`:''}
+        ${svc?`<div class="card-field"><div class="cf-label">支持会话</div><div class="cf-val" style="font-family:var(--sans)">${svc.session}</div></div>`:''}
+        ${bytes.length>1?`<div class="card-field"><div class="cf-label">子功能/DID高位</div><div class="cf-val">0x${bytes[1].toUpperCase()}</div></div>`:''}
+        ${bytes.length>2?`<div class="card-field"><div class="cf-label">Byte[2]</div><div class="cf-val">0x${bytes[2].toUpperCase()}</div></div>`:''}
+        ${bytes.length>3?`<div class="card-field"><div class="cf-label">数据字节</div><div class="cf-val">${bytes.slice(3).map(b=>b.toUpperCase()).join(' ')}</div></div>`:''}
+        <div class="card-field"><div class="cf-label">帧总长度</div><div class="cf-val">${bytes.length} 字节</div></div>
+      </div>
+    </div>`;
+  }
+  el.innerHTML=html;
+}
+
+/* ── Flow renderer helper ── */
+function flowHtml(title,badge,badgeClass,steps){
+  return `<div class="flow-container">
+    <div class="flow-header">
+      <span class="badge ${badgeClass}">${badge}</span>
+      <span class="flow-header-title">${title}</span>
+    </div>
+    <div class="flow-body">
+      <div class="flow-steps">${steps.map((s,i)=>`
+        <div class="flow-step">
+          <div class="step-num">${(i+1).toString().padStart(2,'0')}</div>
+          <div class="step-content">
+            <div class="step-title">${s.t}</div>
+            <div class="step-desc">${s.d}</div>
+            ${s.code?`<div class="step-code">${s.code}</div>`:''}
+            ${s.nrc?`<div class="step-nrc">${s.nrc}</div>`:''}
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ── Session flows ── */
+const SESSION_FLOWS={
+  'enter-ext':{title:'进入扩展诊断会话',steps:[
+    {t:'发送会话切换请求',d:'诊断仪发送 DiagnosticSessionControl，子功能 0x03 = ExtendedDiagnosticSession',code:'→ Tester: <span style="color:var(--blue)">10 03</span>'},
+    {t:'ECU 正响应',d:'ECU 切换会话并返回 P2/P2* 超时参数（P2=25ms, P2*=500ms 为典型值）',code:'← ECU: <span style="color:var(--green)">50 03 00 19 01 F4</span>'},
+    {t:'解析响应参数',d:'Byte[3:4] = P2Server_max（0x0019 = 25ms）；Byte[5:6] = P2*Server_max（0x01F4 = 500ms×10 = 5000ms）'},
+    {t:'启动保活定时器',d:'诊断仪设置 S3Client 定时器（< 5000ms），定期发送 TesterPresent 防止 ECU 退回默认会话',code:'→ Tester: <span style="color:var(--blue)">3E 00</span>  ← ECU: <span style="color:var(--green)">7E 00</span>'},
+    {t:'扩展会话能力',d:'在扩展会话中可访问：DID 读写(0x22/0x2E)、IO 控制(0x2F)、例程控制(0x31)、安全访问(0x27)等'},
+  ]},
+  'enter-prog':{title:'进入编程会话',steps:[
+    {t:'前置条件确认',d:'进入编程会话前通常需要满足：车速=0、发动机熄火、电压 ≥ 11V（OEM 规范不同略有差异）'},
+    {t:'发送编程会话请求',d:'子功能 0x02 = ProgrammingSession',code:'→ <span style="color:var(--blue)">10 02</span>'},
+    {t:'ECU 正响应',d:'ECU 切换至编程会话，开放刷写相关服务',code:'← <span style="color:var(--green)">50 02 00 19 01 F4</span>'},
+    {t:'可选：禁用 DTC 检测',d:'刷写前通常禁用 DTC 存储，防止刷写过程产生误报',code:'→ <span style="color:var(--blue)">85 02</span>  ← <span style="color:var(--green)">C5 02</span>'},
+    {t:'可选：通信控制',d:'禁用正常总线报文，减少刷写干扰',code:'→ <span style="color:var(--blue)">28 03 01</span>  ← <span style="color:var(--green)">68 03</span>'},
+    {t:'进行安全访问',d:'编程操作前必须完成安全解锁（参见安全访问流程）',code:'→ <span style="color:var(--blue)">27 01/03</span>  ← <span style="color:var(--green)">67 01/03 [seed]</span>'},
+  ]},
+  'keepalive':{title:'TesterPresent 保活机制',steps:[
+    {t:'会话超时机制',d:'ECU 进入非默认会话后启动 S3Server 计时器（通常 5000ms），超时未收到请求则退回默认会话'},
+    {t:'诊断仪保活策略',d:'诊断仪在 S3Client 时间内（< S3Server）发送 TesterPresent，抑制位(suppressPosRspMsgIndicationBit) = 1 时 ECU 不回复，减少总线负载',code:'→ <span style="color:var(--blue)">3E 80</span> (抑制响应)  或  <span style="color:var(--blue)">3E 00</span> (需响应)'},
+    {t:'ECU 响应（可选）',d:'子功能 0x00 时 ECU 必须响应；0x80 时抑制响应',code:'← <span style="color:var(--green)">7E 00</span> (仅当子功能=0x00时)'},
+    {t:'会话恢复',d:'若会话已超时退回默认会话，需重新发送 0x10 进入目标会话，并再次执行安全解锁（若需要）'},
+  ]},
+  'exit':{title:'退出诊断会话',steps:[
+    {t:'发送默认会话请求',d:'主动退出可发送 0x10 01 切回默认会话',code:'→ <span style="color:var(--blue)">10 01</span>  ← <span style="color:var(--green)">50 01 00 19 01 F4</span>'},
+    {t:'恢复通信控制',d:'若之前禁用了通信，先恢复正常通信',code:'→ <span style="color:var(--blue)">28 00 01</span>  ← <span style="color:var(--green)">68 00</span>'},
+    {t:'恢复 DTC 检测',d:'重新启用 DTC 检测与存储',code:'→ <span style="color:var(--blue)">85 01</span>  ← <span style="color:var(--green)">C5 01</span>'},
+    {t:'ECU 复位（可选）',d:'部分 OEM 要求刷写后执行 ECU 复位以激活新固件',code:'→ <span style="color:var(--blue)">11 01</span>  ← <span style="color:var(--green)">51 01</span> → [ECU 复位中...]'},
+    {t:'停止保活',d:'诊断仪停止发送 TesterPresent，ECU 在 S3Server 超时后自动退回默认会话'},
+  ]},
+};
+function renderSessionFlow(key){
+  const f=SESSION_FLOWS[key];
+  if(!f)return;
+  document.getElementById('session-flow-out').innerHTML=flowHtml(f.title,'0x10','b-blue',f.steps);
+}
+
+/* ── Security flow ── */
+function renderSecurityFlow(){
+  const el=document.getElementById('security-flow-out');
+  el.innerHTML=`
+  <div class="warn-box"><strong>安全机制说明：</strong>SecurityAccess 采用挑战-响应（Challenge-Response）模式。ECU 生成随机种子（Seed），诊断仪使用 OEM 特定算法计算密钥（Key），密钥正确方可解锁。<br>连续失败超过限制次数（通常 3 次）后 ECU 进入锁定期（10~30s），期间拒绝所有安全请求。</div>
+  ${flowHtml('安全访问完整流程','0x27','b-amber',[
+    {t:'选择安全级别',d:'安全级别以奇数字节标识：0x01（级别1）、0x03（级别2）等。不同级别保护不同服务，通常 0x01 用于一般写操作，0x03 或更高用于编程刷写。'},
+    {t:'请求种子（Step 1）',d:'发送 0x27 + 奇数子功能，ECU 返回随机种子（4~8字节，每次不同）',code:'→ <span style="color:var(--blue)">27 01</span>  ← <span style="color:var(--green)">67 01 A3 F2 11 CC</span> (4字节种子)'},
+    {t:'已解锁状态处理',d:'若 ECU 已处于对应安全级别，返回种子全 0x00，诊断仪可直接进行后续操作',code:'← <span style="color:var(--green)">67 01 00 00 00 00</span> (已解锁)'},
+    {t:'计算密钥',d:'诊断仪使用 OEM 算法计算密钥（常见方案：AES-128 加密种子、XOR 常量、CRC 变换等）。算法通常受保护，不对外公开。'},
+    {t:'发送密钥（Step 2）',d:'发送 0x27 + 偶数子功能（奇数+1）+ 密钥字节',code:'→ <span style="color:var(--blue)">27 02 B4 E3 22 DD</span>'},
+    {t:'解锁成功',d:'ECU 验证密钥通过，返回正响应，当前会话进入已解锁状态',code:'← <span style="color:var(--green)">67 02</span> (无额外数据)'},
+    {t:'密钥错误处理',d:'密钥不匹配返回 NRC 0x35；尝试次数超限返回 NRC 0x36 并进入锁定期；锁定期内请求返回 NRC 0x37',nrc:'7F 27 35 (密钥错误) | 7F 27 36 (超限锁定) | 7F 27 37 (锁定期内)'},
+    {t:'延迟重试',d:'收到 NRC 0x37 后等待 ECU 规定的延迟时间（通常 10~30s），再重新从请求种子开始'},
+  ])}`;
+}
+
+/* ── DTC flows ── */
+const DTC_FLOWS={
+  'read-active':{title:'读取活跃故障码 (0x19 02)',steps:[
+    {t:'确认会话',d:'0x19 在默认/扩展/编程会话均支持，无需安全解锁'},
+    {t:'发送请求',d:'子功能 0x02 = reportDTCByStatusMask，状态掩码 0x09 = testFailed(bit0) + confirmedDTC(bit3)',code:'→ <span style="color:var(--blue)">19 02 09</span>'},
+    {t:'ECU 响应',d:'返回 0x59 + 子功能 + DTCStatusAvailabilityMask + DTC 列表（每条 3B DTC + 1B 状态字节）',code:'← <span style="color:var(--green)">59 02 7F P0 30 00 09 C0 03 5 09 ...</span>'},
+    {t:'DTC 状态字节解析',d:'Bit0=testFailed, Bit1=testFailedThisMonitoringCycle, Bit2=pendingDTC, Bit3=confirmedDTC, Bit4=testNotCompleted, Bit5=testFailedSinceLastClear, Bit6=testNotCompletedSinceLastClear, Bit7=warningIndicatorRequested'},
+    {t:'无故障',d:'DTC 列表为空（仅返回响应头），诊断仪应提示"未检测到故障"'},
+  ]},
+  'read-snapshot':{title:'读取 DTC 快照数据 (0x19 04)',steps:[
+    {t:'前提',d:'已知目标 DTC（如先执行 0x19 02 获取活跃 DTC 列表）'},
+    {t:'请求快照',d:'子功能 0x04 = reportDTCSnapshotRecordByDTCNumber，0x01 = 第1条快照记录（0xFF = 所有记录）',code:'→ <span style="color:var(--blue)">19 04 P0 30 00 01</span>'},
+    {t:'ECU 返回',d:'快照数据包含故障发生时的 DID 快照值（如车速、发动机转速、节气门位置等）',code:'← <span style="color:var(--green)">59 04 P0 30 00 09 01 01 F4 0E [数据...]</span>'},
+    {t:'解析快照 DID',d:'快照由 OEM 定义的 DID 列表组成，需对照车型 DID 定义表解析各字节含义'},
+    {t:'多条快照',d:'ECU 可存储多条快照（通常1~3条），使用记录号 0x01/0x02... 分别读取'},
+  ]},
+  'read-ext':{title:'读取 DTC 扩展数据 (0x19 06)',steps:[
+    {t:'扩展数据说明',d:'扩展数据（Extended Data）包含 DTC 计数器、老化计数、首次故障时间等 OEM 定义数据'},
+    {t:'发送请求',d:'子功能 0x06，记录号 0xFF = 读取所有扩展记录',code:'→ <span style="color:var(--blue)">19 06 P0 30 00 FF</span>'},
+    {t:'ECU 响应',d:'返回扩展数据记录，格式为 [记录号] + [数据]',code:'← <span style="color:var(--green)">59 06 P0 30 00 09 01 05 02 00 12 ...</span>'},
+    {t:'常见扩展数据内容',d:'Record #01: agingCounter（老化计数）；#02: occurrenceCounter（发生次数）；#FF: 诊断仪可用数据'},
+  ]},
+  'clear':{title:'清除故障码 (0x14)',steps:[
+    {t:'清除范围选择',d:'0xFFFFFF = 清除所有 DTC；0x000000~0x00FFFF 按系统分组；也可指定单个 DTC 码'},
+    {t:'前置检查',d:'确认发动机已熄火（部分 ECU 要求）；已退出强制控制状态；记录清除前的 DTC 列表以备存档'},
+    {t:'发送清除请求',d:'清除全部故障码',code:'→ <span style="color:var(--blue)">14 FF FF FF</span>'},
+    {t:'ECU 执行并响应',d:'ECU 清除非永久性 DTC，返回正响应 0x54（无额外数据）',code:'← <span style="color:var(--green)">54</span>'},
+    {t:'Permanent DTC 说明',d:'OBD-II Permanent DTC 不可通过 0x14 清除，需通过 OBD 行驶循环（驾驶验证后自然清除）'},
+    {t:'验证清除结果',d:'重新执行 0x19 02 09 确认 DTC 已清除；注意 OBD 就绪状态（P1000）会被重置',code:'→ <span style="color:var(--blue)">19 02 09</span>  ← <span style="color:var(--green)">59 02 7F</span> (空列表)'},
+    {t:'条件拒绝处理',d:'若条件不满足，ECU 返回 NRC 0x22',nrc:'7F 14 22 (conditionsNotCorrect)'},
+  ]},
+};
+function renderDtcFlow(key){
+  const f=DTC_FLOWS[key];
+  if(!f)return;
+  document.getElementById('dtcio-flow-out').innerHTML=flowHtml(f.title,'0x19/0x14','b-amber',f.steps);
+}
+
+/* ── DID flows ── */
+const DID_FLOWS={
+  'read-single':{title:'读取单个 DID (0x22)',steps:[
+    {t:'构造请求帧',d:'SID=0x22，后接 2 字节 DID（大端序）。常用 DID：F190=VIN，F101=软件版本，F186=ActiveDiagnosticSession',code:'→ <span style="color:var(--blue)">22 F1 90</span>'},
+    {t:'ECU 正响应',d:'0x62 + DID + 数据（F190 为 17 字节 ASCII VIN 码）',code:'← <span style="color:var(--green)">62 F1 90 57 44 42 5A 5A 5A 33 5A...</span> (VIN)'},
+    {t:'DID 不存在',d:'ECU 返回 NRC 0x31，表示此 DID 不在支持范围内',nrc:'7F 22 31 (requestOutOfRange)'},
+    {t:'条件不满足',d:'如某 DID 需发动机运行才能读取（否则返回 NRC 0x22）',nrc:'7F 22 22 (conditionsNotCorrect)'},
+  ]},
+  'read-multi':{title:'读取多个 DID (0x22)',steps:[
+    {t:'多 DID 请求',d:'ISO 14229 允许在单帧中请求多个 DID（实际支持数量由 ECU 决定，通常 1~6 个）',code:'→ <span style="color:var(--blue)">22 F1 90 F1 86 F1 87</span>'},
+    {t:'ECU 依次响应',d:'ECU 在响应中依次包含每个 DID 及其数据，格式为 [DID][Data][DID][Data]...',code:'← <span style="color:var(--green)">62 F1 90 [17B VIN] F1 86 03 F1 87 [N bytes]</span>'},
+    {t:'部分 DID 不支持',d:'若请求的某个 DID 不支持，部分 ECU 仅返回支持的 DID，另一些 ECU 拒绝整个请求（NRC 0x31）'},
+    {t:'最大响应长度',d:'若响应超过 CAN TP 最大 PDU 或 ECU 内部限制，ECU 可能返回 NRC 0x14（responseTooLong）'},
+  ]},
+  'write':{title:'写入 DID (0x2E，含完整前置流程)',steps:[
+    {t:'进入扩展/编程会话',d:'0x2E 通常需要扩展会话（标定）或编程会话（VIN 写入），默认会话返回 NRC 0x7F',code:'→ <span style="color:var(--blue)">10 03</span>  ← <span style="color:var(--green)">50 03 ...</span>'},
+    {t:'安全解锁',d:'写操作需先完成安全访问（参见安全访问流程），安全级别视 DID 权限而定',code:'27 01 → 67 01 [seed] → 27 02 [key] → 67 02'},
+    {t:'发送写入请求',d:'0x2E + DID（2字节）+ 写入数据',code:'→ <span style="color:var(--blue)">2E F1 90 57 44 42 5A 5A...</span> (写入 VIN)'},
+    {t:'ECU 执行',d:'ECU 将数据写入 EEPROM/Flash，执行时间较长时先返回 NRC 0x78',code:'← <span style="color:var(--green)">6E F1 90</span> (写入成功)'},
+    {t:'验证写入',d:'写入后重新读取相同 DID 进行比对验证',code:'→ <span style="color:var(--blue)">22 F1 90</span>  ← <span style="color:var(--green)">62 F1 90 [写入的数据]</span>'},
+    {t:'常见错误',d:'',nrc:'7F 2E 31 (超范围) | 7F 2E 22 (条件不满足) | 7F 2E 33 (未解锁) | 7F 2E 72 (写入失败)'},
+  ]},
+  'periodic':{title:'配置周期性 DID 上报 (0x2A)',steps:[
+    {t:'定义周期 DID',d:'上报速率：01=slowRate(约1Hz)，02=mediumRate(约10Hz)，03=fastRate(约50Hz)，04=stopSending'},
+    {t:'发送配置请求',d:'配置 DID F190 以 mediumRate 上报',code:'→ <span style="color:var(--blue)">2A 02 F1 90</span>'},
+    {t:'ECU 确认',d:'ECU 开始按配置速率定期自动推送数据',code:'← <span style="color:var(--green)">6A 02 F1 90</span> (确认) + 持续上报 0x6A ...'},
+    {t:'停止上报',d:'发送子功能 0x04 停止该 DID 的上报',code:'→ <span style="color:var(--blue)">2A 04 F1 90</span>  ← <span style="color:var(--green)">6A 04</span>'},
+    {t:'注意事项',d:'周期上报会占用总线带宽，刷写前必须停止所有周期上报；退出诊断会话后 ECU 自动停止上报'},
+  ]},
+};
+function renderDidFlow(key){
+  const f=DID_FLOWS[key];
+  if(!f)return;
+  document.getElementById('did-flow-out').innerHTML=flowHtml(f.title,'0x22/0x2E','b-green',f.steps);
+}
+
+/* ── Routine flows ── */
+const ROUTINE_FLOWS={
+  'erase':{title:'Flash 擦除例程 (0x31 FF00)',steps:[
+    {t:'前置条件',d:'必须处于编程会话且完成安全解锁；已执行通信控制（禁用正常报文）'},
+    {t:'启动擦除例程',d:'例程 ID 0xFF00 = 擦除内存，参数包含起始地址和长度',code:'→ <span style="color:var(--blue)">31 01 FF 00 44 00 00 00 00 10 00 00</span> (地址+长度)'},
+    {t:'ECU 处理中',d:'Flash 擦除耗时较长（数百ms~数秒），ECU 持续返回 NRC 0x78 表示处理中',code:'← <span style="color:var(--green)">7F 31 78</span> (处理中，可能多次)'},
+    {t:'擦除完成',d:'ECU 完成擦除后返回正响应',code:'← <span style="color:var(--green)">71 01 FF 00</span>'},
+    {t:'可选：查询结果',d:'发送子功能 0x03 请求例程结果，确认擦除成功',code:'→ <span style="color:var(--blue)">31 03 FF 00</span>  ← <span style="color:var(--green)">71 03 FF 00 00</span> (00=成功)'},
+    {t:'擦除失败',d:'Flash 硬件故障或电压不足时返回 NRC 0x72',nrc:'7F 31 72 (generalProgrammingFailure)'},
+  ]},
+  'check':{title:'编程依赖检查例程 (0x31 FF01)',steps:[
+    {t:'用途',d:'软件下载完成后检查新固件的依赖关系（如 Boot+App+Cal 版本兼容性）和完整性'},
+    {t:'发送请求',d:'例程 ID 0xFF01 = 检查编程依赖性',code:'→ <span style="color:var(--blue)">31 01 FF 01</span>'},
+    {t:'ECU 执行',d:'ECU 验证所有分区 CRC 及版本依赖，可能返回 0x78 等待',code:'← <span style="color:var(--green)">71 01 FF 01 00</span> (00=依赖OK)'},
+    {t:'依赖失败',d:'若某分区缺失或版本不兼容，ECU 返回非零结果码或 NRC 0x72'},
+    {t:'后续操作',d:'检查通过后方可发送 ECU 复位激活新固件'},
+  ]},
+  'calibrate':{title:'传感器校准例程 (OEM 自定义)',steps:[
+    {t:'适用场景',d:'适用于需要初始化学习的传感器：方向盘角度传感器零点、节气门自学习、电池 SOC 初始化等'},
+    {t:'进入扩展会话并解锁',d:'校准通常在扩展会话 + 安全解锁后进行',code:'10 03 → 50 03 → 27 03 → 67 03 [seed] → 27 04 [key] → 67 04'},
+    {t:'启动校准例程',d:'以方向盘校准为例，例程 ID 为 OEM 定义值',code:'→ <span style="color:var(--blue)">31 01 02 02</span> (OEM例程ID)'},
+    {t:'等待完成',d:'校准过程可能需要特定条件（如转到某位置），ECU 通过响应数据指示进度'},
+    {t:'停止例程',d:'若校准为持续性操作，发送 0x31 02 停止',code:'→ <span style="color:var(--blue)">31 02 02 02</span>  ← <span style="color:var(--green)">71 02 02 02</span>'},
+    {t:'读取结果',d:'',code:'→ <span style="color:var(--blue)">31 03 02 02</span>  ← <span style="color:var(--green)">71 03 02 02 00</span> (00=校准成功)'},
+  ]},
+  'selftest':{title:'ECU 自检例程',steps:[
+    {t:'用途',d:'验证 ECU 内部硬件（RAM、ROM、ADC、执行器回路等）工作正常，常用于下线检验'},
+    {t:'启动自检',d:'发送自检例程（例程 ID OEM 定义，通常在 0x0200~0x02FF 范围）',code:'→ <span style="color:var(--blue)">31 01 02 01</span>'},
+    {t:'ECU 执行各项检测',d:'RAM 读写测试、ROM CRC 验证、传感器信号范围检查、执行器短路/断路检测...'},
+    {t:'等待结果',d:'自检耗时较长，ECU 持续返回 0x78',code:'← <span style="color:var(--green)">7F 31 78</span> × N次  → ← <span style="color:var(--green)">71 01 02 01 [result]</span>'},
+    {t:'解析结果字节',d:'结果字节为位图：0x00=全部通过；各 bit 对应不同子项目，非零表示对应项目失败'},
+  ]},
+};
+function renderRoutineFlow(key){
+  const f=ROUTINE_FLOWS[key];
+  if(!f)return;
+  document.getElementById('routine-flow-out').innerHTML=flowHtml(f.title,'0x31','b-teal',f.steps);
+}
+
+/* ── OTA flow ── */
+function renderOtaFlow(){
+  const el=document.getElementById('ota-flow-out');
+  el.innerHTML=`
+  <div class="info-box"><strong>OTA 软件下载（UDS Flashing）完整流程</strong><br>UDS 刷写遵循严格的步骤顺序，任何跳步或顺序错误均会导致 ECU 返回 NRC 0x24（requestSequenceError）。典型刷写流程分为 7 个阶段，总耗时视固件大小和通信速率而定（通常 30s~5min）。本页包含：总览流程框图 → 各阶段步骤详解 → 完整报文时序图。</div>
+
+  <!-- ═══════════ 总览流程框图 ═══════════ -->
+  <div class="flow-container" style="margin-bottom:1.8rem">
+    <div class="flow-header">
+      <span class="badge b-blue">总览</span>
+      <span class="flow-header-title">OTA 刷写总流程框图</span>
+    </div>
+    <div class="flow-body" style="overflow-x:auto">
+      <svg viewBox="0 0 860 760" xmlns="http://www.w3.org/2000/svg"
+           style="font-family:'IBM Plex Mono',monospace;display:block;min-width:620px;max-width:860px;width:100%">
+        <defs>
+          <marker id="ah" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#4a5568"/>
+          </marker>
+          <marker id="ah-g" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#1d7a4a"/>
+          </marker>
+          <marker id="ah-r" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#c0392b"/>
+          </marker>
+          <marker id="ah-b" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#1a5fb4"/>
+          </marker>
+        </defs>
+
+        <!-- ── 开始 ── -->
+        <ellipse cx="430" cy="36" rx="80" ry="22" fill="#1c2333" />
+        <text x="430" y="41" text-anchor="middle" font-size="13" fill="#fff" font-weight="600">开始</text>
+        <line x1="430" y1="58" x2="430" y2="80" stroke="#4a5568" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <!-- ── 条件检查菱形 ── -->
+        <polygon points="430,80 530,108 430,136 330,108" fill="#fef3e2" stroke="#b85c00" stroke-width="1.5"/>
+        <text x="430" y="105" text-anchor="middle" font-size="11" fill="#7c3d00">前置条件检查</text>
+        <text x="430" y="120" text-anchor="middle" font-size="10" fill="#b85c00">车速=0 / 电压≥11V</text>
+        <!-- 条件不满足 → 右侧 -->
+        <line x1="530" y1="108" x2="620" y2="108" stroke="#c0392b" stroke-width="1.5" marker-end="url(#ah-r)"/>
+        <rect x="620" y="90" width="110" height="36" rx="6" fill="#fdecea" stroke="#c0392b" stroke-width="1"/>
+        <text x="675" y="106" text-anchor="middle" font-size="10" fill="#7b1d1d">中止</text>
+        <text x="675" y="120" text-anchor="middle" font-size="10" fill="#7b1d1d">上报原因</text>
+        <text x="545" y="102" text-anchor="middle" font-size="9" fill="#c0392b">否</text>
+        <text x="470" y="100" text-anchor="middle" font-size="9" fill="#1d7a4a">是</text>
+
+        <!-- ── P1: 编程会话 ── -->
+        <line x1="430" y1="136" x2="430" y2="158" stroke="#4a5568" stroke-width="1.5" marker-end="url(#ah)"/>
+        <rect x="300" y="158" width="260" height="42" rx="8" fill="#f0eafa" stroke="#6b3fa0" stroke-width="1.5"/>
+        <text x="430" y="176" text-anchor="middle" font-size="12" fill="#4c1d95" font-weight="600">阶段 1 — 预刷写准备</text>
+        <text x="430" y="192" text-anchor="middle" font-size="10" fill="#6b3fa0">10 02 → 28 03 → 85 02 → 27 03/04</text>
+        <line x1="430" y1="200" x2="430" y2="222" stroke="#4a5568" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <!-- ── 安全解锁菱形 ── -->
+        <polygon points="430,222 530,250 430,278 330,250" fill="#fef3e2" stroke="#b85c00" stroke-width="1.5"/>
+        <text x="430" y="247" text-anchor="middle" font-size="11" fill="#7c3d00">安全解锁</text>
+        <text x="430" y="262" text-anchor="middle" font-size="10" fill="#b85c00">Seed-Key 验证</text>
+        <!-- 失败 -->
+        <line x1="530" y1="250" x2="620" y2="250" stroke="#c0392b" stroke-width="1.5" marker-end="url(#ah-r)"/>
+        <rect x="620" y="232" width="110" height="36" rx="6" fill="#fdecea" stroke="#c0392b" stroke-width="1"/>
+        <text x="675" y="248" text-anchor="middle" font-size="10" fill="#7b1d1d">NRC 0x35/36</text>
+        <text x="675" y="262" text-anchor="middle" font-size="10" fill="#7b1d1d">解锁失败</text>
+        <text x="545" y="244" text-anchor="middle" font-size="9" fill="#c0392b">失败</text>
+        <text x="465" y="242" text-anchor="middle" font-size="9" fill="#1d7a4a">成功</text>
+
+        <!-- ── P2: Flash擦除 ── -->
+        <line x1="430" y1="278" x2="430" y2="300" stroke="#4a5568" stroke-width="1.5" marker-end="url(#ah)"/>
+        <rect x="300" y="300" width="260" height="42" rx="8" fill="#e8f0fb" stroke="#1a5fb4" stroke-width="1.5"/>
+        <text x="430" y="318" text-anchor="middle" font-size="12" fill="#0c3d7a" font-weight="600">阶段 2 — Flash 擦除</text>
+        <text x="430" y="334" text-anchor="middle" font-size="10" fill="#1a5fb4">31 01 FF 00 [addr][size]</text>
+        <line x1="430" y1="342" x2="430" y2="364" stroke="#4a5568" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <!-- ── 擦除等待菱形 ── -->
+        <polygon points="430,364 530,386 430,408 330,386" fill="#fef3e2" stroke="#b85c00" stroke-width="1.5"/>
+        <text x="430" y="383" text-anchor="middle" font-size="11" fill="#7c3d00">擦除完成?</text>
+        <text x="430" y="398" text-anchor="middle" font-size="10" fill="#b85c00">7F 31 78 / 71 FF00</text>
+        <!-- 等待循环 -->
+        <line x1="530" y1="386" x2="600" y2="386" stroke="#b85c00" stroke-width="1.2" stroke-dasharray="4,3"/>
+        <line x1="600" y1="386" x2="600" y2="321" stroke="#b85c00" stroke-width="1.2" stroke-dasharray="4,3"/>
+        <line x1="600" y1="321" x2="560" y2="321" stroke="#b85c00" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ah-r)"/>
+        <text x="612" y="358" text-anchor="middle" font-size="9" fill="#b85c00" transform="rotate(90,612,358)">0x78等待</text>
+        <text x="470" y="378" text-anchor="middle" font-size="9" fill="#1d7a4a">完成</text>
+
+        <!-- ── P3: 请求下载 ── -->
+        <line x1="430" y1="408" x2="430" y2="430" stroke="#4a5568" stroke-width="1.5" marker-end="url(#ah)"/>
+        <rect x="300" y="430" width="260" height="42" rx="8" fill="#fef3e2" stroke="#b85c00" stroke-width="1.5"/>
+        <text x="430" y="448" text-anchor="middle" font-size="12" fill="#7c3d00" font-weight="600">阶段 3 — 请求下载</text>
+        <text x="430" y="464" text-anchor="middle" font-size="10" fill="#b85c00">34 00 44 [addr][size] → 74 [maxBlk]</text>
+        <line x1="430" y1="472" x2="430" y2="494" stroke="#4a5568" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <!-- ── P4: 分块传输 ── -->
+        <rect x="300" y="494" width="260" height="42" rx="8" fill="#e6f5ee" stroke="#1d7a4a" stroke-width="1.5"/>
+        <text x="430" y="512" text-anchor="middle" font-size="12" fill="#14532d" font-weight="600">阶段 4 — 分块传输</text>
+        <text x="430" y="528" text-anchor="middle" font-size="10" fill="#1d7a4a">36 01..FF [data] ← 76 nn</text>
+        <line x1="430" y1="536" x2="430" y2="556" stroke="#4a5568" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <!-- ── 传输完成菱形 ── -->
+        <polygon points="430,556 530,578 430,600 330,578" fill="#fef3e2" stroke="#b85c00" stroke-width="1.5"/>
+        <text x="430" y="575" text-anchor="middle" font-size="11" fill="#7c3d00">全部块发完?</text>
+        <text x="430" y="590" text-anchor="middle" font-size="10" fill="#b85c00">NRC 0x73 / 76 nn</text>
+        <!-- 继续循环 -->
+        <line x1="330" y1="578" x2="250" y2="578" stroke="#1a5fb4" stroke-width="1.2" stroke-dasharray="4,3"/>
+        <line x1="250" y1="578" x2="250" y2="515" stroke="#1a5fb4" stroke-width="1.2" stroke-dasharray="4,3"/>
+        <line x1="250" y1="515" x2="300" y2="515" stroke="#1a5fb4" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ah-b)"/>
+        <text x="238" y="552" text-anchor="middle" font-size="9" fill="#1a5fb4" transform="rotate(-90,238,552)">继续传输</text>
+        <text x="370" y="571" text-anchor="middle" font-size="9" fill="#c0392b">未完成</text>
+        <text x="468" y="570" text-anchor="middle" font-size="9" fill="#1d7a4a">完成</text>
+
+        <!-- ── P5: 传输退出 + 校验 ── -->
+        <line x1="430" y1="600" x2="430" y2="622" stroke="#4a5568" stroke-width="1.5" marker-end="url(#ah)"/>
+        <rect x="300" y="622" width="260" height="42" rx="8" fill="#e2f5f5" stroke="#0d7377" stroke-width="1.5"/>
+        <text x="430" y="640" text-anchor="middle" font-size="12" fill="#134e4a" font-weight="600">阶段 5 — 退出 &amp; 校验</text>
+        <text x="430" y="656" text-anchor="middle" font-size="10" fill="#0d7377">37 → 77  |  31 01 FF 01 → 71</text>
+        <line x1="430" y1="664" x2="430" y2="686" stroke="#4a5568" stroke-width="1.5" marker-end="url(#ah)"/>
+
+        <!-- ── 多分区菱形 ── -->
+        <polygon points="430,686 530,708 430,730 330,708" fill="#f0f2f7" stroke="#8896aa" stroke-width="1.5"/>
+        <text x="430" y="705" text-anchor="middle" font-size="11" fill="#4a5568">还有分区?</text>
+        <text x="430" y="720" text-anchor="middle" font-size="10" fill="#8896aa">Boot/App/Cal</text>
+        <!-- 循环回擦除 -->
+        <line x1="330" y1="708" x2="160" y2="708" stroke="#8896aa" stroke-width="1.2" stroke-dasharray="4,3"/>
+        <line x1="160" y1="708" x2="160" y2="386" stroke="#8896aa" stroke-width="1.2" stroke-dasharray="4,3"/>
+        <line x1="160" y1="386" x2="330" y2="386" stroke="#8896aa" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ah)"/>
+        <text x="148" y="560" text-anchor="middle" font-size="9" fill="#8896aa" transform="rotate(-90,148,560)">下一分区</text>
+        <text x="370" y="702" text-anchor="middle" font-size="9" fill="#8896aa">有</text>
+        <text x="468" y="700" text-anchor="middle" font-size="9" fill="#1d7a4a">无</text>
+
+        <!-- ── P7: 复位恢复 ── -->
+        <line x1="430" y1="730" x2="430" y2="752" stroke="#4a5568" stroke-width="1.5" marker-end="url(#ah)"/>
+        <ellipse cx="430" cy="770" rx="120" ry="22" fill="#1c2333"/>
+        <text x="430" y="774" text-anchor="middle" font-size="12" fill="#fff" font-weight="600">11 01 复位 → 验证版本</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ═══════════ 各阶段步骤 ═══════════ -->
+  <div class="flow-container">
+    <div class="flow-header">
+      <span class="badge b-purple">阶段 1</span>
+      <span class="flow-header-title">预刷写准备（Pre-Programming）</span>
+    </div>
+    <div class="flow-body"><div class="flow-steps">
+      <div class="flow-step"><div class="step-num">01</div><div class="step-content"><div class="step-title">进入编程会话</div><div class="step-desc">切换至 ProgrammingSession，解锁编程功能。</div><div class="step-code">→ <span style="color:var(--blue)">10 02</span>  ← <span style="color:var(--green)">50 02 00 19 01 F4</span></div></div></div>
+      <div class="flow-step"><div class="step-num">02</div><div class="step-content"><div class="step-title">通信控制 — 禁用正常报文</div><div class="step-desc">关闭节点正常通信报文与网络管理报文，减少总线干扰，防止刷写期间产生 DTC。</div><div class="step-code">→ <span style="color:var(--blue)">28 03 01</span>  ← <span style="color:var(--green)">68 03</span></div></div></div>
+      <div class="flow-step"><div class="step-num">03</div><div class="step-content"><div class="step-title">禁用 DTC 检测</div><div class="step-desc">防止刷写过程中传感器信号异常被错误记录为故障码。</div><div class="step-code">→ <span style="color:var(--blue)">85 02</span>  ← <span style="color:var(--green)">C5 02</span></div></div></div>
+      <div class="flow-step"><div class="step-num">04</div><div class="step-content"><div class="step-title">安全访问解锁</div><div class="step-desc">编程刷写通常需要较高安全级别（如 0x03/0x05），完成 Seed-Key 握手。</div><div class="step-code">→ <span style="color:var(--blue)">27 03</span>  ← <span style="color:var(--green)">67 03 [4B seed]</span>  → <span style="color:var(--blue)">27 04 [4B key]</span>  ← <span style="color:var(--green)">67 04</span></div></div></div>
+      <div class="flow-step"><div class="step-num">05</div><div class="step-content"><div class="step-title">可选：切换通信速率</div><div class="step-desc">LinkControl(0x87) 切换至更高波特率（如 CAN 500kbps → 2Mbps 或 DoIP），加速传输。</div><div class="step-code">→ <span style="color:var(--blue)">87 03 [速率标识]</span>  ← <span style="color:var(--green)">C7 03</span></div></div></div>
+    </div></div>
+  </div>
+
+  <div class="flow-container">
+    <div class="flow-header">
+      <span class="badge b-blue">阶段 2</span>
+      <span class="flow-header-title">Flash 擦除（Erase Memory）</span>
+    </div>
+    <div class="flow-body"><div class="flow-steps">
+      <div class="flow-step"><div class="step-num">06</div><div class="step-content"><div class="step-title">启动擦除例程</div><div class="step-desc">RoutineControl 0x31 + 例程 ID 0xFF00，参数含起始地址和擦除长度（大端序）。</div><div class="step-code">→ <span style="color:var(--blue)">31 01 FF 00 [addr 4B] [size 4B]</span>  ← <span style="color:var(--green)">7F 31 78 × N</span>（等待）<br>最终: ← <span style="color:var(--green)">71 01 FF 00</span></div></div></div>
+    </div></div>
+  </div>
+
+  <div class="flow-container">
+    <div class="flow-header">
+      <span class="badge b-amber">阶段 3</span>
+      <span class="flow-header-title">请求下载（Request Download）</span>
+    </div>
+    <div class="flow-body"><div class="flow-steps">
+      <div class="flow-step"><div class="step-num">07</div><div class="step-content"><div class="step-title">发送下载请求</div><div class="step-desc">0x34 协商：dataFormatIdentifier（压缩/加密标志）、memoryAddress（起始地址）、memorySize（总数据量）。</div><div class="step-code">→ <span style="color:var(--blue)">34 00 44 [addr 4B] [size 4B]</span></div></div></div>
+      <div class="flow-step"><div class="step-num">08</div><div class="step-content"><div class="step-title">ECU 确认并返回 maxBlockLen</div><div class="step-desc">0x74 + lengthOfMaxBlockLen + maxBlockLen 值，表示每个数据块的最大字节数（含 1 字节块序号）。</div><div class="step-code">← <span style="color:var(--green)">74 20 00 0A 00</span>（maxBlockLen = 0x0A00 = 2560字节）</div></div></div>
+    </div></div>
+  </div>
+
+  <div class="flow-container">
+    <div class="flow-header">
+      <span class="badge b-green">阶段 4</span>
+      <span class="flow-header-title">数据传输（Transfer Data）</span>
+    </div>
+    <div class="flow-body"><div class="flow-steps">
+      <div class="flow-step"><div class="step-num">09</div><div class="step-content"><div class="step-title">循环发送数据块</div><div class="step-desc">0x36 + blockSequenceCounter（从 0x01 开始，达 0xFF 后回绕至 0x00，不为 0x01）+ 数据。每块最大 = maxBlockLen - 2。</div><div class="step-code">→ <span style="color:var(--blue)">36 01 [block 1 data...]</span>  ← <span style="color:var(--green)">76 01</span><br>→ <span style="color:var(--blue)">36 02 [block 2 data...]</span>  ← <span style="color:var(--green)">76 02</span><br>... 循环直至所有数据发送完毕</div></div></div>
+      <div class="flow-step"><div class="step-num">10</div><div class="step-content"><div class="step-title">块序号错误处理</div><div class="step-desc">若 blockSequenceCounter 不连续，ECU 返回 NRC 0x73，诊断仪需重发正确序号的块。</div><div class="step-nrc">7F 36 73 (wrongBlockSequenceCounter)</div></div></div>
+      <div class="flow-step"><div class="step-num">11</div><div class="step-content"><div class="step-title">处理 0x78 中间响应</div><div class="step-desc">ECU 正在将接收数据写入 Flash 时，若超过 P2 超时会先返回 0x78，诊断仪需等待最终响应（不可重发）。</div><div class="step-code">← <span style="color:var(--green)">7F 36 78</span>（处理中，继续等待）→ ← <span style="color:var(--green)">76 XX</span>（最终响应）</div></div></div>
+    </div></div>
+  </div>
+
+  <div class="flow-container">
+    <div class="flow-header">
+      <span class="badge b-teal">阶段 5</span>
+      <span class="flow-header-title">传输退出与完整性验证</span>
+    </div>
+    <div class="flow-body"><div class="flow-steps">
+      <div class="flow-step"><div class="step-num">12</div><div class="step-content"><div class="step-title">请求传输退出</div><div class="step-desc">所有数据块发送完毕后，发送 RequestTransferExit，ECU 执行 CRC/哈希校验。</div><div class="step-code">→ <span style="color:var(--blue)">37</span>  ← <span style="color:var(--green)">77 [校验签名，可选]</span></div></div></div>
+      <div class="flow-step"><div class="step-num">13</div><div class="step-content"><div class="step-title">编程依赖检查</div><div class="step-desc">验证新固件与 Bootloader/Calibration 的版本依赖兼容性。</div><div class="step-code">→ <span style="color:var(--blue)">31 01 FF 01</span>  ← <span style="color:var(--green)">71 01 FF 01 00</span>（00=通过）</div></div></div>
+    </div></div>
+  </div>
+
+  <div class="flow-container">
+    <div class="flow-header">
+      <span class="badge b-red">阶段 6</span>
+      <span class="flow-header-title">多分区支持（如有）</span>
+    </div>
+    <div class="flow-body">
+      <div class="step-desc" style="margin-bottom:10px;font-size:.82rem;color:var(--text2)">若固件分为多个分区（Bootloader、Application、Calibration 等），需对每个分区重复<strong>阶段 3~5（擦除 → 请求下载 → 传输 → 退出）</strong>，所有分区完成后统一执行依赖检查与复位。</div>
+      <div class="step-code">分区1: 34 → 36×N → 37 → 71 FF01<br>分区2: 34 → 36×N → 37<br>分区N: 34 → 36×N → 37<br>全部完成: 31 01 FF 01 → ECU复位</div>
+    </div>
+  </div>
+
+  <div class="flow-container">
+    <div class="flow-header">
+      <span class="badge b-gray">阶段 7</span>
+      <span class="flow-header-title">后刷写恢复（Post-Programming）</span>
+    </div>
+    <div class="flow-body"><div class="flow-steps">
+      <div class="flow-step"><div class="step-num">14</div><div class="step-content"><div class="step-title">ECU 复位激活新固件</div><div class="step-desc">发送 ECUReset 硬复位，ECU 重启并加载新固件。</div><div class="step-code">→ <span style="color:var(--blue)">11 01</span>  ← <span style="color:var(--green)">51 01</span> → ECU 重启...</div></div></div>
+      <div class="flow-step"><div class="step-num">15</div><div class="step-content"><div class="step-title">等待 ECU 上线</div><div class="step-desc">等待 ECU 完成初始化（通常 1~5s），重新建立诊断连接。</div></div></div>
+      <div class="flow-step"><div class="step-num">16</div><div class="step-content"><div class="step-title">恢复正常通信</div><div class="step-desc">进入扩展会话，恢复通信控制和 DTC 检测。</div><div class="step-code">10 03 → 28 00 01 → 68 00  |  85 01 → C5 01</div></div></div>
+      <div class="flow-step"><div class="step-num">17</div><div class="step-content"><div class="step-title">验证新固件</div><div class="step-desc">读取软件版本 DID（如 F101）确认版本已更新；清除刷写过程中可能产生的 DTC。</div><div class="step-code">22 F1 01 → 62 F1 01 [新版本号]  |  14 FF FF FF → 54</div></div></div>
+    </div></div>
+  </div>
+
+  <!-- ═══════════ 完整报文时序图 ═══════════ -->
+  <div class="flow-container" style="margin-top:1.8rem">
+    <div class="flow-header">
+      <span class="badge b-teal">时序图</span>
+      <span class="flow-header-title">OTA 完整报文时序（Tester ↔ ECU）</span>
+    </div>
+    <div class="flow-body" style="overflow-x:auto;padding:0.8rem">
+      <svg viewBox="0 0 900 1060" xmlns="http://www.w3.org/2000/svg"
+           style="font-family:'IBM Plex Mono',monospace;display:block;min-width:700px;max-width:900px;width:100%">
+        <defs>
+          <marker id="t-b" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L7,3 z" fill="#1a5fb4"/>
+          </marker>
+          <marker id="t-g" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L7,3 z" fill="#1d7a4a"/>
+          </marker>
+          <marker id="t-a" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L7,3 z" fill="#b85c00"/>
+          </marker>
+          <marker id="t-r" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L7,3 z" fill="#c0392b"/>
+          </marker>
+          <marker id="t-p" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L7,3 z" fill="#6b3fa0"/>
+          </marker>
+          <marker id="t-gray" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L7,3 z" fill="#8896aa"/>
+          </marker>
+        </defs>
+
+        <!-- Header -->
+        <rect x="0" y="0" width="900" height="44" fill="#f0f2f7" rx="0"/>
+        <!-- Tester box -->
+        <rect x="60" y="6" width="130" height="30" rx="6" fill="#e8f0fb" stroke="#1a5fb4" stroke-width="1.5"/>
+        <text x="125" y="26" text-anchor="middle" font-size="12" fill="#0c3d7a" font-weight="600">Tester / OTA工具</text>
+        <!-- ECU box -->
+        <rect x="710" y="6" width="130" height="30" rx="6" fill="#e6f5ee" stroke="#1d7a4a" stroke-width="1.5"/>
+        <text x="775" y="26" text-anchor="middle" font-size="12" fill="#14532d" font-weight="600">ECU / Bootloader</text>
+
+        <!-- Lifelines -->
+        <line x1="125" y1="44" x2="125" y2="1040" stroke="#b8c8e8" stroke-width="1" stroke-dasharray="5,4"/>
+        <line x1="775" y1="44" x2="775" y2="1040" stroke="#b8c8e8" stroke-width="1" stroke-dasharray="5,4"/>
+
+        <!-- Phase label helper -->
+        <!-- PHASE 1 -->
+        <rect x="0" y="52" width="60" height="200" rx="4" fill="#f0eafa"/>
+        <text x="30" y="165" text-anchor="middle" font-size="10" fill="#6b3fa0" font-weight="600" transform="rotate(-90,30,165)">阶段1 预刷写准备</text>
+
+        <!-- 10 02 -->
+        <line x1="125" y1="72" x2="765" y2="72" stroke="#1a5fb4" stroke-width="1.5" marker-end="url(#t-b)"/>
+        <text x="445" y="68" text-anchor="middle" font-size="10" fill="#0c3d7a">10 02  (DiagnosticSessionControl: ProgrammingSession)</text>
+        <line x1="765" y1="88" x2="135" y2="88" stroke="#1d7a4a" stroke-width="1.5" marker-end="url(#t-g)"/>
+        <text x="445" y="84" text-anchor="middle" font-size="10" fill="#14532d">50 02 00 19 01 F4  (正响应, P2=25ms P2*=5000ms)</text>
+
+        <!-- 28 03 01 -->
+        <line x1="125" y1="108" x2="765" y2="108" stroke="#1a5fb4" stroke-width="1.5" marker-end="url(#t-b)"/>
+        <text x="445" y="104" text-anchor="middle" font-size="10" fill="#0c3d7a">28 03 01  (CommunicationControl: 禁用收发)</text>
+        <line x1="765" y1="122" x2="135" y2="122" stroke="#1d7a4a" stroke-width="1.5" marker-end="url(#t-g)"/>
+        <text x="445" y="118" text-anchor="middle" font-size="10" fill="#14532d">68 03  (正响应)</text>
+
+        <!-- 85 02 -->
+        <line x1="125" y1="142" x2="765" y2="142" stroke="#1a5fb4" stroke-width="1.5" marker-end="url(#t-b)"/>
+        <text x="445" y="138" text-anchor="middle" font-size="10" fill="#0c3d7a">85 02  (ControlDTCSetting: 禁用DTC)</text>
+        <line x1="765" y1="156" x2="135" y2="156" stroke="#1d7a4a" stroke-width="1.5" marker-end="url(#t-g)"/>
+        <text x="445" y="152" text-anchor="middle" font-size="10" fill="#14532d">C5 02  (正响应)</text>
+
+        <!-- 27 03 seed -->
+        <line x1="125" y1="176" x2="765" y2="176" stroke="#b85c00" stroke-width="1.5" marker-end="url(#t-a)"/>
+        <text x="445" y="172" text-anchor="middle" font-size="10" fill="#7c3d00">27 03  (SecurityAccess: 请求种子)</text>
+        <line x1="765" y1="190" x2="135" y2="190" stroke="#b85c00" stroke-width="1.5" marker-end="url(#t-a)"/>
+        <text x="445" y="186" text-anchor="middle" font-size="10" fill="#7c3d00">67 03 A3 F2 11 CC  (返回4字节种子)</text>
+
+        <!-- 27 04 key -->
+        <line x1="125" y1="210" x2="765" y2="210" stroke="#b85c00" stroke-width="1.5" marker-end="url(#t-a)"/>
+        <text x="445" y="206" text-anchor="middle" font-size="10" fill="#7c3d00">27 04 B4 E3 22 DD  (发送密钥)</text>
+        <line x1="765" y1="224" x2="135" y2="224" stroke="#b85c00" stroke-width="1.5" marker-end="url(#t-a)"/>
+        <text x="445" y="220" text-anchor="middle" font-size="10" fill="#7c3d00">67 04  (解锁成功)</text>
+
+        <!-- PHASE 2 -->
+        <rect x="0" y="252" width="60" height="110" rx="4" fill="#e8f0fb"/>
+        <text x="30" y="315" text-anchor="middle" font-size="10" fill="#1a5fb4" font-weight="600" transform="rotate(-90,30,315)">阶段2 Flash擦除</text>
+
+        <!-- 31 FF00 -->
+        <line x1="125" y1="272" x2="765" y2="272" stroke="#1a5fb4" stroke-width="1.5" marker-end="url(#t-b)"/>
+        <text x="445" y="268" text-anchor="middle" font-size="10" fill="#0c3d7a">31 01 FF 00 44 00 00 00 00 10 00 00  (擦除例程 addr+size)</text>
+        <!-- 0x78 pending -->
+        <line x1="765" y1="288" x2="135" y2="288" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#t-r)"/>
+        <text x="445" y="284" text-anchor="middle" font-size="10" fill="#c0392b">7F 31 78  (处理中…)</text>
+        <line x1="765" y1="304" x2="135" y2="304" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#t-r)"/>
+        <text x="445" y="300" text-anchor="middle" font-size="10" fill="#c0392b">7F 31 78  (处理中…)</text>
+        <!-- final -->
+        <line x1="765" y1="340" x2="135" y2="340" stroke="#1d7a4a" stroke-width="2" marker-end="url(#t-g)"/>
+        <text x="445" y="336" text-anchor="middle" font-size="10" fill="#14532d">71 01 FF 00  (擦除完成)</text>
+        <!-- P2* bracket -->
+        <line x1="840" y1="272" x2="840" y2="340" stroke="#c0392b" stroke-width="1"/>
+        <line x1="836" y1="272" x2="844" y2="272" stroke="#c0392b" stroke-width="1"/>
+        <line x1="836" y1="340" x2="844" y2="340" stroke="#c0392b" stroke-width="1"/>
+        <text x="860" y="312" text-anchor="middle" font-size="9" fill="#c0392b" transform="rotate(90,860,312)">≤ P2* (5s)</text>
+
+        <!-- PHASE 3 -->
+        <rect x="0" y="362" width="60" height="90" rx="4" fill="#fef3e2"/>
+        <text x="30" y="415" text-anchor="middle" font-size="10" fill="#b85c00" font-weight="600" transform="rotate(-90,30,415)">阶段3 请求下载</text>
+
+        <!-- 34 -->
+        <line x1="125" y1="380" x2="765" y2="380" stroke="#b85c00" stroke-width="1.5" marker-end="url(#t-a)"/>
+        <text x="445" y="376" text-anchor="middle" font-size="10" fill="#7c3d00">34 00 44 44 00 00 00 00 20 00 00  (dataFmt, addrLen, addr, size)</text>
+        <line x1="765" y1="396" x2="135" y2="396" stroke="#b85c00" stroke-width="1.5" marker-end="url(#t-a)"/>
+        <text x="445" y="392" text-anchor="middle" font-size="10" fill="#7c3d00">74 20 00 0A 00  (maxBlockLen = 2560字节)</text>
+        <!-- 3E keepalive -->
+        <line x1="125" y1="432" x2="765" y2="432" stroke="#8896aa" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#t-gray)"/>
+        <text x="445" y="428" text-anchor="middle" font-size="10" fill="#8896aa">3E 80  (TesterPresent 保活, 抑制响应)</text>
+
+        <!-- PHASE 4 -->
+        <rect x="0" y="452" width="60" height="270" rx="4" fill="#e6f5ee"/>
+        <text x="30" y="600" text-anchor="middle" font-size="10" fill="#1d7a4a" font-weight="600" transform="rotate(-90,30,600)">阶段4 分块传输</text>
+
+        <!-- block 01 -->
+        <line x1="125" y1="470" x2="765" y2="470" stroke="#1d7a4a" stroke-width="1.5" marker-end="url(#t-g)"/>
+        <text x="445" y="466" text-anchor="middle" font-size="10" fill="#14532d">36 01 [data 0~2557B]  (block #01)</text>
+        <line x1="765" y1="486" x2="135" y2="486" stroke="#1d7a4a" stroke-width="1.5" marker-end="url(#t-g)"/>
+        <text x="445" y="482" text-anchor="middle" font-size="10" fill="#14532d">76 01  (正响应)</text>
+
+        <!-- block 02 -->
+        <line x1="125" y1="506" x2="765" y2="506" stroke="#1d7a4a" stroke-width="1.5" marker-end="url(#t-g)"/>
+        <text x="445" y="502" text-anchor="middle" font-size="10" fill="#14532d">36 02 [data]  (block #02)</text>
+        <!-- 0x78 inside transfer -->
+        <line x1="765" y1="520" x2="135" y2="520" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#t-r)"/>
+        <text x="445" y="516" text-anchor="middle" font-size="10" fill="#c0392b">7F 36 78  (Flash写入中, 等待…)</text>
+        <line x1="765" y1="540" x2="135" y2="540" stroke="#1d7a4a" stroke-width="2" marker-end="url(#t-g)"/>
+        <text x="445" y="536" text-anchor="middle" font-size="10" fill="#14532d">76 02  (最终正响应)</text>
+
+        <!-- block 03 ... -->
+        <text x="445" y="558" text-anchor="middle" font-size="11" fill="#8896aa">…… 循环 block #03 ~ #FF ~ #00 ~ … ……</text>
+
+        <!-- last block -->
+        <line x1="125" y1="576" x2="765" y2="576" stroke="#1d7a4a" stroke-width="1.5" marker-end="url(#t-g)"/>
+        <text x="445" y="572" text-anchor="middle" font-size="10" fill="#14532d">36 NN [最后一块数据]  (block #NN)</text>
+        <line x1="765" y1="592" x2="135" y2="592" stroke="#1d7a4a" stroke-width="1.5" marker-end="url(#t-g)"/>
+        <text x="445" y="588" text-anchor="middle" font-size="10" fill="#14532d">76 NN  (正响应)</text>
+
+        <!-- block error example -->
+        <line x1="125" y1="616" x2="765" y2="616" stroke="#c0392b" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#t-r)"/>
+        <text x="445" y="612" text-anchor="middle" font-size="10" fill="#c0392b">36 XX  (若序号错误 → NRC 7F 36 73)</text>
+        <line x1="765" y1="630" x2="135" y2="630" stroke="#c0392b" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#t-r)"/>
+        <text x="445" y="626" text-anchor="middle" font-size="10" fill="#c0392b">7F 36 73  (wrongBlockSequenceCounter)</text>
+
+        <!-- PHASE 5 -->
+        <rect x="0" y="652" width="60" height="130" rx="4" fill="#e2f5f5"/>
+        <text x="30" y="725" text-anchor="middle" font-size="10" fill="#0d7377" font-weight="600" transform="rotate(-90,30,725)">阶段5 退出&amp;校验</text>
+
+        <!-- 37 -->
+        <line x1="125" y1="670" x2="765" y2="670" stroke="#0d7377" stroke-width="1.5" marker-end="url(#t-p)"/>
+        <text x="445" y="666" text-anchor="middle" font-size="10" fill="#134e4a">37  (RequestTransferExit)</text>
+        <line x1="765" y1="686" x2="135" y2="686" stroke="#0d7377" stroke-width="1.5" marker-end="url(#t-p)"/>
+        <text x="445" y="682" text-anchor="middle" font-size="10" fill="#134e4a">77 [CRC/签名, 可选]  (传输退出正响应)</text>
+
+        <!-- 31 FF01 check -->
+        <line x1="125" y1="706" x2="765" y2="706" stroke="#0d7377" stroke-width="1.5" marker-end="url(#t-p)"/>
+        <text x="445" y="702" text-anchor="middle" font-size="10" fill="#134e4a">31 01 FF 01  (编程依赖检查例程)</text>
+        <line x1="765" y1="722" x2="135" y2="722" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#t-r)"/>
+        <text x="445" y="718" text-anchor="middle" font-size="10" fill="#c0392b">7F 31 78  (检查中…)</text>
+        <line x1="765" y1="756" x2="135" y2="756" stroke="#1d7a4a" stroke-width="2" marker-end="url(#t-g)"/>
+        <text x="445" y="752" text-anchor="middle" font-size="10" fill="#14532d">71 01 FF 01 00  (依赖检查通过)</text>
+
+        <!-- PHASE 7 -->
+        <rect x="0" y="782" width="60" height="240" rx="4" fill="#f0f2f7"/>
+        <text x="30" y="908" text-anchor="middle" font-size="10" fill="#4a5568" font-weight="600" transform="rotate(-90,30,908)">阶段7 后刷写恢复</text>
+
+        <!-- 11 01 reset -->
+        <line x1="125" y1="800" x2="765" y2="800" stroke="#4a5568" stroke-width="1.5" marker-end="url(#t-gray)"/>
+        <text x="445" y="796" text-anchor="middle" font-size="10" fill="#4a5568">11 01  (ECUReset: hardReset)</text>
+        <line x1="765" y1="816" x2="135" y2="816" stroke="#4a5568" stroke-width="1.5" marker-end="url(#t-gray)"/>
+        <text x="445" y="812" text-anchor="middle" font-size="10" fill="#4a5568">51 01  (正响应, ECU即将重启)</text>
+
+        <!-- silent -->
+        <rect x="690" y="828" width="90" height="56" rx="4" fill="#f5f6f8" stroke="#cdd3e0" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="735" y="851" text-anchor="middle" font-size="9" fill="#8896aa">ECU 重启中</text>
+        <text x="735" y="866" text-anchor="middle" font-size="9" fill="#8896aa">~1~5s 无响应</text>
+        <text x="445" y="852" text-anchor="middle" font-size="10" fill="#8896aa">━━━━━━━━━━  总线静默 (等待ECU初始化)  ━━━━━━━━━━</text>
+
+        <!-- 10 03 restore -->
+        <line x1="125" y1="898" x2="765" y2="898" stroke="#1a5fb4" stroke-width="1.5" marker-end="url(#t-b)"/>
+        <text x="445" y="894" text-anchor="middle" font-size="10" fill="#0c3d7a">10 03  (重新进入扩展会话)</text>
+        <line x1="765" y1="912" x2="135" y2="912" stroke="#1d7a4a" stroke-width="1.5" marker-end="url(#t-g)"/>
+        <text x="445" y="908" text-anchor="middle" font-size="10" fill="#14532d">50 03 ...  (正响应)</text>
+
+        <!-- 28 00 restore comm -->
+        <line x1="125" y1="930" x2="765" y2="930" stroke="#1a5fb4" stroke-width="1.5" marker-end="url(#t-b)"/>
+        <text x="445" y="926" text-anchor="middle" font-size="10" fill="#0c3d7a">28 00 01  (恢复通信控制)   85 01  (恢复DTC检测)</text>
+        <line x1="765" y1="944" x2="135" y2="944" stroke="#1d7a4a" stroke-width="1.5" marker-end="url(#t-g)"/>
+        <text x="445" y="940" text-anchor="middle" font-size="10" fill="#14532d">68 00   C5 01</text>
+
+        <!-- 22 F101 verify -->
+        <line x1="125" y1="964" x2="765" y2="964" stroke="#1a5fb4" stroke-width="1.5" marker-end="url(#t-b)"/>
+        <text x="445" y="960" text-anchor="middle" font-size="10" fill="#0c3d7a">22 F1 01  (读取软件版本 DID)</text>
+        <line x1="765" y1="978" x2="135" y2="978" stroke="#1d7a4a" stroke-width="1.5" marker-end="url(#t-g)"/>
+        <text x="445" y="974" text-anchor="middle" font-size="10" fill="#14532d">62 F1 01 [新版本号]  (版本确认)</text>
+
+        <!-- 14 FF FF FF clear dtc -->
+        <line x1="125" y1="998" x2="765" y2="998" stroke="#1a5fb4" stroke-width="1.5" marker-end="url(#t-b)"/>
+        <text x="445" y="994" text-anchor="middle" font-size="10" fill="#0c3d7a">14 FF FF FF  (清除全部 DTC)</text>
+        <line x1="765" y1="1012" x2="135" y2="1012" stroke="#1d7a4a" stroke-width="2" marker-end="url(#t-g)"/>
+        <text x="445" y="1008" text-anchor="middle" font-size="10" fill="#14532d">54  (清除成功，OTA完成)</text>
+
+        <!-- END marker -->
+        <rect x="350" y="1028" width="160" height="26" rx="13" fill="#1c2333"/>
+        <text x="430" y="1045" text-anchor="middle" font-size="12" fill="#fff" font-weight="600">OTA 刷写完成</text>
+
+        <!-- Legend -->
+        <rect x="66" y="1040" width="8" height="8" rx="1" fill="#1a5fb4"/>
+        <text x="78" y="1050" font-size="9" fill="#4a5568">Tester → ECU 请求</text>
+        <rect x="200" y="1040" width="8" height="8" rx="1" fill="#1d7a4a"/>
+        <text x="212" y="1050" font-size="9" fill="#4a5568">ECU → Tester 正响应</text>
+        <rect x="360" y="1040" width="8" height="8" rx="1" fill="#c0392b"/>
+        <text x="372" y="1050" font-size="9" fill="#4a5568">0x78 中间响应（等待）</text>
+        <rect x="540" y="1040" width="8" height="8" rx="1" fill="#8896aa"/>
+        <text x="552" y="1050" font-size="9" fill="#4a5568">保活 / 静默</text>
+      </svg>
+    </div>
+  </div>`;
+}
+
+/* ── Comm flow ── */
+function renderCommFlow(){
+  const el=document.getElementById('comm-flow-out');
+  el.innerHTML=`
+  ${flowHtml('通信控制流程 (0x28)','0x28','b-gray',[
+    {t:'子功能说明',d:'0x00=enableRxAndTx（恢复）；0x01=enableRxAndDisableTx；0x02=disableRxAndEnableTx；0x03=disableRxAndTx（刷写前常用）'},
+    {t:'通信类型字节',d:'0x01=normalCommunicationMessages；0x02=nmCommunicationMessages；0x03=两者都控制'},
+    {t:'刷写前禁用',d:'关闭节点正常收发，隔离总线噪声',code:'→ <span style="color:var(--blue)">28 03 01</span>  ← <span style="color:var(--green)">68 03</span>'},
+    {t:'刷写后恢复',d:'重新启用正常报文，恢复节点网络通信',code:'→ <span style="color:var(--blue)">28 00 01</span>  ← <span style="color:var(--green)">68 00</span>'},
+    {t:'自动恢复',d:'ECU 复位或退出编程会话后自动恢复默认通信状态，无需显式发送 0x28 00'},
+  ])}
+  ${flowHtml('链路速率切换流程 (0x87)','0x87','b-gray',[
+    {t:'用途',d:'将诊断通信速率从标准值（500kbps）切换至高速值（2Mbps/5Mbps），加速大文件刷写传输'},
+    {t:'请求切换',d:'子功能 0x03=transitionBaudrateRecord，附上新速率标识',code:'→ <span style="color:var(--blue)">87 03 [速率ID]</span>  ← <span style="color:var(--green)">C7 03</span>'},
+    {t:'物理层切换',d:'收到响应后，诊断仪和 ECU 均切换物理层速率，此后通信在新速率下进行'},
+    {t:'验证连通性',d:'切换后发送 TesterPresent 确认连接',code:'→ <span style="color:var(--blue)">3E 00</span>  ← <span style="color:var(--green)">7E 00</span>'},
+    {t:'刷写结束后恢复',d:'ECU 复位后自动恢复到默认通信速率'},
+  ])}`;
+}
+
+/* ── Timing ── */
+function renderTiming(){
+  const el=document.getElementById('timing-out');
+  el.innerHTML=`
+  <div class="sec-title">时序参数定义</div>
+  <div class="tbl-wrap" style="margin-bottom:1.5rem">
+    <table>
+      <thead><tr><th>参数</th><th>方向</th><th>含义</th><th>典型值</th><th>配置方式</th></tr></thead>
+      <tbody>
+        <tr><td class="mono" style="color:var(--blue)">P2Server_max</td><td>服务器响应</td><td>ECU 处理请求并发出响应/0x78 的最大时间</td><td>25ms ~ 50ms</td><td>0x10 响应 Byte[3:4]</td></tr>
+        <tr><td class="mono" style="color:var(--blue)">P2*Server_max</td><td>服务器响应</td><td>收到 0x78 后 ECU 发出最终响应的最大时间（可延长多次）</td><td>5000ms</td><td>0x10 响应 Byte[5:6] ×10ms</td></tr>
+        <tr><td class="mono" style="color:var(--amber)">S3Client</td><td>诊断仪</td><td>诊断仪发送请求的最大间隔（超过则会话超时）</td><td>< 5000ms</td><td>TesterPresent 保活周期</td></tr>
+        <tr><td class="mono" style="color:var(--amber)">S3Server</td><td>服务器</td><td>ECU 等待诊断仪请求的超时时间，超时退回默认会话</td><td>5000ms</td><td>ECU 固件配置</td></tr>
+        <tr><td class="mono" style="color:var(--green)">P1Server</td><td>服务器内部</td><td>ECU 收到第一个字节到最后一个字节之间的最大时间</td><td>—</td><td>CAN TP 层参数</td></tr>
+        <tr><td class="mono" style="color:var(--green)">P3Client_max</td><td>诊断仪</td><td>诊断仪发出请求到下一请求的最小间隔</td><td>55ms</td><td>诊断仪配置</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec-title">0x78 待处理响应机制</div>
+  <div class="warn-box"><strong>重要：</strong>收到 0x78 后，诊断仪必须继续等待，<strong>禁止重发原始请求</strong>。ECU 在处理完成前会持续发送 0x78，直到操作完成发出最终响应。等待时间上限为 P2*Server_max。</div>
+
+  <div class="flow-container">
+    <div class="flow-header"><span class="badge b-amber">0x78 时序图</span><span class="flow-header-title">requestCorrectlyReceivedResponsePending 处理流程</span></div>
+    <div class="flow-body">
+      <div class="timing-wrap">
+        <svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg" style="font-family:'IBM Plex Mono',monospace">
+          <!-- lanes -->
+          <rect x="0" y="0" width="760" height="260" fill="#f5f6f8" rx="0"/>
+          <rect x="0" y="0" width="760" height="40" fill="#e8f0fb"/>
+          <text x="80" y="25" font-size="12" fill="#0c3d7a" font-weight="600">诊断仪 Tester</text>
+          <text x="620" y="25" font-size="12" fill="#14532d" font-weight="600">ECU Server</text>
+          <!-- lifelines -->
+          <line x1="100" y1="40" x2="100" y2="240" stroke="#b8c8e8" stroke-width="1" stroke-dasharray="4,4"/>
+          <line x1="660" y1="40" x2="660" y2="240" stroke="#b8c8e8" stroke-width="1" stroke-dasharray="4,4"/>
+          <!-- arrows -->
+          <!-- Request -->
+          <line x1="100" y1="70" x2="650" y2="70" stroke="#1a5fb4" stroke-width="1.5" marker-end="url(#arr-b)"/>
+          <rect x="320" y="55" width="120" height="16" rx="3" fill="#e8f0fb"/>
+          <text x="380" y="67" font-size="10" fill="#0c3d7a" text-anchor="middle">31 01 FF 00 [addr]</text>
+          <!-- 0x78 first -->
+          <line x1="660" y1="100" x2="110" y2="100" stroke="#b85c00" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-a)"/>
+          <rect x="320" y="85" width="120" height="16" rx="3" fill="#fef3e2"/>
+          <text x="380" y="97" font-size="10" fill="#7c3d00" text-anchor="middle">7F 31 78 (处理中)</text>
+          <!-- 0x78 second -->
+          <line x1="660" y1="140" x2="110" y2="140" stroke="#b85c00" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-a)"/>
+          <rect x="320" y="125" width="120" height="16" rx="3" fill="#fef3e2"/>
+          <text x="380" y="137" font-size="10" fill="#7c3d00" text-anchor="middle">7F 31 78 (处理中)</text>
+          <!-- wait annotation -->
+          <line x1="100" y1="100" x2="100" y2="180" stroke="#8896aa" stroke-width="1" stroke-dasharray="2,2"/>
+          <text x="30" y="145" font-size="10" fill="#8896aa" text-anchor="middle">等待中</text>
+          <text x="30" y="158" font-size="10" fill="#8896aa" text-anchor="middle">禁止重发</text>
+          <!-- final response -->
+          <line x1="660" y1="190" x2="110" y2="190" stroke="#1d7a4a" stroke-width="2" marker-end="url(#arr-g)"/>
+          <rect x="300" y="175" width="140" height="16" rx="3" fill="#e6f5ee"/>
+          <text x="370" y="187" font-size="10" fill="#14532d" text-anchor="middle">71 01 FF 00 (最终响应)</text>
+          <!-- time brackets -->
+          <line x1="680" y1="70" x2="680" y2="190" stroke="#8896aa" stroke-width="1"/>
+          <line x1="676" y1="70" x2="684" y2="70" stroke="#8896aa" stroke-width="1"/>
+          <line x1="676" y1="190" x2="684" y2="190" stroke="#8896aa" stroke-width="1"/>
+          <text x="710" y="130" font-size="10" fill="#8896aa" text-anchor="middle">≤ P2*</text>
+          <text x="710" y="143" font-size="10" fill="#8896aa" text-anchor="middle">Server</text>
+          <!-- P2 bracket -->
+          <line x1="80" y1="70" x2="80" y2="100" stroke="#b85c00" stroke-width="1"/>
+          <line x1="76" y1="70" x2="84" y2="70" stroke="#b85c00" stroke-width="1"/>
+          <line x1="76" y1="100" x2="84" y2="100" stroke="#b85c00" stroke-width="1"/>
+          <text x="44" y="86" font-size="9" fill="#b85c00">P2</text>
+          <!-- defs -->
+          <defs>
+            <marker id="arr-b" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#1a5fb4"/></marker>
+            <marker id="arr-a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#b85c00"/></marker>
+            <marker id="arr-g" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#1d7a4a"/></marker>
+          </defs>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-title">CAN TP (ISO 15765-2) 帧类型</div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>帧类型</th><th>标识</th><th>用途</th><th>格式</th></tr></thead>
+      <tbody>
+        <tr><td>Single Frame (SF)</td><td>Nibble = 0x0</td><td>数据 ≤ 7 字节（标准）或 ≤ 62 字节（FD）</td><td>0x0N [N字节数据]</td></tr>
+        <tr><td>First Frame (FF)</td><td>Nibble = 0x1</td><td>多帧传输的第一帧，含总长度</td><td>0x1LLL [6字节数据]</td></tr>
+        <tr><td>Consecutive Frame (CF)</td><td>Nibble = 0x2</td><td>后续数据帧，含序号（0x21~0x2F, 0x20循环）</td><td>0x2N [7字节数据]</td></tr>
+        <tr><td>Flow Control (FC)</td><td>Nibble = 0x3</td><td>接收方控制发送速率：ContinueToSend/Wait/Overflow</td><td>0x30/31/32 [BS] [STmin]</td></tr>
+      </tbody>
+    </table>
+  </div>`;
+}
+
+/* ── NRC table ── */
+function renderNRC(q){
+  const list=q?NRC_LIST.filter(d=>d.code.toUpperCase().includes(q.toUpperCase())||d.desc.toUpperCase().includes(q.toUpperCase())):NRC_LIST;
+  const code=n=>n.replace('NRC ','').toUpperCase();
+  document.getElementById('nrc-tbody').innerHTML=list.map(d=>`
+    <tr>
+      <td class="mono" style="color:var(--red);font-weight:600">${code(d.code)}</td>
+      <td style="font-size:.78rem;color:var(--text);font-weight:500">${d.desc.split('—')[0]}</td>
+      <td style="font-size:.78rem;color:var(--text2)">${d.desc.includes('—')?d.desc.split('—').slice(1).join('—'):d.desc}</td>
+      <td style="font-size:.78rem;color:var(--text3)">${d.cause}</td>
+    </tr>`).join('');
+}
+function searchNRC(){
+  renderNRC(document.getElementById('nrc-q').value);
+}
+
+/* ── Init ── */
+renderSvcTable('all');
+searchDTC();
+renderNRC('');
+</script>

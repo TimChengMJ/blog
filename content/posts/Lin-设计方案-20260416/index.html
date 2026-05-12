@@ -1,0 +1,1635 @@
+---
+title: "LIN 通信设计参考手册"
+description: ""
+date: 2026-04-16T11:16:12+08:00
+categories: ["技术文档"]
+tags: []
+draft: false
+---
+
+<style>
+
+:root{
+  --bg:#f4f7f6;
+  --bg2:#ecf1ef;
+  --surface:#ffffff;
+  --surface2:#f0f5f3;
+  --surface3:#e6ede9;
+  --border:#d2ddd8;
+  --border2:#b8ccc4;
+  --pine:#1a4a3c;
+  --pine-l:#e4f0ec;
+  --teal:#1d6b58;
+  --teal-l:#e2f0ec;
+  --sage:#4a7c6a;
+  --sage-l:#eaf3ef;
+  --moss:#3d5c2e;
+  --moss-l:#eaf2e4;
+  --amber:#7a5200;
+  --amber-l:#fdf4e0;
+  --rust:#8b3620;
+  --rust-l:#fdf0eb;
+  --slate:#2a3d5a;
+  --slate-l:#e8edf5;
+  --ink:#1a2820;
+  --ink2:#3a4f46;
+  --ink3:#6a8076;
+  --ink4:#9ab0a8;
+  --mono:'Inconsolata',monospace;
+  --display:'Playfair Display',serif;
+  --sans:'Outfit',sans-serif;
+  --border-r:6px;
+}::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--sage)}
+
+/* ── Shell ── */
+.shell{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
+
+/* ── Sidebar ── */
+.sidebar{background:var(--pine);position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.brand{padding:1.6rem 1.4rem 1.3rem;border-bottom:1px solid rgba(255,255,255,.1)}
+.brand-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:.25rem .8rem;font-family:var(--mono);font-size:.68rem;color:rgba(255,255,255,.85);letter-spacing:.08em;margin-bottom:.7rem}
+.brand-title{font-family:var(--display);font-size:1.15rem;font-weight:600;color:#fff;line-height:1.25}
+.brand-sub{font-family:var(--mono);font-size:.6rem;color:rgba(255,255,255,.45);letter-spacing:.12em;margin-top:3px}
+.nav-grp{padding:.9rem 0 .2rem 1.4rem;font-family:var(--mono);font-size:.58rem;font-weight:600;color:rgba(255,255,255,.35);letter-spacing:.16em;text-transform:uppercase}
+.ni{display:flex;align-items:center;gap:9px;padding:5px 1.4rem;font-family:var(--sans);font-size:.84rem;color:rgba(255,255,255,.6);cursor:pointer;border-left:2px solid transparent;transition:all .13s;user-select:none}
+.ni:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.9)}
+.ni.on{background:rgba(255,255,255,.12);color:#fff;border-left-color:rgba(255,255,255,.7);font-weight:500}
+.ndot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.25);flex-shrink:0;transition:background .13s}
+.ni.on .ndot{background:#6dddbe}
+
+/* ── Main ── */
+.main{padding:2.4rem 3rem 6rem;max-width:1060px}
+
+/* ── Panels ── */
+.panel{display:none}.panel.on{display:block;animation:up .2s ease both}
+@keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Page header ── */
+.ph{margin-bottom:2rem;padding-bottom:1.2rem;border-bottom:2px solid var(--border)}
+.ph-tag{font-family:var(--mono);font-size:.68rem;color:var(--teal);letter-spacing:.14em;text-transform:uppercase;margin-bottom:.4rem}
+.ph-h1{font-family:var(--display);font-size:1.9rem;font-weight:700;color:var(--pine);line-height:1.15;margin-bottom:.35rem}
+.ph-sub{font-family:var(--mono);font-size:.72rem;color:var(--ink4);letter-spacing:.06em}
+
+/* ── Headings ── */
+.sh{font-family:var(--display);font-size:1.15rem;font-weight:600;color:var(--pine);margin:2rem 0 .9rem;padding-left:12px;border-left:3px solid var(--teal);line-height:1.3}
+.sh2{font-family:var(--sans);font-size:.95rem;font-weight:600;color:var(--ink);margin:1.4rem 0 .6rem}
+
+/* ── Prose ── */
+p{color:var(--ink2);margin-bottom:.8rem;font-size:.93rem;line-height:1.8}
+strong{color:var(--ink);font-weight:600}
+ul,ol{padding-left:1.5rem;margin-bottom:.8rem}
+li{font-size:.9rem;color:var(--ink2);margin:.3rem 0;line-height:1.7}
+li::marker{color:var(--teal)}
+
+/* ── Info boxes ── */
+.box{border-radius:var(--border-r);padding:.85rem 1.1rem;margin:.85rem 0;font-size:.87rem;line-height:1.75}
+.box strong{font-size:.88rem}
+.box-pine{background:var(--pine-l);border:1px solid #b0d0c4;color:var(--ink2)}
+.box-teal{background:var(--teal-l);border:1px solid #9ecfbf;color:var(--ink2)}
+.box-sage{background:var(--sage-l);border:1px solid #aed0c0;color:var(--ink2)}
+.box-moss{background:var(--moss-l);border:1px solid #b0c8a0;color:var(--ink2)}
+.box-amber{background:var(--amber-l);border:1px solid #d4b070;color:#4a3000}
+.box-rust{background:var(--rust-l);border:1px solid #d4a090;color:#5a2010}
+.box-slate{background:var(--slate-l);border:1px solid #a8bcd4;color:var(--ink2)}
+
+/* ── Badges ── */
+.badge{display:inline-block;padding:2px 9px;border-radius:3px;font-family:var(--mono);font-size:.67rem;font-weight:600;white-space:nowrap;vertical-align:middle}
+.bp{background:var(--pine-l);color:#0f3028}
+.bt{background:var(--teal-l);color:#0d4035}
+.bm{background:var(--moss-l);color:#283d1a}
+.ba{background:var(--amber-l);color:#4a3000}
+.br{background:var(--rust-l);color:#5a2010}
+.bs{background:var(--slate-l);color:#1a2840}
+.bg{background:var(--surface3);color:var(--ink2)}
+
+/* ── Tables ── */
+.tw{overflow-x:auto;border:1px solid var(--border);border-radius:var(--border-r);margin:.85rem 0}
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+thead tr{background:var(--surface2)}
+th{padding:9px 13px;text-align:left;font-family:var(--mono);font-size:.66rem;font-weight:600;color:var(--ink3);letter-spacing:.09em;text-transform:uppercase;border-bottom:1px solid var(--border)}
+td{padding:7px 13px;border-bottom:1px solid var(--border);color:var(--ink2);vertical-align:top;line-height:1.55}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface2)}
+.m{font-family:var(--mono);font-size:.78rem}
+
+/* ── Cards ── */
+.cg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:.85rem 0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--border-r);padding:1rem 1.1rem;transition:box-shadow .18s,transform .18s}
+.card:hover{box-shadow:0 3px 18px rgba(26,74,60,.09);transform:translateY(-1px)}
+.ct{font-family:var(--sans);font-size:.88rem;font-weight:600;color:var(--pine);margin-bottom:.3rem}
+.cb{font-family:var(--sans);font-size:.8rem;color:var(--ink3);line-height:1.6}
+
+/* ── Stats ── */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:.85rem 0}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--border-r);padding:.9rem;text-align:center}
+.sn{font-family:var(--mono);font-size:1.45rem;font-weight:700;color:var(--teal)}
+.sl{font-family:var(--sans);font-size:.7rem;color:var(--ink4);margin-top:2px}
+
+/* ── Steps ── */
+.flow{display:flex;flex-direction:column}
+.fstep{display:flex;gap:12px;padding:9px 0;border-bottom:1px dashed var(--border);align-items:flex-start}
+.fstep:last-child{border-bottom:none}
+.fnum{width:26px;height:26px;border-radius:50%;background:var(--pine-l);color:var(--pine);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.68rem;font-weight:700;flex-shrink:0;margin-top:2px;border:1px solid #b0d0c4}
+.ft{font-family:var(--sans);font-size:.87rem;font-weight:600;color:var(--ink);margin-bottom:2px}
+.fd{font-family:var(--sans);font-size:.81rem;color:var(--ink2);line-height:1.65}
+.fc{font-family:var(--mono);font-size:.71rem;background:var(--bg2);border:1px solid var(--border);padding:3px 8px;border-radius:3px;display:inline-block;margin-top:5px;color:var(--ink)}
+
+/* ── SVG containers ── */
+.sw{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--border-r);padding:1.2rem;margin:.85rem 0}
+.sw svg{display:block}
+
+/* ── Code ── */
+pre{background:var(--surface2);border:1px solid var(--border);border-radius:var(--border-r);padding:1rem 1.2rem;overflow-x:auto;margin:.8rem 0;font-family:var(--mono);font-size:.77rem;line-height:1.75;color:var(--ink)}
+code{font-family:var(--mono);font-size:.8rem;background:var(--surface3);border:1px solid var(--border);padding:.1em .4em;border-radius:3px;color:var(--teal)}
+
+/* ── Frame bit diagram ── */
+.frame-wrap{overflow-x:auto;padding:.5rem 0}
+.frame-row{display:flex;min-width:600px}
+.frame-field{display:flex;flex-direction:column;align-items:center;border:1px solid var(--border2);border-right:none;flex:1}
+.frame-field:last-child{border-right:1px solid var(--border2)}
+.ff-label{padding:.35rem .2rem;font-family:var(--mono);font-size:.62rem;color:var(--ink3);border-bottom:1px solid var(--border);width:100%;text-align:center;background:var(--surface2)}
+.ff-val{padding:.5rem .2rem;font-family:var(--mono);font-size:.75rem;font-weight:600;text-align:center;width:100%}
+
+@media(max-width:800px){
+  .shell{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .main{padding:1.2rem}
+  .cg{grid-template-columns:1fr 1fr}
+}
+
+</style>
+
+<div class="shell">
+
+<!-- ══ SIDEBAR ══ -->
+<nav class="sidebar">
+  <div class="brand">
+    <div class="brand-badge">LIN 2.2A · ISO 17987</div>
+    <div class="brand-title">LIN 通信设计<br>参考手册</div>
+    <div class="brand-sub">Local Interconnect Network</div>
+  </div>
+
+  <div class="nav-grp">基础</div>
+  <div class="ni on" onclick="go('overview')"><div class="ndot"></div>总览与背景</div>
+  <div class="ni" onclick="go('concepts')"><div class="ndot"></div>基础概念与术语</div>
+  <div class="ni" onclick="go('versions')"><div class="ndot"></div>版本演化</div>
+
+  <div class="nav-grp">物理与协议层</div>
+  <div class="ni" onclick="go('physical')"><div class="ndot"></div>物理层设计</div>
+  <div class="ni" onclick="go('frame')"><div class="ndot"></div>帧结构详解</div>
+  <div class="ni" onclick="go('schedule')"><div class="ndot"></div>调度表机制</div>
+  <div class="ni" onclick="go('transport')"><div class="ndot"></div>传输层 (TP)</div>
+
+  <div class="nav-grp">节点与配置</div>
+  <div class="ni" onclick="go('node')"><div class="ndot"></div>Master / Slave 节点</div>
+  <div class="ni" onclick="go('nad')"><div class="ndot"></div>NAD 与节点配置</div>
+  <div class="ni" onclick="go('diag')"><div class="ndot"></div>诊断与配置服务</div>
+
+  <div class="nav-grp">设计与建模</div>
+  <div class="ni" onclick="go('design')"><div class="ndot"></div>系统设计方法</div>
+  <div class="ni" onclick="go('ldf')"><div class="ndot"></div>LDF 文件与模型</div>
+  <div class="ni" onclick="go('autosar')"><div class="ndot"></div>AUTOSAR LinIf 集成</div>
+
+  <div class="nav-grp">时序与流程</div>
+  <div class="ni" onclick="go('seq-normal')"><div class="ndot"></div>正常通信时序</div>
+  <div class="ni" onclick="go('seq-wakeup')"><div class="ndot"></div>唤醒与休眠时序</div>
+  <div class="ni" onclick="go('seq-diag')"><div class="ndot"></div>诊断时序</div>
+  <div class="ni" onclick="go('flowchart')"><div class="ndot"></div>流程框图</div>
+
+  <div class="nav-grp">应用与参考</div>
+  <div class="ni" onclick="go('scenario')"><div class="ndot"></div>典型应用场景</div>
+  <div class="ni" onclick="go('errorhandling')"><div class="ndot"></div>错误处理</div>
+  <div class="ni" onclick="go('param')"><div class="ndot"></div>参数速查表</div>
+</nav>
+
+<!-- ══ MAIN ══ -->
+<main class="main">
+
+<!-- ─ OVERVIEW ─ -->
+<div class="panel on" id="pnl-overview">
+  <div class="ph">
+    <div class="ph-tag">LIN — Local Interconnect Network</div>
+    <div class="ph-h1">LIN 通信设计参考手册</div>
+    <div class="ph-sub">LIN 2.2A · ISO 17987-1~7 · 适用于汽车低速主从通信</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="sn">20 kbps</div><div class="sl">最高波特率</div></div>
+    <div class="stat"><div class="sn">16</div><div class="sl">最多 Slave 数</div></div>
+    <div class="stat"><div class="sn">8</div><div class="sl">最大数据字节</div></div>
+    <div class="stat"><div class="sn">40m</div><div class="sl">最大总线长度</div></div>
+    <div class="stat"><div class="sn">1Wire</div><div class="sl">单线通信</div></div>
+  </div>
+
+  <div class="box box-pine"><strong>什么是 LIN？</strong><br>
+  LIN（Local Interconnect Network）是一种低成本、单线、主从式串行通信协议，专为汽车车身舒适性功能设计。它由 LIN 联盟（LIN Consortium，BMW、Daimler、Motorola、Volvo 等联合制定）于 1999 年发布，以极低的实现成本（仅需标准 UART + 单线收发器）连接 ECU 与低速传感器/执行器。</div>
+
+  <div class="sh">LIN 在汽车网络中的定位</div>
+  <p>LIN 是 CAN 的有效补充，专注于低成本、低速率的本地互联。典型应用于车门、座椅、车窗、空调等舒适性子系统。</p>
+  <div class="sw">
+    <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg" style="font-family:'Outfit',sans-serif;max-width:700px;width:100%">
+      <defs><marker id="ov1" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#6a8076"/></marker></defs>
+
+      <!-- Backbone CAN -->
+      <rect x="10" y="10" width="680" height="42" rx="5" fill="#e4f0ec" stroke="#9ecfbf" stroke-width="1.5"/>
+      <text x="350" y="27" text-anchor="middle" font-size="11" fill="#0f3028" font-weight="600">CAN / CAN FD 主干网络（Backbone）</text>
+      <text x="350" y="42" text-anchor="middle" font-size="9" fill="#1d6b58">BCM · GW · ECM · TCU · ABS — 高速控制报文，最高 8Mbps（CANFD）</text>
+
+      <!-- Gateway node -->
+      <rect x="310" y="62" width="80" height="32" rx="5" fill="#1a4a3c"/>
+      <text x="350" y="77" text-anchor="middle" font-size="10" fill="#fff" font-weight="600">GW/BCM</text>
+      <text x="350" y="89" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.7)">LIN Master</text>
+      <line x1="350" y1="52" x2="350" y2="62" stroke="#6a8076" stroke-width="1.3" marker-end="url(#ov1)"/>
+
+      <!-- LIN bus 1 -->
+      <line x1="350" y1="94" x2="120" y2="120" stroke="#1d6b58" stroke-width="2"/>
+      <line x1="350" y1="94" x2="580" y2="120" stroke="#1d6b58" stroke-width="2"/>
+      <text x="230" y="112" text-anchor="middle" font-size="9" fill="#1d6b58" font-weight="600">LIN Bus 1 (20kbps)</text>
+      <text x="475" y="112" text-anchor="middle" font-size="9" fill="#1d6b58" font-weight="600">LIN Bus 2 (20kbps)</text>
+
+      <!-- LIN slaves bus1 -->
+      <rect x="40" y="120" width="80" height="32" rx="5" fill="#e4f0ec" stroke="#9ecfbf" stroke-width="1.2"/>
+      <text x="80" y="135" text-anchor="middle" font-size="9" fill="#0f3028" font-weight="600">车窗电机</text>
+      <text x="80" y="147" text-anchor="middle" font-size="8" fill="#4a7c6a">Slave</text>
+
+      <rect x="150" y="120" width="80" height="32" rx="5" fill="#e4f0ec" stroke="#9ecfbf" stroke-width="1.2"/>
+      <text x="190" y="135" text-anchor="middle" font-size="9" fill="#0f3028" font-weight="600">雨刮传感</text>
+      <text x="190" y="147" text-anchor="middle" font-size="8" fill="#4a7c6a">Slave</text>
+
+      <!-- LIN slaves bus2 -->
+      <rect x="490" y="120" width="80" height="32" rx="5" fill="#eaf3ef" stroke="#aed0c0" stroke-width="1.2"/>
+      <text x="530" y="135" text-anchor="middle" font-size="9" fill="#0f3028" font-weight="600">座椅调节</text>
+      <text x="530" y="147" text-anchor="middle" font-size="8" fill="#4a7c6a">Slave</text>
+
+      <rect x="600" y="120" width="80" height="32" rx="5" fill="#eaf3ef" stroke="#aed0c0" stroke-width="1.2"/>
+      <text x="640" y="135" text-anchor="middle" font-size="9" fill="#0f3028" font-weight="600">空调风门</text>
+      <text x="640" y="147" text-anchor="middle" font-size="8" fill="#4a7c6a">Slave</text>
+
+      <!-- Labels -->
+      <text x="350" y="190" text-anchor="middle" font-size="9" fill="#9ab0a8">LIN Master 通常集成在 BCM / 域控制器中，作为 CAN-LIN 网关</text>
+    </svg>
+  </div>
+
+  <div class="sh">LIN 与 CAN 对比</div>
+  <div class="tw"><table>
+    <thead><tr><th>特性</th><th>LIN</th><th>CAN</th></tr></thead>
+    <tbody>
+      <tr><td>拓扑</td><td>单主多从（主从式）</td><td>多主总线（分布式）</td></tr>
+      <tr><td>速率</td><td>最高 20 kbps</td><td>最高 1 Mbps（CAN FD 8 Mbps）</td></tr>
+      <tr><td>线缆</td><td>1 根信号线 + 地</td><td>2 根差分线（CAN_H / CAN_L）</td></tr>
+      <tr><td>节点数</td><td>最多 16 个 Slave</td><td>最多 110+ 节点</td></tr>
+      <tr><td>成本</td><td>极低（标准 UART）</td><td>中等（需专用控制器）</td></tr>
+      <tr><td>同步</td><td>无需晶振（Break 同步）</td><td>需要精确时钟</td></tr>
+      <tr><td>仲裁</td><td>无（Master 调度）</td><td>有（CSMA/CA）</td></tr>
+      <tr><td>典型应用</td><td>车窗、座椅、灯光、空调</td><td>动力、底盘、安全系统</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- ─ CONCEPTS ─ -->
+<div class="panel" id="pnl-concepts">
+  <div class="ph">
+    <div class="ph-tag">Fundamental Concepts</div>
+    <div class="ph-h1">基础概念与术语</div>
+    <div class="ph-sub">理解 LIN 协议的核心知识体系</div>
+  </div>
+
+  <div class="sh">核心术语表</div>
+  <div class="tw"><table>
+    <thead><tr><th>术语</th><th>英文</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td class="m" style="color:var(--teal);font-weight:600">Master Node</td><td>Master Node</td><td>总线控制节点，唯一负责发送 Header（Break + Sync + PID）的节点</td></tr>
+      <tr><td class="m" style="color:var(--teal);font-weight:600">Slave Node</td><td>Slave Node</td><td>响应节点，根据 PID 决定是否发送 Response（数据）</td></tr>
+      <tr><td class="m" style="color:var(--teal);font-weight:600">Frame</td><td>LIN Frame</td><td>LIN 通信基本单元，由 Header + Response 组成</td></tr>
+      <tr><td class="m" style="color:var(--teal);font-weight:600">Break Field</td><td>Break Field</td><td>帧起始标志，至少 13 位显性（低电平）+ 1 位隐性，让所有节点同步</td></tr>
+      <tr><td class="m" style="color:var(--teal);font-weight:600">Sync Field</td><td>Sync Byte</td><td>同步字节（0x55），帮助 Slave 测量当前波特率并自动同步</td></tr>
+      <tr><td class="m" style="color:var(--teal);font-weight:600">PID</td><td>Protected ID</td><td>帧 ID + 2 位奇偶校验，6 位帧 ID（0~63），标识帧类型与数据方向</td></tr>
+      <tr><td class="m" style="color:var(--teal);font-weight:600">Response</td><td>Response Field</td><td>1~8 字节数据 + 1 字节校验和，由发布者（Publisher）Slave 发送</td></tr>
+      <tr><td class="m" style="color:var(--teal);font-weight:600">Checksum</td><td>Checksum</td><td>Classic（数据字节之和取反）或 Enhanced（含 PID）校验，LIN 2.0+ 推荐 Enhanced</td></tr>
+      <tr><td class="m" style="color:var(--teal);font-weight:600">Publisher</td><td>Publisher</td><td>某帧 Response 的发送者（可以是 Slave，也可以是 Master）</td></tr>
+      <tr><td class="m" style="color:var(--teal);font-weight:600">Subscriber</td><td>Subscriber</td><td>某帧 Response 的接收者（可以多个节点同时订阅）</td></tr>
+      <tr><td class="m" style="color:var(--teal);font-weight:600">Schedule Table</td><td>Schedule Table</td><td>Master 的帧发送时间表，定义哪些帧以什么时序周期发送</td></tr>
+      <tr><td class="m" style="color:var(--teal);font-weight:600">Frame Slot</td><td>Frame Slot</td><td>调度表中分配给一帧的时间窗口</td></tr>
+      <tr><td class="m" style="color:var(--teal);font-weight:600">NAD</td><td>Node Address for Diagnostics</td><td>诊断用节点地址（1~125），用于配置和诊断服务寻址</td></tr>
+      <tr><td class="m" style="color:var(--teal);font-weight:600">LDF</td><td>LIN Description File</td><td>描述整个 LIN 网络的配置文件（类似 CAN DBC），包含信号、帧、调度等</td></tr>
+      <tr><td class="m" style="color:var(--teal);font-weight:600">SID/RSID</td><td>Service/Response Service ID</td><td>传输层诊断服务标识符，RSID = SID | 0x40</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="sh">信号与帧的关系</div>
+  <div class="cg">
+    <div class="card"><div class="ct">信号 Signal</div><div class="cb">最小数据单元，定义位域（起始位、长度、初始值、缩放比例）。多个信号打包在一帧 Response 中</div></div>
+    <div class="card"><div class="ct">帧 Frame</div><div class="cb">通信基本单元，包含帧 ID 和 1~8 字节 Response。帧内信号的布局由 LDF 文件定义</div></div>
+    <div class="card"><div class="ct">帧组 Frame Group</div><div class="cb">多帧的逻辑分组，用于事件触发帧（ETF）机制，标识同类型帧集合</div></div>
+    <div class="card"><div class="ct">调度表</div><div class="cb">定义帧发送的时间顺序和间隔，Master 按调度表循环发送 Header，驱动整个总线通信</div></div>
+  </div>
+</div>
+
+<!-- ─ VERSIONS ─ -->
+<div class="panel" id="pnl-versions">
+  <div class="ph">
+    <div class="ph-tag">Version History</div>
+    <div class="ph-h1">版本演化</div>
+    <div class="ph-sub">LIN 1.0 → LIN 2.2A → ISO 17987 标准化历程</div>
+  </div>
+
+  <div class="tw"><table>
+    <thead><tr><th>版本</th><th>发布年份</th><th>主要特性</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge bp">LIN 1.0</span></td><td>1999</td><td>初始版本，基本主从通信，Classic Checksum</td><td><span class="badge bg">已废弃</span></td></tr>
+      <tr><td><span class="badge bp">LIN 1.1</span></td><td>2000</td><td>修正若干错误，增加诊断帧支持</td><td><span class="badge bg">已废弃</span></td></tr>
+      <tr><td><span class="badge bp">LIN 1.2</span></td><td>2001</td><td>引入传输层（TP），支持多帧诊断</td><td><span class="badge bg">已废弃</span></td></tr>
+      <tr><td><span class="badge bt">LIN 2.0</span></td><td>2003</td><td>Enhanced Checksum（含 PID），节点配置服务，事件触发帧，偶发帧</td><td><span class="badge bg">存量维护</span></td></tr>
+      <tr><td><span class="badge bt">LIN 2.1</span></td><td>2006</td><td>完善诊断服务（AssignNAD, SaveConfig 等），LDF 规范增强</td><td><span class="badge bg">存量维护</span></td></tr>
+      <tr><td><span class="badge bm" style="font-weight:700">LIN 2.2A</span></td><td>2010</td><td>当前主流版本，完善传输层和诊断，增加冲突解析，J2602 兼容</td><td><span class="badge bm">主流</span></td></tr>
+      <tr><td><span class="badge bm">ISO 17987</span></td><td>2016</td><td>LIN 2.2A 的 ISO 标准化版本，分 7 个部分（物理层到一致性测试）</td><td><span class="badge bm">标准</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box box-teal"><strong>注意：</strong>J2602 是 SAE 制定的 LIN 子集规范，主要用于北美市场，支持 10.417 kbps 和 20 kbps 两种速率，并对物理层要求稍有不同。绝大多数芯片同时支持 LIN 2.2A 和 J2602。</div>
+</div>
+
+<!-- ─ PHYSICAL ─ -->
+<div class="panel" id="pnl-physical">
+  <div class="ph">
+    <div class="ph-tag">Physical Layer</div>
+    <div class="ph-h1">物理层设计</div>
+    <div class="ph-sub">单线拓扑、电气特性与收发器选型</div>
+  </div>
+
+  <div class="sh">物理层基本特性</div>
+  <div class="cg">
+    <div class="card"><div class="ct">总线电平</div><div class="cb"><strong>显性（Dominant）：</strong>接近地（0V，逻辑0）<br><strong>隐性（Recessive）：</strong>接近 Vbat（12V，逻辑1）<br>与 CAN 相反，LIN 显性 = 低电平</div></div>
+    <div class="card"><div class="ct">物理接口</div><div class="cb">单根 LIN 总线线（约 40V 以下），无差分信号。主节点通过 1kΩ 上拉电阻连接 Vbat，从节点通过 30kΩ 上拉电阻</div></div>
+    <div class="card"><div class="ct">波特率</div><div class="cb">标准：2.4 / 4.8 / 9.6 / 10.417 / 19.2 / 20 kbps<br>从节点通过 Break+Sync 自动适应，无需精确晶振</div></div>
+    <div class="card"><div class="ct">总线长度</div><div class="cb">最大 40m（单段），节点间距无特殊限制。长距离需注意寄生电容对波形上升沿的影响</div></div>
+  </div>
+
+  <div class="sh">LIN 收发器典型电路</div>
+  <div class="sw">
+    <svg viewBox="0 0 680 220" xmlns="http://www.w3.org/2000/svg" style="font-family:'Outfit',sans-serif;max-width:680px;width:100%">
+      <!-- Master node -->
+      <rect x="10" y="40" width="170" height="150" rx="6" fill="#e4f0ec" stroke="#9ecfbf" stroke-width="1.5"/>
+      <text x="95" y="62" text-anchor="middle" font-size="11" fill="#0f3028" font-weight="600">LIN Master</text>
+
+      <rect x="25" y="72" width="140" height="32" rx="4" fill="#1a4a3c"/>
+      <text x="95" y="88" text-anchor="middle" font-size="10" fill="#fff">MCU (UART)</text>
+      <text x="95" y="100" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.7)">TXD / RXD</text>
+
+      <rect x="25" y="120" width="140" height="32" rx="4" fill="#fff" stroke="#9ecfbf" stroke-width="1"/>
+      <text x="95" y="136" text-anchor="middle" font-size="10" fill="#0f3028" font-weight="600">LIN Transceiver</text>
+      <text x="95" y="148" text-anchor="middle" font-size="8" fill="#4a7c6a">e.g. TJA1021 / MCP2004</text>
+
+      <!-- Pull-up resistor -->
+      <text x="95" y="178" text-anchor="middle" font-size="9" fill="#1d6b58">1kΩ 上拉 → Vbat</text>
+
+      <!-- Lines TXD/RXD Master -->
+      <line x1="95" y1="104" x2="95" y2="120" stroke="#6a8076" stroke-width="1.2"/>
+
+      <!-- LIN bus line -->
+      <line x1="180" y1="152" x2="500" y2="152" stroke="#1a4a3c" stroke-width="2.5"/>
+      <text x="340" y="143" text-anchor="middle" font-size="10" fill="#1a4a3c" font-weight="600">LIN 总线（单线）</text>
+
+      <!-- Slave 1 -->
+      <rect x="500" y="80" width="165" height="100" rx="6" fill="#eaf3ef" stroke="#aed0c0" stroke-width="1.5"/>
+      <text x="582" y="98" text-anchor="middle" font-size="11" fill="#0f3028" font-weight="600">LIN Slave 1</text>
+      <rect x="514" y="108" width="137" height="28" rx="4" fill="#fff" stroke="#aed0c0" stroke-width="1"/>
+      <text x="582" y="123" text-anchor="middle" font-size="10" fill="#0f3028" font-weight="600">LIN Transceiver</text>
+      <text x="582" y="135" text-anchor="middle" font-size="8" fill="#4a7c6a">30kΩ 上拉 → Vbat</text>
+      <text x="582" y="163" text-anchor="middle" font-size="9" fill="#4a7c6a">MCU / ASIC</text>
+      <line x1="500" y1="152" x2="514" y2="152" stroke="#1a4a3c" stroke-width="2" stroke-dasharray="3,2"/>
+      <line x1="582" y1="136" x2="582" y2="152" stroke="#6a8076" stroke-width="1.2" stroke-dasharray="3,2"/>
+
+      <!-- Termination note -->
+      <text x="340" y="200" text-anchor="middle" font-size="9" fill="#9ab0a8">Master 1kΩ 上拉保证总线偏置；Slave 30kΩ 上拉减少负载；无需终端电阻</text>
+    </svg>
+  </div>
+
+  <div class="sh">常用 LIN 收发器芯片</div>
+  <div class="tw"><table>
+    <thead><tr><th>芯片型号</th><th>厂商</th><th>特性</th><th>适用场景</th></tr></thead>
+    <tbody>
+      <tr><td class="m">TJA1021</td><td>NXP</td><td>LIN 2.x / ISO 17987，低功耗，集成稳压</td><td>通用 LIN 节点</td></tr>
+      <tr><td class="m">TJA1029</td><td>NXP</td><td>LIN 2.x，故障安全，高 ESD 防护（±8kV）</td><td>恶劣环境节点</td></tr>
+      <tr><td class="m">MCP2004</td><td>Microchip</td><td>LIN 主节点专用（含 1kΩ 上拉），SPI 接口</td><td>LIN Master 专用</td></tr>
+      <tr><td class="m">ATA6614Q</td><td>Microchip</td><td>内嵌 LIN Slave 功能 + MCU，片上 LIN</td><td>智能执行器</td></tr>
+      <tr><td class="m">TLIN1027-Q1</td><td>TI</td><td>LIN 2.x / ISO 17987，AEC-Q100 认证</td><td>车规级应用</td></tr>
+      <tr><td class="m">NCV7321</td><td>onsemi</td><td>LIN 2.x，汽车级，低待机电流</td><td>低功耗节点</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="sh">电气规格限值</div>
+  <div class="tw"><table>
+    <thead><tr><th>参数</th><th>最小值</th><th>典型值</th><th>最大值</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>供电电压 Vbat</td><td>7V</td><td>12V</td><td>18V</td><td>支持 LIN 通信的电源范围</td></tr>
+      <tr><td>总线显性电平</td><td>—</td><td>0V</td><td>0.4×Vbat</td><td>总线被驱动为低电平</td></tr>
+      <tr><td>总线隐性电平</td><td>0.6×Vbat</td><td>Vbat</td><td>—</td><td>上拉电阻拉高总线</td></tr>
+      <tr><td>最大节点数</td><td>—</td><td>—</td><td>16 Slaves</td><td>含 Master 共 17 个节点</td></tr>
+      <tr><td>总线电容</td><td>—</td><td>—</td><td>10 nF</td><td>影响上升沿速率</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- ─ FRAME ─ -->
+<div class="panel" id="pnl-frame">
+  <div class="ph">
+    <div class="ph-tag">Frame Structure</div>
+    <div class="ph-h1">帧结构详解</div>
+    <div class="ph-sub">LIN 帧的完整字段组成与编码规则</div>
+  </div>
+
+  <div class="sh">LIN 帧完整结构</div>
+  <div class="sw">
+    <div class="frame-wrap">
+      <div class="frame-row">
+        <div class="frame-field" style="flex:1.5">
+          <div class="ff-label">Inter-Frame Gap</div>
+          <div class="ff-val" style="color:var(--ink4)">≥0 bit</div>
+        </div>
+        <div class="frame-field" style="flex:2;background:#e4f0ec">
+          <div class="ff-label" style="background:#cce8dc">Break Field</div>
+          <div class="ff-val" style="color:var(--pine)">13+ 位显性</div>
+        </div>
+        <div class="frame-field" style="flex:1;background:#e4f0ec">
+          <div class="ff-label" style="background:#cce8dc">Break Delim</div>
+          <div class="ff-val" style="color:var(--pine)">1 位隐性</div>
+        </div>
+        <div class="frame-field" style="flex:1.5;background:#eaf3ef">
+          <div class="ff-label" style="background:#d0e8dc">Sync Byte</div>
+          <div class="ff-val" style="color:var(--teal)">0x55</div>
+        </div>
+        <div class="frame-field" style="flex:1.5;background:#eaf3ef">
+          <div class="ff-label" style="background:#d0e8dc">PID</div>
+          <div class="ff-val" style="color:var(--teal)">ID + P0 + P1</div>
+        </div>
+        <div class="frame-field" style="flex:4;background:#f0f8f4">
+          <div class="ff-label" style="background:#d8ece4">Data (1~8 Bytes)</div>
+          <div class="ff-val" style="color:var(--sage)">应用数据</div>
+        </div>
+        <div class="frame-field" style="flex:1.5;background:#f0f8f4">
+          <div class="ff-label" style="background:#d8ece4">Checksum</div>
+          <div class="ff-val" style="color:var(--sage)">校验和</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:1.5rem;margin-top:.8rem;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;background:#e4f0ec;border:1px solid #9ecfbf;border-radius:2px"></div><span style="font-size:.75rem;color:var(--ink3)">Header（Master 发送）</span></div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;background:#f0f8f4;border:1px solid #aed0c0;border-radius:2px"></div><span style="font-size:.75rem;color:var(--ink3)">Response（Publisher Slave/Master 发送）</span></div>
+    </div>
+  </div>
+
+  <div class="sh">各字段详细说明</div>
+  <div class="tw"><table>
+    <thead><tr><th>字段</th><th>长度</th><th>内容</th><th>作用</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge bp">Break Field</span></td><td>≥13 位显性</td><td>全 0（低电平）</td><td>帧起始标志，唤醒所有 Slave，使其准备接收新帧</td></tr>
+      <tr><td><span class="badge bp">Break Delimiter</span></td><td>1 位隐性</td><td>逻辑 1</td><td>Break 结束标志，Slave 以此检测 Break 结束</td></tr>
+      <tr><td><span class="badge bt">Sync Byte</span></td><td>1 字节（10 位帧）</td><td>固定 0x55（01010101）</td><td>提供 8 个下降沿，Slave 测量位时间，自动校准波特率</td></tr>
+      <tr><td><span class="badge bt">PID</span></td><td>1 字节（10 位帧）</td><td>6bit ID + P0 + P1</td><td>帧标识符，决定哪个节点响应及数据长度。P0=ID0^ID1^ID2^ID4, P1=~(ID1^ID3^ID4^ID5)</td></tr>
+      <tr><td><span class="badge bm">Data</span></td><td>1~8 字节</td><td>应用数据</td><td>实际传输的信号值，字节序小端（LSB先发）</td></tr>
+      <tr><td><span class="badge bm">Checksum</span></td><td>1 字节</td><td>累加取反</td><td>Classic：仅对 Data 字节；Enhanced（LIN 2.0+）：PID + Data 字节之和的反码</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="sh">PID 字节位结构</div>
+  <div class="sw">
+    <svg viewBox="0 0 700 120" xmlns="http://www.w3.org/2000/svg" style="font-family:'Inconsolata',monospace;max-width:700px;width:100%">
+      <!-- 8 bits -->
+      <rect x="10" y="30" width="80" height="50" rx="3" fill="#eaf3ef" stroke="#aed0c0" stroke-width="1.2"/>
+      <text x="50" y="50" text-anchor="middle" font-size="9" fill="#4a7c6a">Bit 7</text>
+      <text x="50" y="66" text-anchor="middle" font-size="11" fill="#1a4a3c" font-weight="700">P1</text>
+      <text x="50" y="78" text-anchor="middle" font-size="8" fill="#6a8076">奇偶校验</text>
+
+      <rect x="100" y="30" width="80" height="50" rx="3" fill="#eaf3ef" stroke="#aed0c0" stroke-width="1.2"/>
+      <text x="140" y="50" text-anchor="middle" font-size="9" fill="#4a7c6a">Bit 6</text>
+      <text x="140" y="66" text-anchor="middle" font-size="11" fill="#1a4a3c" font-weight="700">P0</text>
+      <text x="140" y="78" text-anchor="middle" font-size="8" fill="#6a8076">奇偶校验</text>
+
+      <rect x="190" y="30" width="80" height="50" rx="3" fill="#e4f0ec" stroke="#9ecfbf" stroke-width="1.5"/>
+      <text x="230" y="50" text-anchor="middle" font-size="9" fill="#0f3028">Bit 5</text>
+      <text x="230" y="66" text-anchor="middle" font-size="11" fill="#1d6b58" font-weight="700">ID5</text>
+
+      <rect x="280" y="30" width="80" height="50" rx="3" fill="#e4f0ec" stroke="#9ecfbf" stroke-width="1.5"/>
+      <text x="320" y="50" text-anchor="middle" font-size="9" fill="#0f3028">Bit 4</text>
+      <text x="320" y="66" text-anchor="middle" font-size="11" fill="#1d6b58" font-weight="700">ID4</text>
+
+      <rect x="370" y="30" width="80" height="50" rx="3" fill="#e4f0ec" stroke="#9ecfbf" stroke-width="1.5"/>
+      <text x="410" y="50" text-anchor="middle" font-size="9" fill="#0f3028">Bit 3</text>
+      <text x="410" y="66" text-anchor="middle" font-size="11" fill="#1d6b58" font-weight="700">ID3</text>
+
+      <rect x="460" y="30" width="80" height="50" rx="3" fill="#e4f0ec" stroke="#9ecfbf" stroke-width="1.5"/>
+      <text x="500" y="50" text-anchor="middle" font-size="9" fill="#0f3028">Bit 2</text>
+      <text x="500" y="66" text-anchor="middle" font-size="11" fill="#1d6b58" font-weight="700">ID2</text>
+
+      <rect x="550" y="30" width="80" height="50" rx="3" fill="#e4f0ec" stroke="#9ecfbf" stroke-width="1.5"/>
+      <text x="590" y="50" text-anchor="middle" font-size="9" fill="#0f3028">Bit 1</text>
+      <text x="590" y="66" text-anchor="middle" font-size="11" fill="#1d6b58" font-weight="700">ID1</text>
+
+      <rect x="640" y="30" width="50" height="50" rx="3" fill="#e4f0ec" stroke="#9ecfbf" stroke-width="1.5"/>
+      <text x="665" y="50" text-anchor="middle" font-size="9" fill="#0f3028">Bit 0</text>
+      <text x="665" y="66" text-anchor="middle" font-size="11" fill="#1d6b58" font-weight="700">ID0</text>
+
+      <!-- Bracket for ID -->
+      <line x1="190" y1="90" x2="690" y2="90" stroke="#1d6b58" stroke-width="1"/>
+      <line x1="190" y1="86" x2="190" y2="94" stroke="#1d6b58" stroke-width="1"/>
+      <line x1="690" y1="86" x2="690" y2="94" stroke="#1d6b58" stroke-width="1"/>
+      <text x="440" y="108" text-anchor="middle" font-size="9" fill="#1d6b58">6-bit Frame ID (0~63)</text>
+
+      <!-- Bracket for parity -->
+      <line x1="10" y1="90" x2="180" y2="90" stroke="#4a7c6a" stroke-width="1"/>
+      <line x1="10" y1="86" x2="10" y2="94" stroke="#4a7c6a" stroke-width="1"/>
+      <line x1="180" y1="86" x2="180" y2="94" stroke="#4a7c6a" stroke-width="1"/>
+      <text x="95" y="108" text-anchor="middle" font-size="9" fill="#4a7c6a">Parity</text>
+    </svg>
+  </div>
+
+  <div class="sh">帧 ID 分类（0x00~0x3F）</div>
+  <div class="tw"><table>
+    <thead><tr><th>ID 范围</th><th>帧类型</th><th>数据长度</th><th>用途</th></tr></thead>
+    <tbody>
+      <tr><td class="m">0x00~0x1F</td><td><span class="badge bt">无条件帧 Unconditional</span></td><td>2字节</td><td>周期性数据帧，长度2字节</td></tr>
+      <tr><td class="m">0x10~0x1F</td><td><span class="badge bt">无条件帧</span></td><td>4字节</td><td>周期性数据帧，长度4字节</td></tr>
+      <tr><td class="m">0x20~0x2F</td><td><span class="badge bt">无条件帧</span></td><td>8字节</td><td>周期性数据帧，长度8字节</td></tr>
+      <tr><td class="m">0x3C (60)</td><td><span class="badge ba">诊断主请求帧</span></td><td>8字节</td><td>Master Request Frame（MRF），Master 发给 Slave 的诊断请求</td></tr>
+      <tr><td class="m">0x3D (61)</td><td><span class="badge ba">诊断从响应帧</span></td><td>8字节</td><td>Slave Response Frame（SRF），Slave 回复 Master 的诊断响应</td></tr>
+      <tr><td class="m">0x3E (62)</td><td><span class="badge bg">保留</span></td><td>—</td><td>LIN 2.2A 保留，用于未来扩展</td></tr>
+      <tr><td class="m">0x3F (63)</td><td><span class="badge bg">保留</span></td><td>—</td><td>LIN 2.2A 保留</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="sh">帧类型（Frame Type）</div>
+  <div class="cg">
+    <div class="card"><div class="ct"><span class="badge bt">无条件帧</span></div><div class="cb">最常见，调度表中固定周期发送，Publisher 总是回复 Response</div></div>
+    <div class="card"><div class="ct"><span class="badge bm">事件触发帧 ETF</span></div><div class="cb">多个 Slave 共用一个帧 ID，仅在数据变化时才回复 Response，节省总线带宽</div></div>
+    <div class="card"><div class="ct"><span class="badge ba">偶发帧 SF</span></div><div class="cb">Sporadic Frame，Master 仅在数据变化时才发送该帧的 Header，节省调度表空间</div></div>
+    <div class="card"><div class="ct"><span class="badge bs">诊断帧</span></div><div class="cb">ID=0x3C/0x3D，固定 8 字节，用于节点配置和诊断服务（UDS/LIN TP）</div></div>
+  </div>
+</div>
+
+<!-- ─ SCHEDULE ─ -->
+<div class="panel" id="pnl-schedule">
+  <div class="ph">
+    <div class="ph-tag">Schedule Table</div>
+    <div class="ph-h1">调度表机制</div>
+    <div class="ph-sub">Master 调度逻辑、Frame Slot 计算与调度表切换</div>
+  </div>
+
+  <div class="sh">调度表原理</div>
+  <p>LIN Master 按照预定义的<strong>调度表（Schedule Table）</strong>循环发送帧 Header。调度表由若干 Frame Slot 组成，每个 Slot 指定：要发送的帧 ID 和该 Slot 的时间长度（Frame Slot Time）。</p>
+
+  <div class="box box-pine"><strong>Frame Slot Time 计算：</strong><br>
+  <code>T_frame_slot ≥ T_header + T_response + T_jitter</code><br>
+  其中：<code>T_header = 34 位时间 + IFS</code>（Break 13位+Delim+Sync 10位+PID 10位）<br>
+  <code>T_response = (N_data + 1) × 10 位时间</code>（N_data 字节数据 + 1 校验和字节）<br>
+  典型 20kbps、8字节数据帧：T_frame_slot ≈ 5.2ms，通常配置为 6~8ms 留余量</div>
+
+  <div class="sh">调度表 LDF 示例</div>
+  <pre>/* LDF 调度表定义示例 */
+Schedule_tables {
+  /* 正常运行调度表 */
+  NormalTable {
+    WindowMotor_Status  delay 10 ms;   /* 车窗电机状态，10ms 周期 */
+    SeatPosition_Read   delay 20 ms;   /* 座椅位置读取，20ms 周期 */
+    ClimateControl_Cmd  delay 20 ms;   /* 空调控制指令，20ms 周期 */
+    DoorStatus_Read     delay 50 ms;   /* 门状态读取，50ms 周期 */
+  }
+  /* 诊断调度表（访问 NAD=0x01 的 Slave） */
+  DiagTable {
+    MasterReq           delay 10 ms;   /* 0x3C 主请求帧 */
+    SlaveResp           delay 10 ms;   /* 0x3D 从响应帧 */
+  }
+  /* 初始化/配置调度表 */
+  InitTable {
+    AssignNAD_req       delay 10 ms;
+    AssignNAD_resp      delay 10 ms;
+  }
+}</pre>
+
+  <div class="sh">调度表切换机制</div>
+  <div class="flow">
+    <div class="fstep"><div class="fnum">1</div><div><div class="ft">正常模式（Normal Schedule）</div><div class="fd">系统上电后进入正常调度表，循环发送应用数据帧，覆盖所有 Slave 节点的周期性数据</div></div></div>
+    <div class="fstep"><div class="fnum">2</div><div><div class="ft">诊断模式（Diagnostic Schedule）</div><div class="fd">上层（ComM/Dcm）发起诊断请求时，Master 切换到诊断调度表，交替发送 0x3C/0x3D 帧，完成诊断后回切</div></div></div>
+    <div class="fstep"><div class="fnum">3</div><div><div class="ft">初始化/配置调度（Init Schedule）</div><div class="fd">系统首次上电或节点更换时，运行 AssignNAD、AssignFrameId 等配置帧序列</div></div></div>
+    <div class="fstep"><div class="fnum">4</div><div><div class="ft">事件触发冲突解析（Collision Resolving）</div><div class="fd">ETF 发生冲突时，Master 临时切换到冲突解析调度表，逐一查询各 Slave 的无条件帧</div></div></div>
+  </div>
+
+  <div class="sh">偶发帧（Sporadic Frame）在调度表中的处理</div>
+  <p>偶发帧（Sporadic Frame）在调度表中占据固定 Slot 位置，但 Master 仅在对应信号数据<strong>发生变化</strong>时才实际发送 Header，否则跳过该 Slot。这可以在保持调度表结构不变的前提下节省总线带宽。</p>
+  <div class="box box-sage"><strong>Sporadic Frame 配置要点：</strong><br>
+  • 在 LDF 的 <code>Sporadic_frames</code> 块中声明，并关联一组"候选无条件帧"<br>
+  • Master 在每个调度周期检查所有候选帧的信号是否有更新，若有更新则发送变化最早的那帧<br>
+  • 若同一 Slot 内多帧均有更新，本次发最高优先级帧，其余等下一轮<br>
+  • LinIf 通过 <code>Lin_HeaderIndication()</code> 回调通知上层，由上层决定是否提供 Response 数据</div>
+
+  <div class="sh">多 Frame Slot 时间轴</div>
+  <div class="sw">
+    <svg viewBox="0 0 720 160" xmlns="http://www.w3.org/2000/svg" style="font-family:'Outfit',sans-serif;max-width:720px;width:100%;min-width:560px">
+      <defs><marker id="ta1" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3z" fill="#6a8076"/></marker></defs>
+
+      <line x1="20" y1="80" x2="700" y2="80" stroke="#b8ccc4" stroke-width="1.3" marker-end="url(#ta1)"/>
+      <text x="706" y="84" font-size="9" fill="#6a8076">t</text>
+
+      <!-- Slot 1 -->
+      <rect x="30" y="50" width="120" height="36" rx="3" fill="#e4f0ec" stroke="#9ecfbf" stroke-width="1.3"/>
+      <text x="90" y="65" text-anchor="middle" font-size="9" fill="#0f3028" font-weight="600">WindowMotor</text>
+      <text x="90" y="78" text-anchor="middle" font-size="8" fill="#4a7c6a">ID=0x01, 8ms Slot</text>
+
+      <!-- Slot 2 -->
+      <rect x="160" y="50" width="100" height="36" rx="3" fill="#eaf3ef" stroke="#aed0c0" stroke-width="1.3"/>
+      <text x="210" y="65" text-anchor="middle" font-size="9" fill="#0f3028" font-weight="600">SeatPosition</text>
+      <text x="210" y="78" text-anchor="middle" font-size="8" fill="#4a7c6a">ID=0x05</text>
+
+      <!-- Slot 3 -->
+      <rect x="270" y="50" width="130" height="36" rx="3" fill="#e4f0ec" stroke="#9ecfbf" stroke-width="1.3"/>
+      <text x="335" y="65" text-anchor="middle" font-size="9" fill="#0f3028" font-weight="600">ClimateControl</text>
+      <text x="335" y="78" text-anchor="middle" font-size="8" fill="#4a7c6a">ID=0x08, 20ms Slot</text>
+
+      <!-- Slot 4 -->
+      <rect x="410" y="50" width="80" height="36" rx="3" fill="#f0fdf4" stroke="#aed0c0" stroke-width="1"/>
+      <text x="450" y="65" text-anchor="middle" font-size="9" fill="#0f3028" font-weight="600">DoorStatus</text>
+      <text x="450" y="78" text-anchor="middle" font-size="8" fill="#6a8076">ID=0x0F</text>
+
+      <!-- Repeat indicator -->
+      <text x="520" y="68" text-anchor="middle" font-size="11" fill="#9ab0a8">… 循环 …</text>
+
+      <!-- Total period bracket -->
+      <line x1="30" y1="100" x2="510" y2="100" stroke="#1d6b58" stroke-width="1"/>
+      <line x1="30" y1="96" x2="30" y2="104" stroke="#1d6b58" stroke-width="1"/>
+      <line x1="510" y1="96" x2="510" y2="104" stroke="#1d6b58" stroke-width="1"/>
+      <text x="270" y="118" text-anchor="middle" font-size="9" fill="#1d6b58">调度表总周期 (≥ 所有 Slot 时间之和)</text>
+
+      <!-- Header/Response breakdown -->
+      <line x1="30" y1="134" x2="73" y2="134" stroke="#1a4a3c" stroke-width="1.5"/>
+      <line x1="73" y1="134" x2="150" y2="134" stroke="#4a7c6a" stroke-width="1.5"/>
+      <text x="51" y="128" text-anchor="middle" font-size="8" fill="#1a4a3c">Header</text>
+      <text x="111" y="128" text-anchor="middle" font-size="8" fill="#4a7c6a">Response</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ─ TRANSPORT ─ -->
+<div class="panel" id="pnl-transport">
+  <div class="ph">
+    <div class="ph-tag">Transport Layer</div>
+    <div class="ph-h1">传输层 (LIN TP)</div>
+    <div class="ph-sub">多帧诊断传输、PDU 格式与流控机制</div>
+  </div>
+
+  <div class="sh">LIN TP 概述</div>
+  <p>LIN 传输层（LIN TP / LIN Transport Protocol）基于 ID=0x3C（MRF）和 ID=0x3D（SRF）的 8 字节诊断帧，实现超过 6 字节的多帧数据传输，用于 UDS 诊断、节点配置等服务。</p>
+
+  <div class="sh">PDU 类型</div>
+  <div class="tw"><table>
+    <thead><tr><th>PDU 类型</th><th>NAD Byte[0]</th><th>PCI Byte[1]</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge bt">SF (Single Frame)</span></td><td>NAD</td><td>0x0N（N=数据长度1~6）</td><td>单帧，最多 6 字节有效数据</td></tr>
+      <tr><td><span class="badge bm">FF (First Frame)</span></td><td>NAD</td><td>0x1N + Byte[2]=LEN</td><td>多帧首帧，Byte[1]低4位+Byte[2]=总长度</td></tr>
+      <tr><td><span class="badge bm">CF (Consecutive Frame)</span></td><td>NAD</td><td>0x2N（N=序号1~F,0）</td><td>多帧后续帧，序号循环，最多 6 字节/帧</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box box-teal"><strong>LIN TP vs CAN TP：</strong>LIN TP 没有 Flow Control（FC）帧，Master 通过调度表控制 CF 帧的发送时机，无需显式流量控制。这简化了实现，但也意味着每次请求/响应之间必须通过调度表留足时间窗口。</div>
+
+  <div class="sh">MRF / SRF 帧格式（8字节）</div>
+  <pre>/* Master Request Frame (ID=0x3C) 格式 */
+Byte[0] = NAD          /* 目标 Slave 节点地址（1~125）*/
+Byte[1] = PCI          /* 0x06=单帧，0x10/11=首帧，0x21~=续帧 */
+Byte[2] = LEN/SID      /* 单帧:数据长度；多帧首帧:高字节；其余=SID */
+Byte[3..7] = DATA      /* 有效数据载荷 */
+
+/* Slave Response Frame (ID=0x3D) 格式 */
+Byte[0] = NAD          /* 响应的 Slave 地址 */
+Byte[1] = PCI          /* 同上 */
+Byte[2] = LEN/RSID     /* RSID = SID | 0x40 */
+Byte[3..7] = DATA      /* 响应数据 */</pre>
+</div>
+
+<!-- ─ NODE ─ -->
+<div class="panel" id="pnl-node">
+  <div class="ph">
+    <div class="ph-tag">Master / Slave</div>
+    <div class="ph-h1">Master / Slave 节点</div>
+    <div class="ph-sub">主从节点职责划分与任务分工</div>
+  </div>
+
+  <div class="sh">Master 节点职责</div>
+  <div class="cg">
+    <div class="card"><div class="ct">调度表执行</div><div class="cb">按预定义调度表循环发送 Header（Break+Sync+PID），驱动整个总线通信节奏</div></div>
+    <div class="card"><div class="ct">时钟提供</div><div class="cb">通过 Break+Sync 为所有 Slave 提供同步时钟基准，Slave 无需精确晶振</div></div>
+    <div class="card"><div class="ct">网络管理</div><div class="cb">负责 Slave 的 NAD 分配、帧 ID 分配、唤醒/休眠控制</div></div>
+    <div class="card"><div class="ct">错误监测</div><div class="cb">监测 Response 超时、校验和错误，上报给上层并决策是否重试</div></div>
+    <div class="card"><div class="ct">诊断转发</div><div class="cb">作为 LIN-CAN 网关，将 CAN 侧的 UDS 诊断请求转发到 LIN 子网</div></div>
+  </div>
+
+  <div class="sh">Slave 节点职责</div>
+  <div class="cg">
+    <div class="card"><div class="ct">波特率自适应</div><div class="cb">通过测量 Sync 字节的下降沿间隔，自动计算并适应当前波特率，无需配置</div></div>
+    <div class="card"><div class="ct">PID 过滤</div><div class="cb">收到 Header 后比较 PID（含奇偶校验），判断自己是否需要发送或接收该帧</div></div>
+    <div class="card"><div class="ct">Response 发布</div><div class="cb">若自己是 Publisher，在规定时间内发送 Response（数据+校验和）</div></div>
+    <div class="card"><div class="ct">Response 订阅</div><div class="cb">若自己是 Subscriber，接收并校验 Response 数据，更新本地信号值</div></div>
+    <div class="card"><div class="ct">诊断服务</div><div class="cb">响应 NAD 寻址的诊断请求（AssignNAD、ReadByID、UDS 服务等）</div></div>
+  </div>
+
+  <div class="sh">Master Task 与 Slave Task</div>
+  <div class="tw"><table>
+    <thead><tr><th>概念</th><th>属于</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Master Task</strong></td><td>任意节点</td><td>负责发送 Header 的任务。通常只有 Master 节点运行 Master Task</td></tr>
+      <tr><td><strong>Slave Task</strong></td><td>任意节点</td><td>负责处理 Header 并决定是否发送/接收 Response 的任务。所有节点（含 Master）都运行 Slave Task</td></tr>
+    </tbody>
+  </table></div>
+  <div class="box box-sage">Master 节点也运行 Slave Task，因此 Master 也可以作为某些帧的 Publisher 或 Subscriber。当 Master 发布 Response 时，Header 和 Response 都由 Master 自己完成——这称为 <strong>Master 自回环帧</strong>，用于向 Slave 广播控制指令。</div>
+</div>
+
+<!-- ─ NAD ─ -->
+<div class="panel" id="pnl-nad">
+  <div class="ph">
+    <div class="ph-tag">NAD & Node Configuration</div>
+    <div class="ph-h1">NAD 与节点配置</div>
+    <div class="ph-sub">节点地址分配策略与动态配置服务</div>
+  </div>
+
+  <div class="sh">NAD 地址规划</div>
+  <div class="tw"><table>
+    <thead><tr><th>NAD 范围</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td class="m">0x00</td><td>广播地址（保留），所有 Slave 响应（用于 AssignNAD 广播）</td></tr>
+      <tr><td class="m">0x01~0x7D</td><td>用户可分配 NAD，实际节点地址范围（1~125）</td></tr>
+      <tr><td class="m">0x7E</td><td>功能广播地址（Functional Broadcast），用于特定功能广播</td></tr>
+      <tr><td class="m">0x7F (127)</td><td>出厂默认 NAD（Initial NAD），Slave 出厂未配置时使用</td></tr>
+      <tr><td class="m">0x80~0xFF</td><td>保留</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="sh">节点配置服务（Node Configuration Services）</div>
+  <div class="flow">
+    <div class="fstep"><div class="fnum">SID 0xB0</div><div><div class="ft">AssignNAD</div><div class="fd">通过 Supplier ID + Function ID 精确定位 Slave，将其初始 NAD（0x7F）重新分配为目标 NAD。用于产线首次配置</div><div class="fc">Req: [0x7F][0x06][0xB0][Supplier ID L/H][Function ID L/H][New NAD]</div></div></div>
+    <div class="fstep"><div class="fnum">SID 0xB1</div><div><div class="ft">AssignFrameIdRange</div><div class="fd">为 Slave 的一组帧分配物理 Frame ID，允许运行时动态更改帧 ID 映射（最多4帧/次）</div></div></div>
+    <div class="fstep"><div class="fnum">SID 0xB2</div><div><div class="ft">ReadByIdentifier</div><div class="fd">读取 Slave 的属性信息：LIN_PRODUCT_ID（Supplier+Function+Variant）、用户定义数据等</div><div class="fc">Identifier 0x00=LIN Product ID, 0x01=Serial Number, 0x20~0x5F=用户自定义</div></div></div>
+    <div class="fstep"><div class="fnum">SID 0xB3</div><div><div class="ft">ConditionalChangeNAD</div><div class="fd">有条件更改 NAD：若 Slave 的某字节值满足条件（= / ≠）则更改 NAD，用于批量节点区分</div></div></div>
+    <div class="fstep"><div class="fnum">SID 0xB5</div><div><div class="ft">SaveConfiguration</div><div class="fd">要求 Slave 将当前的 NAD 和帧 ID 配置永久保存到非易失性存储（NVM），上电后自动恢复</div></div></div>
+    <div class="fstep"><div class="fnum">SID 0xB6</div><div><div class="ft">AssignFrameId</div><div class="fd">单帧版本的帧 ID 分配（LIN 2.0 引入），每次只配置一帧，较 AssignFrameIdRange 更精细</div></div></div>
+  </div>
+</div>
+
+<!-- ─ DIAG ─ -->
+<div class="panel" id="pnl-diag">
+  <div class="ph">
+    <div class="ph-tag">Diagnostics</div>
+    <div class="ph-h1">诊断与配置服务</div>
+    <div class="ph-sub">LIN UDS 诊断（通过 LIN TP 传输）</div>
+  </div>
+
+  <div class="sh">LIN 诊断体系</div>
+  <p>LIN 的诊断通过 <strong>LIN TP（传输层）</strong> 承载 UDS（ISO 14229）服务，与 CAN 侧的 UDS 诊断原理相同，但受限于 LIN 的 8 字节帧和 20 kbps 速率，诊断吞吐量较低。</p>
+
+  <div class="sh">常用 UDS 服务在 LIN 上的实现</div>
+  <div class="tw"><table>
+    <thead><tr><th>UDS SID</th><th>服务名</th><th>LIN 实现注意</th></tr></thead>
+    <tbody>
+      <tr><td class="m">0x10</td><td>DiagnosticSessionControl</td><td>切换诊断会话，对 LIN Slave 有效，需 Master 先进入诊断调度表</td></tr>
+      <tr><td class="m">0x11</td><td>ECUReset</td><td>复位 LIN Slave，Slave 复位后重新执行初始化</td></tr>
+      <tr><td class="m">0x22</td><td>ReadDataByIdentifier</td><td>读取 Slave DID，数据若超 6 字节需分多帧传输</td></tr>
+      <tr><td class="m">0x27</td><td>SecurityAccess</td><td>LIN Slave 安全解锁（部分高端 Slave 支持）</td></tr>
+      <tr><td class="m">0x2E</td><td>WriteDataByIdentifier</td><td>写入 DID，需先进入编程会话并安全解锁</td></tr>
+      <tr><td class="m">0x3E</td><td>TesterPresent</td><td>保持诊断会话活跃（LIN 侧超时通常更短，约 2~5s）</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="sh">LIN 诊断通路（CAN→LIN）</div>
+  <div class="sw">
+    <svg viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg" style="font-family:'Outfit',sans-serif;max-width:700px;width:100%">
+      <defs><marker id="dg1" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#4a7c6a"/></marker></defs>
+
+      <rect x="10" y="40" width="100" height="60" rx="5" fill="#e8edf5" stroke="#a8bcd4" stroke-width="1.3"/>
+      <text x="60" y="66" text-anchor="middle" font-size="10" fill="#1a2840" font-weight="600">诊断仪</text>
+      <text x="60" y="80" text-anchor="middle" font-size="8" fill="#6a8090">CANoe/PC</text>
+      <text x="60" y="93" text-anchor="middle" font-size="8" fill="#6a8090">UDS请求</text>
+
+      <line x1="110" y1="70" x2="160" y2="70" stroke="#4a7c6a" stroke-width="1.5" marker-end="url(#dg1)"/>
+      <text x="135" y="63" text-anchor="middle" font-size="8" fill="#4a7c6a">CAN</text>
+
+      <rect x="160" y="30" width="130" height="80" rx="5" fill="#e4f0ec" stroke="#9ecfbf" stroke-width="1.5"/>
+      <text x="225" y="55" text-anchor="middle" font-size="10" fill="#0f3028" font-weight="600">GW / BCM</text>
+      <text x="225" y="70" text-anchor="middle" font-size="8" fill="#1d6b58">CAN Tester</text>
+      <text x="225" y="82" text-anchor="middle" font-size="8" fill="#1d6b58">↕ LinIf</text>
+      <text x="225" y="94" text-anchor="middle" font-size="8" fill="#1d6b58">LIN Master</text>
+
+      <line x1="290" y1="70" x2="350" y2="70" stroke="#4a7c6a" stroke-width="1.5" marker-end="url(#dg1)"/>
+      <text x="320" y="63" text-anchor="middle" font-size="8" fill="#4a7c6a">LIN TP</text>
+      <text x="320" y="82" text-anchor="middle" font-size="8" fill="#9ab0a8">0x3C/0x3D</text>
+
+      <rect x="350" y="40" width="110" height="60" rx="5" fill="#eaf3ef" stroke="#aed0c0" stroke-width="1.3"/>
+      <text x="405" y="65" text-anchor="middle" font-size="10" fill="#0f3028" font-weight="600">LIN Slave</text>
+      <text x="405" y="80" text-anchor="middle" font-size="8" fill="#4a7c6a">NAD=0x01</text>
+      <text x="405" y="93" text-anchor="middle" font-size="8" fill="#4a7c6a">UDS 处理</text>
+
+      <text x="550" y="65" text-anchor="middle" font-size="10" fill="#9ab0a8">… 其他 Slave …</text>
+      <text x="550" y="80" text-anchor="middle" font-size="9" fill="#9ab0a8">NAD=0x02,0x03</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ─ DESIGN ─ -->
+<div class="panel" id="pnl-design">
+  <div class="ph">
+    <div class="ph-tag">System Design</div>
+    <div class="ph-h1">系统设计方法</div>
+    <div class="ph-sub">从需求到实现的完整 LIN 网络设计流程</div>
+  </div>
+
+  <div class="sh">LIN 系统设计流程</div>
+  <div class="flow">
+    <div class="fstep"><div class="fnum">01</div><div><div class="ft">功能需求分析</div><div class="fd">梳理 LIN 子系统的功能（车窗控制、座椅调节等），确定需要传输的信号列表：信号名、方向（M→S 或 S→M）、数据类型、更新频率、精度</div></div></div>
+    <div class="fstep"><div class="fnum">02</div><div><div class="ft">节点清单与 NAD 分配</div><div class="fd">确定 Slave 节点数量（≤16），分配 NAD（1~125，推荐按功能域分段）。明确每个节点的 Supplier ID 和 Function ID（唯一标识 Slave 类型）</div><div class="fc">例：车窗左前 NAD=0x01, 右前=0x02, 左后=0x03, 右后=0x04</div></div></div>
+    <div class="fstep"><div class="fnum">03</div><div><div class="ft">帧与信号设计</div><div class="fd">将信号打包到帧中（同一帧的信号共享 Publisher），设计帧 ID（0x00~0x3B），确定每帧数据长度（1/2/4/8 字节）和信号位域布局</div></div></div>
+    <div class="fstep"><div class="fnum">04</div><div><div class="ft">调度表设计</div><div class="fd">根据信号更新频率和时延要求，设计 Frame Slot Time 和调度周期。优先级高/频率高的帧给更小的 Slot 时间，低优先级帧可以用倍数关系跳过</div></div></div>
+    <div class="fstep"><div class="fnum">05</div><div><div class="ft">编写 LDF 文件</div><div class="fd">将以上设计输出为标准 LDF 文件，包含：nodes, signals, frames, schedule_tables, node_attributes 等完整定义</div></div></div>
+    <div class="fstep"><div class="fnum">06</div><div><div class="ft">代码生成与集成</div><div class="fd">使用工具（LINWorks、Vector LIN Config、ETAS ISOLAR）从 LDF 生成 LinIf/LinSM 配置代码，集成到 BSW 或裸机驱动</div></div></div>
+    <div class="fstep"><div class="fnum">07</div><div><div class="ft">物理层验证</div><div class="fd">使用示波器验证 Break/Sync 波形，测量上升沿时间，确认总线电平符合规范。重点检查长总线或多节点时的波形畸变</div></div></div>
+    <div class="fstep"><div class="fnum">08</div><div><div class="ft">协议一致性测试</div><div class="fd">使用 CANoe/CANalyzer LIN 插件或专用 LIN 分析仪验证：调度表执行、Frame 超时处理、NAD 配置、唤醒/休眠、错误响应</div></div></div>
+  </div>
+
+  <div class="sh">波特率选择建议</div>
+  <div class="tw"><table>
+    <thead><tr><th>速率</th><th>适用场景</th><th>备注</th></tr></thead>
+    <tbody>
+      <tr><td class="m">9.6 kbps</td><td>老平台兼容、极低成本 Slave</td><td>容错性好，响应慢，不推荐新设计</td></tr>
+      <tr><td class="m">10.417 kbps</td><td>J2602 兼容、北美市场</td><td>SAE 标准，与 20kbps 配合可双速率</td></tr>
+      <tr><td class="m">19.2 kbps</td><td>需要较快响应的控制类应用</td><td>不常见，部分工具不支持</td></tr>
+      <tr><td class="m">20 kbps</td><td>主流应用（车窗、座椅、空调）</td><td>推荐选择，工具链支持最完善</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- ─ LDF ─ -->
+<div class="panel" id="pnl-ldf">
+  <div class="ph">
+    <div class="ph-tag">LDF File & Model</div>
+    <div class="ph-h1">LDF 文件与网络模型</div>
+    <div class="ph-sub">LIN Description File 完整格式解析</div>
+  </div>
+
+  <div class="sh">LDF 文件结构</div>
+  <div class="tw"><table>
+    <thead><tr><th>LDF 块</th><th>内容</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td class="m">LIN_description_file</td><td>LIN 版本声明</td><td>文件头，声明 LIN 协议版本</td></tr>
+      <tr><td class="m">LIN_protocol_version</td><td>"2.2"</td><td>协议版本字符串</td></tr>
+      <tr><td class="m">LIN_language_version</td><td>"2.2"</td><td>LDF 语言版本</td></tr>
+      <tr><td class="m">LIN_speed</td><td>20 kbps</td><td>总线波特率</td></tr>
+      <tr><td class="m">Nodes</td><td>Master + Slaves</td><td>节点声明，含 Master 时间参数和 Slave 列表</td></tr>
+      <tr><td class="m">Node_attributes</td><td>每个 Slave 的属性</td><td>NAD、LIN_protocol、Supplier ID、Function ID、Variant、初始化帧等</td></tr>
+      <tr><td class="m">Signals</td><td>所有信号定义</td><td>信号名、位长、初始值、发布者、订阅者列表</td></tr>
+      <tr><td class="m">Frames</td><td>所有帧定义</td><td>帧名、帧ID、Publisher、字节数、包含的信号及位域</td></tr>
+      <tr><td class="m">Schedule_tables</td><td>调度表</td><td>帧与 Slot 时间映射</td></tr>
+      <tr><td class="m">Signal_encoding_types</td><td>信号编码类型</td><td>物理值和逻辑值映射（缩放、枚举等）</td></tr>
+      <tr><td class="m">Signal_representation</td><td>信号关联编码</td><td>将信号关联到编码类型</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="sh">完整 LDF 示例（车窗控制子系统）</div>
+  <pre>LIN_description_file;
+LIN_protocol_version = "2.2";
+LIN_language_version = "2.2";
+LIN_speed = 20 kbps;
+
+/* 节点声明 */
+Nodes {
+  Master: BCM, 5 ms, 0.1 ms;    /* 主节点 BCM，调度精度5ms，抖动0.1ms */
+  Slaves: WinMotorLF, WinMotorRF;  /* 左前/右前车窗电机 Slave */
+}
+
+/* 节点属性 */
+Node_attributes {
+  WinMotorLF {
+    LIN_protocol = "2.2";
+    configured_NAD = 0x01;
+    initial_NAD = 0x7F;
+    product_id = 0x0026, 0x0001, 0x00; /* Supplier=0x0026, Function=0x0001 */
+    response_error = WinLF_RespErr;
+    P2_min = 50 ms;
+    ST_min = 0 ms;
+    configurable_frames {
+      WinMotor_LF_Cmd  = 0x01;  /* 指令帧 ID 0x01 */
+      WinMotor_LF_Sts  = 0x11;  /* 状态帧 ID 0x11 */
+    }
+  }
+  WinMotorRF {
+    configured_NAD = 0x02;
+    initial_NAD = 0x7F;
+    product_id = 0x0026, 0x0002, 0x00;
+    /* ... 同上 ... */
+  }
+}
+
+/* 信号定义 */
+Signals {
+  WinLF_PosCmd:    8, 0,  BCM,        WinMotorLF;  /* 位置指令, 8bit */
+  WinLF_SpeedCmd:  4, 0,  BCM,        WinMotorLF;  /* 速度指令, 4bit */
+  WinLF_Position:  8, 0,  WinMotorLF, BCM;          /* 实际位置反馈, 8bit */
+  WinLF_Current:   8, 0,  WinMotorLF, BCM;          /* 电机电流, 8bit */
+  WinLF_Status:    4, 0,  WinMotorLF, BCM;          /* 运行状态, 4bit */
+  WinLF_RespErr:   1, 0,  WinMotorLF, BCM;          /* 响应错误标志 */
+}
+
+/* 帧定义 */
+Frames {
+  WinMotor_LF_Cmd: 0x01, BCM, 2 {    /* Master→Slave, 2字节 */
+    WinLF_PosCmd,  0;                  /* 位置指令 Byte0 全部8位 */
+    WinLF_SpeedCmd, 8;                 /* 速度指令 Byte1 低4位 */
+  }
+  WinMotor_LF_Sts: 0x11, WinMotorLF, 4 {  /* Slave→Master, 4字节 */
+    WinLF_Position, 0;
+    WinLF_Current,  8;
+    WinLF_Status,   16;
+    WinLF_RespErr,  20;
+  }
+}
+
+/* 信号编码 */
+Signal_encoding_types {
+  WinPosition_Encoding {
+    logical_value, 0x00, "CLOSED";
+    logical_value, 0xFF, "OPEN";
+    physical_range, 1, 254, 0.392, 0; /* 1~254 → 0.4%~100% */
+  }
+}
+Signal_representation {
+  WinPosition_Encoding: WinLF_Position, WinLF_PosCmd;
+}
+
+/* 调度表 */
+Schedule_tables {
+  NormalSchedule {
+    WinMotor_LF_Cmd  delay 10 ms;
+    WinMotor_LF_Sts  delay 10 ms;
+    WinMotor_RF_Cmd  delay 10 ms;
+    WinMotor_RF_Sts  delay 10 ms;
+  }
+  DiagSchedule {
+    MasterReq  delay 10 ms;
+    SlaveResp  delay 10 ms;
+  }
+}</pre>
+</div>
+
+<!-- ─ AUTOSAR ─ -->
+<div class="panel" id="pnl-autosar">
+  <div class="ph">
+    <div class="ph-tag">AUTOSAR LinIf</div>
+    <div class="ph-h1">AUTOSAR LinIf 集成</div>
+    <div class="ph-sub">AUTOSAR LIN 软件栈架构与关键模块</div>
+  </div>
+
+  <div class="sh">AUTOSAR LIN 软件栈</div>
+  <div class="sw">
+    <svg viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg" style="font-family:'Outfit',sans-serif;max-width:700px;width:100%">
+      <defs><marker id="au1" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#6a8076"/></marker></defs>
+
+      <rect x="10" y="10" width="680" height="38" rx="5" fill="#e4f0ec" stroke="#9ecfbf" stroke-width="1.3"/>
+      <text x="350" y="24" text-anchor="middle" font-size="11" fill="#0f3028" font-weight="600">应用层 / RTE</text>
+      <text x="350" y="38" text-anchor="middle" font-size="9" fill="#1d6b58">Com · ComM · Dcm · Nm（通过 LinIf 与 LIN 总线交互）</text>
+
+      <rect x="10" y="58" width="330" height="38" rx="5" fill="#eaf3ef" stroke="#aed0c0" stroke-width="1.3"/>
+      <text x="175" y="73" text-anchor="middle" font-size="11" fill="#0f3028" font-weight="600">PduR (PDU Router)</text>
+      <text x="175" y="86" text-anchor="middle" font-size="9" fill="#4a7c6a">路由 LIN PDU ↔ COM 层</text>
+
+      <rect x="360" y="58" width="330" height="38" rx="5" fill="#f0fdf8" stroke="#aed0c0" stroke-width="1.3"/>
+      <text x="525" y="73" text-anchor="middle" font-size="11" fill="#0f3028" font-weight="600">LinSM (LIN State Manager)</text>
+      <text x="525" y="86" text-anchor="middle" font-size="9" fill="#4a7c6a">LIN 总线状态管理（全通/静默/休眠）</text>
+
+      <rect x="10" y="106" width="680" height="50" rx="5" fill="#e4f0ec" stroke="#9ecfbf" stroke-width="1.8"/>
+      <text x="350" y="125" text-anchor="middle" font-size="13" fill="#0f3028" font-weight="700">LinIf (LIN Interface)</text>
+      <text x="350" y="143" text-anchor="middle" font-size="9" fill="#1d6b58">调度表执行 · Frame 触发 · Header/Response 回调 · 唤醒处理 · 错误通知</text>
+
+      <rect x="10" y="166" width="330" height="38" rx="5" fill="#f0f5f3" stroke="#b8ccc4" stroke-width="1.3"/>
+      <text x="175" y="181" text-anchor="middle" font-size="11" fill="#0f3028" font-weight="600">LinTp (LIN Transport Layer)</text>
+      <text x="175" y="194" text-anchor="middle" font-size="9" fill="#4a7c6a">SF / FF / CF 分帧组包，诊断数据传输</text>
+
+      <rect x="360" y="166" width="330" height="38" rx="5" fill="#f0f5f3" stroke="#b8ccc4" stroke-width="1.3"/>
+      <text x="525" y="181" text-anchor="middle" font-size="11" fill="#0f3028" font-weight="600">LinNm (LIN Network Mgmt)</text>
+      <text x="525" y="194" text-anchor="middle" font-size="9" fill="#4a7c6a">LIN 网络管理（通常由 LinSM 代替）</text>
+
+      <rect x="10" y="214" width="680" height="38" rx="5" fill="#f0f8f4" stroke="#b8ccc4" stroke-width="1.3"/>
+      <text x="350" y="229" text-anchor="middle" font-size="11" fill="#0f3028" font-weight="600">Lin Driver (Lin 驱动)</text>
+      <text x="350" y="244" text-anchor="middle" font-size="9" fill="#4a7c6a">UART/LIN 硬件控制，Break 发送，Sync 检测，字节收发</text>
+
+      <rect x="10" y="262" width="680" height="38" rx="5" fill="#e8f5f0" stroke="#9ecfbf" stroke-width="1.3"/>
+      <text x="350" y="277" text-anchor="middle" font-size="11" fill="#0f3028" font-weight="600">LIN 物理总线</text>
+      <text x="350" y="292" text-anchor="middle" font-size="9" fill="#1d6b58">LIN Transceiver · 单线 · 20 kbps</text>
+
+      <!-- Arrows -->
+      <line x1="350" y1="48" x2="175" y2="58" stroke="#6a8076" stroke-width="1.2" marker-end="url(#au1)"/>
+      <line x1="350" y1="48" x2="525" y2="58" stroke="#6a8076" stroke-width="1.2" marker-end="url(#au1)"/>
+      <line x1="175" y1="96" x2="250" y2="106" stroke="#6a8076" stroke-width="1.2" marker-end="url(#au1)"/>
+      <line x1="525" y1="96" x2="450" y2="106" stroke="#6a8076" stroke-width="1.2" marker-end="url(#au1)"/>
+      <line x1="175" y1="156" x2="175" y2="166" stroke="#6a8076" stroke-width="1.2" marker-end="url(#au1)"/>
+      <line x1="525" y1="156" x2="525" y2="166" stroke="#6a8076" stroke-width="1.2" marker-end="url(#au1)"/>
+      <line x1="350" y1="204" x2="350" y2="214" stroke="#6a8076" stroke-width="1.2" marker-end="url(#au1)"/>
+      <line x1="350" y1="252" x2="350" y2="262" stroke="#6a8076" stroke-width="1.2" marker-end="url(#au1)"/>
+    </svg>
+  </div>
+
+  <div class="sh">LinIf 关键配置参数</div>
+  <div class="tw"><table>
+    <thead><tr><th>ARXML 参数</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td class="m">LinIfBaudRate</td><td>LIN 总线波特率（典型 20000 bps）</td></tr>
+      <tr><td class="m">LinIfFrameRef</td><td>关联的 LIN Frame 引用（来自 LDF 导入）</td></tr>
+      <tr><td class="m">LinIfScheduleTableRef</td><td>调度表引用，LinSM 通知切换时使用</td></tr>
+      <tr><td class="m">LinIfSlaveFrameErrorNotification</td><td>Frame Error 回调函数</td></tr>
+      <tr><td class="m">LinIfMasterToSlaveDelay</td><td>Header 发送完成到 Response 超时的等待时间</td></tr>
+      <tr><td class="m">LinIfSlaveToMasterDelay</td><td>Response 最后字节到下一 Header 的最小间隔</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- ─ SEQ NORMAL ─ -->
+<div class="panel" id="pnl-seq-normal">
+  <div class="ph">
+    <div class="ph-tag">Normal Communication Timing</div>
+    <div class="ph-h1">正常通信时序</div>
+    <div class="ph-sub">Master/Slave 帧交互完整时序图</div>
+  </div>
+
+  <div class="sh">单帧通信时序（Master Publisher）</div>
+  <div class="sw">
+    <svg viewBox="0 0 820 320" xmlns="http://www.w3.org/2000/svg" style="font-family:'Inconsolata',monospace;max-width:820px;width:100%;min-width:620px">
+      <defs>
+        <marker id="nm1" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#1d6b58"/></marker>
+        <marker id="nm2" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#4a5e2a"/></marker>
+      </defs>
+
+      <!-- Header -->
+      <rect x="0" y="0" width="820" height="42" fill="#e4f0ec"/>
+      <rect x="60" y="6" width="120" height="28" rx="5" fill="#1a4a3c"/>
+      <text x="120" y="24" text-anchor="middle" font-size="11" fill="#fff" font-weight="600">Master (BCM)</text>
+      <rect x="640" y="6" width="140" height="28" rx="5" fill="#2d5a3e"/>
+      <text x="710" y="24" text-anchor="middle" font-size="11" fill="#fff" font-weight="600">Slave (WinMotor)</text>
+
+      <!-- Lifelines -->
+      <line x1="120" y1="42" x2="120" y2="300" stroke="#9ecfbf" stroke-width="1" stroke-dasharray="5,4"/>
+      <line x1="710" y1="42" x2="710" y2="300" stroke="#aed0c0" stroke-width="1" stroke-dasharray="5,4"/>
+
+      <!-- Break field -->
+      <rect x="90" y="55" width="60" height="20" rx="3" fill="#1a4a3c"/>
+      <text x="120" y="69" text-anchor="middle" font-size="8" fill="#fff">Break</text>
+      <line x1="150" y1="65" x2="700" y2="65" stroke="#1d6b58" stroke-width="1.5" marker-end="url(#nm1)"/>
+      <text x="35" y="68" text-anchor="middle" font-size="8" fill="#6a8076">t=0</text>
+      <text x="400" y="59" text-anchor="middle" font-size="8" fill="#1d6b58">Break Field (13+位显性)</text>
+
+      <!-- Sync byte -->
+      <rect x="90" y="88" width="60" height="18" rx="3" fill="#2d5a3e"/>
+      <text x="120" y="101" text-anchor="middle" font-size="8" fill="#fff">Sync 0x55</text>
+      <line x1="150" y1="97" x2="700" y2="97" stroke="#1d6b58" stroke-width="1.5" marker-end="url(#nm1)"/>
+      <!-- Slave measures baud rate -->
+      <rect x="670" y="88" width="110" height="18" rx="3" fill="#eaf3ef" stroke="#aed0c0" stroke-width="1"/>
+      <text x="725" y="101" text-anchor="middle" font-size="8" fill="#1d6b58">测量波特率</text>
+      <text x="35" y="100" text-anchor="middle" font-size="8" fill="#6a8076">+1ms</text>
+
+      <!-- PID -->
+      <rect x="90" y="120" width="60" height="18" rx="3" fill="#2d5a3e"/>
+      <text x="120" y="133" text-anchor="middle" font-size="8" fill="#fff">PID 0x01</text>
+      <line x1="150" y1="129" x2="700" y2="129" stroke="#1d6b58" stroke-width="1.5" marker-end="url(#nm1)"/>
+      <text x="35" y="132" text-anchor="middle" font-size="8" fill="#6a8076">+0.5ms</text>
+      <!-- Slave matches PID -->
+      <rect x="670" y="120" width="110" height="18" rx="3" fill="#eaf3ef" stroke="#aed0c0" stroke-width="1"/>
+      <text x="725" y="133" text-anchor="middle" font-size="8" fill="#1d6b58">PID匹配=Subscriber</text>
+
+      <!-- Header bracket -->
+      <line x1="22" y1="55" x2="22" y2="140" stroke="#1a4a3c" stroke-width="1"/>
+      <line x1="18" y1="55" x2="26" y2="55" stroke="#1a4a3c" stroke-width="1"/>
+      <line x1="18" y1="140" x2="26" y2="140" stroke="#1a4a3c" stroke-width="1"/>
+      <text x="12" y="100" text-anchor="middle" font-size="8" fill="#1a4a3c" transform="rotate(-90,12,100)">Header</text>
+
+      <!-- Response: Master is Publisher (sends data) -->
+      <text x="400" y="158" text-anchor="middle" font-size="9" fill="#3d5c2e" font-weight="600">Master 作为 Publisher，发送 Response</text>
+
+      <!-- Data bytes -->
+      <rect x="90" y="166" width="200" height="20" rx="3" fill="#4a7c6a"/>
+      <text x="190" y="180" text-anchor="middle" font-size="9" fill="#fff">Data Bytes [0xA0, 0x03] (控制指令)</text>
+      <line x1="290" y1="176" x2="700" y2="176" stroke="#4a5e2a" stroke-width="1.5" marker-end="url(#nm2)"/>
+      <text x="35" y="179" text-anchor="middle" font-size="8" fill="#6a8076">+0.5ms</text>
+
+      <!-- Checksum -->
+      <rect x="90" y="200" width="80" height="18" rx="3" fill="#4a7c6a"/>
+      <text x="130" y="213" text-anchor="middle" font-size="8" fill="#fff">Checksum</text>
+      <line x1="170" y1="209" x2="700" y2="209" stroke="#4a5e2a" stroke-width="1.5" marker-end="url(#nm2)"/>
+
+      <!-- Slave receives and processes -->
+      <rect x="665" y="200" width="120" height="20" rx="3" fill="#eaf3ef" stroke="#aed0c0" stroke-width="1"/>
+      <text x="725" y="214" text-anchor="middle" font-size="8" fill="#1d6b58">校验通过→更新信号</text>
+
+      <!-- Response bracket -->
+      <line x1="22" y1="166" x2="22" y2="220" stroke="#4a7c6a" stroke-width="1"/>
+      <line x1="18" y1="166" x2="26" y2="166" stroke="#4a7c6a" stroke-width="1"/>
+      <line x1="18" y1="220" x2="26" y2="220" stroke="#4a7c6a" stroke-width="1"/>
+      <text x="12" y="196" text-anchor="middle" font-size="8" fill="#4a7c6a" transform="rotate(-90,12,196)">Response</text>
+
+      <!-- Slot time bracket -->
+      <line x1="40" y1="240" x2="750" y2="240" stroke="#9ab0a8" stroke-width="1"/>
+      <line x1="40" y1="236" x2="40" y2="244" stroke="#9ab0a8" stroke-width="1"/>
+      <line x1="750" y1="236" x2="750" y2="244" stroke="#9ab0a8" stroke-width="1"/>
+      <text x="395" y="256" text-anchor="middle" font-size="9" fill="#6a8076">Frame Slot Time (8ms 典型)</text>
+
+      <!-- Next frame header starts -->
+      <text x="35" y="280" text-anchor="middle" font-size="8" fill="#9ab0a8">+IFS</text>
+      <rect x="60" y="270" width="180" height="18" rx="3" fill="#e4f0ec" stroke="#9ecfbf" stroke-width="1"/>
+      <text x="150" y="283" text-anchor="middle" font-size="9" fill="#0f3028">下一帧 Header 开始...</text>
+    </svg>
+  </div>
+
+  <div class="sh">Slave Publisher 时序（Slave 回复 Response）</div>
+  <div class="sw">
+    <svg viewBox="0 0 820 260" xmlns="http://www.w3.org/2000/svg" style="font-family:'Inconsolata',monospace;max-width:820px;width:100%;min-width:620px">
+      <defs>
+        <marker id="sp1" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#1d6b58"/></marker>
+        <marker id="sp2" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#3d5c2e"/></marker>
+      </defs>
+
+      <rect x="0" y="0" width="820" height="42" fill="#e4f0ec"/>
+      <rect x="60" y="6" width="120" height="28" rx="5" fill="#1a4a3c"/>
+      <text x="120" y="24" text-anchor="middle" font-size="11" fill="#fff" font-weight="600">Master</text>
+      <rect x="640" y="6" width="140" height="28" rx="5" fill="#2d5a3e"/>
+      <text x="710" y="24" text-anchor="middle" font-size="11" fill="#fff" font-weight="600">Slave (Publisher)</text>
+
+      <line x1="120" y1="42" x2="120" y2="240" stroke="#9ecfbf" stroke-width="1" stroke-dasharray="5,4"/>
+      <line x1="710" y1="42" x2="710" y2="240" stroke="#aed0c0" stroke-width="1" stroke-dasharray="5,4"/>
+
+      <!-- Master sends Header -->
+      <rect x="90" y="52" width="150" height="20" rx="3" fill="#1a4a3c"/>
+      <text x="165" y="66" text-anchor="middle" font-size="9" fill="#fff">Break + Sync + PID(0x11)</text>
+      <line x1="240" y1="62" x2="700" y2="62" stroke="#1d6b58" stroke-width="1.5" marker-end="url(#sp1)"/>
+
+      <!-- Slave recognizes as Publisher -->
+      <rect x="655" y="52" width="120" height="20" rx="3" fill="#eaf3ef" stroke="#aed0c0"/>
+      <text x="715" y="66" text-anchor="middle" font-size="8" fill="#1d6b58">PID匹配=Publisher!</text>
+
+      <!-- T_header_tx_end time -->
+      <text x="35" y="85" text-anchor="middle" font-size="8" fill="#9ab0a8">+2.2ms</text>
+
+      <!-- Slave sends Response (inter-byte gap first) -->
+      <text x="400" y="100" text-anchor="middle" font-size="9" fill="#3d5c2e" font-weight="600">← Slave 发送 Response（含位置+电流+状态）</text>
+
+      <rect x="565" y="108" width="220" height="20" rx="3" fill="#4a7c6a"/>
+      <text x="675" y="122" text-anchor="middle" font-size="9" fill="#fff">Data [0x7A, 0x35, 0x02, 0x00] + CRC</text>
+      <line x1="565" y1="118" x2="135" y2="118" stroke="#3d5c2e" stroke-width="1.5" marker-end="url(#sp2)"/>
+      <text x="35" y="121" text-anchor="middle" font-size="8" fill="#6a8076">+0.5ms</text>
+
+      <!-- Master checks CRC -->
+      <rect x="75" y="108" width="110" height="20" rx="3" fill="#e4f0ec" stroke="#9ecfbf"/>
+      <text x="130" y="122" text-anchor="middle" font-size="8" fill="#0f3028">校验→读取信号</text>
+
+      <!-- Response timeout window -->
+      <line x1="240" y1="150" x2="560" y2="150" stroke="#a8c8a8" stroke-width="1" stroke-dasharray="3,2"/>
+      <text x="400" y="165" text-anchor="middle" font-size="8" fill="#6a8076">Response Window（Master 等待 Slave 回复的超时窗口）</text>
+
+      <!-- No response scenario -->
+      <rect x="240" y="178" width="500" height="18" rx="3" fill="#fdf4e0" stroke="#d4b070"/>
+      <text x="490" y="191" text-anchor="middle" font-size="9" fill="#4a3000">若超时无 Response → Master 记录 Frame Error，通知 LinSM</text>
+
+      <text x="35" y="230" text-anchor="middle" font-size="7" fill="#9ab0a8">注意:</text>
+      <text x="400" y="230" text-anchor="middle" font-size="8" fill="#9ab0a8">Slave 必须在 T_header_tx_end 后 ≤ T_slave_to_master_delay 内开始发送 Response</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ─ SEQ WAKEUP ─ -->
+<div class="panel" id="pnl-seq-wakeup">
+  <div class="ph">
+    <div class="ph-tag">Wakeup / Sleep Timing</div>
+    <div class="ph-h1">唤醒与休眠时序</div>
+    <div class="ph-sub">LIN 总线睡眠进入与唤醒帧机制</div>
+  </div>
+
+  <div class="sh">LIN 休眠机制</div>
+  <p>LIN 没有独立的网络管理协议，休眠由 Master 通过发送<strong>睡眠命令帧（Go-to-Sleep Frame）</strong>触发，唤醒通过检测总线唤醒脉冲实现。</p>
+
+  <div class="box box-teal"><strong>Go-to-Sleep Frame：</strong>是一个特殊的无条件帧（ID=0x3C，即 MRF），其 Response 由 Master 自己发送，内容为固定字节 <code>[0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]</code>（NAD=0x00 为广播）。所有 Slave 收到此帧后进入睡眠模式。</div>
+
+  <div class="sh">唤醒与休眠完整时序</div>
+  <div class="sw">
+    <svg viewBox="0 0 820 380" xmlns="http://www.w3.org/2000/svg" style="font-family:'Inconsolata',monospace;max-width:820px;width:100%;min-width:640px">
+      <defs>
+        <marker id="ws1" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#1d6b58"/></marker>
+        <marker id="ws2" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#3d5c2e"/></marker>
+        <marker id="ws3" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#7a5200"/></marker>
+      </defs>
+
+      <rect x="0" y="0" width="820" height="42" fill="#e4f0ec"/>
+      <rect x="50" y="6" width="120" height="28" rx="5" fill="#1a4a3c"/>
+      <text x="110" y="24" text-anchor="middle" font-size="10" fill="#fff" font-weight="600">Master</text>
+      <rect x="350" y="6" width="130" height="28" rx="5" fill="#2d5a3e"/>
+      <text x="415" y="24" text-anchor="middle" font-size="10" fill="#fff" font-weight="600">Slave 1</text>
+      <rect x="640" y="6" width="130" height="28" rx="5" fill="#3d6b4e"/>
+      <text x="705" y="24" text-anchor="middle" font-size="10" fill="#fff" font-weight="600">Slave 2</text>
+
+      <line x1="110" y1="42" x2="110" y2="360" stroke="#9ecfbf" stroke-width="1" stroke-dasharray="5,4"/>
+      <line x1="415" y1="42" x2="415" y2="360" stroke="#aed0c0" stroke-width="1" stroke-dasharray="5,4"/>
+      <line x1="705" y1="42" x2="705" y2="360" stroke="#b0c8b0" stroke-width="1" stroke-dasharray="5,4"/>
+
+      <!-- Normal operation -->
+      <rect x="60" y="50" width="720" height="20" rx="3" fill="#e4f0ec" stroke="#9ecfbf"/>
+      <text x="420" y="64" text-anchor="middle" font-size="9" fill="#0f3028">正常调度表运行中……（周期帧交互）</text>
+
+      <!-- Go-to-Sleep -->
+      <rect x="60" y="82" width="120" height="20" rx="3" fill="#7a5200"/>
+      <text x="120" y="96" text-anchor="middle" font-size="8" fill="#fff">Go-to-Sleep</text>
+      <line x1="180" y1="92" x2="405" y2="92" stroke="#7a5200" stroke-width="2" marker-end="url(#ws3)"/>
+      <line x1="180" y1="92" x2="695" y2="92" stroke="#7a5200" stroke-width="2" marker-end="url(#ws3)"/>
+      <text x="35" y="95" text-anchor="middle" font-size="8" fill="#6a8076">t=0</text>
+      <text x="320" y="86" text-anchor="middle" font-size="9" fill="#7a5200">Go-to-Sleep Frame [0x3C: 0x00, 0xFF×7]</text>
+
+      <!-- Slaves enter sleep -->
+      <rect x="380" y="112" width="70" height="16" rx="3" fill="#fdf4e0" stroke="#d4b070"/>
+      <text x="415" y="123" text-anchor="middle" font-size="8" fill="#7a5200">进入休眠</text>
+      <rect x="670" y="112" width="70" height="16" rx="3" fill="#fdf4e0" stroke="#d4b070"/>
+      <text x="705" y="123" text-anchor="middle" font-size="8" fill="#7a5200">进入休眠</text>
+      <!-- Master also sleeps -->
+      <rect x="75" y="112" width="70" height="16" rx="3" fill="#fdf4e0" stroke="#d4b070"/>
+      <text x="110" y="123" text-anchor="middle" font-size="8" fill="#7a5200">进入休眠</text>
+
+      <!-- Sleep state bar -->
+      <rect x="60" y="140" width="720" height="16" rx="2" fill="#fdf4e0" stroke="#d4b070" stroke-width="1"/>
+      <text x="420" y="152" text-anchor="middle" font-size="9" fill="#7a5200" font-weight="600">Bus-Sleep 状态（总线静默，收发器低功耗）</text>
+
+      <!-- Wakeup pulse from Master -->
+      <text x="35" y="182" text-anchor="middle" font-size="8" fill="#1d6b58">唤醒</text>
+      <rect x="60" y="172" width="120" height="18" rx="3" fill="#1a4a3c"/>
+      <text x="120" y="185" text-anchor="middle" font-size="8" fill="#fff">Wake-up Pulse</text>
+      <line x1="180" y1="181" x2="405" y2="181" stroke="#1d6b58" stroke-width="2.5" marker-end="url(#ws1)"/>
+      <line x1="180" y1="181" x2="695" y2="181" stroke="#1d6b58" stroke-width="2.5" marker-end="url(#ws1)"/>
+      <text x="380" y="175" text-anchor="middle" font-size="9" fill="#1d6b58">唤醒脉冲（250μs~5ms 显性信号）</text>
+
+      <!-- Slaves detect wakeup -->
+      <rect x="380" y="202" width="70" height="16" rx="3" fill="#e4f0ec" stroke="#9ecfbf"/>
+      <text x="415" y="213" text-anchor="middle" font-size="8" fill="#0f3028">检测唤醒</text>
+      <rect x="670" y="202" width="70" height="16" rx="3" fill="#e4f0ec" stroke="#9ecfbf"/>
+      <text x="705" y="213" text-anchor="middle" font-size="8" fill="#0f3028">检测唤醒</text>
+
+      <!-- Wakeup wait time -->
+      <rect x="60" y="228" width="720" height="16" rx="2" fill="#e4f0ec" stroke="#9ecfbf"/>
+      <text x="420" y="240" text-anchor="middle" font-size="9" fill="#1d6b58">等待 T_wakeup (100ms~150ms)，Slave 初始化完成</text>
+
+      <!-- Master sends first Header -->
+      <rect x="60" y="255" width="150" height="18" rx="3" fill="#1a4a3c"/>
+      <text x="135" y="268" text-anchor="middle" font-size="8" fill="#fff">Break+Sync+PID (首帧)</text>
+      <line x1="210" y1="264" x2="405" y2="264" stroke="#1d6b58" stroke-width="1.5" marker-end="url(#ws1)"/>
+      <line x1="210" y1="264" x2="695" y2="264" stroke="#1d6b58" stroke-width="1.5" marker-end="url(#ws1)"/>
+      <text x="35" y="267" text-anchor="middle" font-size="8" fill="#6a8076">+100ms</text>
+
+      <!-- Slaves respond -->
+      <rect x="370" y="283" width="90" height="16" rx="3" fill="#eaf3ef" stroke="#aed0c0"/>
+      <text x="415" y="294" text-anchor="middle" font-size="8" fill="#0f3028">恢复正常</text>
+      <rect x="660" y="283" width="90" height="16" rx="3" fill="#eaf3ef" stroke="#aed0c0"/>
+      <text x="705" y="294" text-anchor="middle" font-size="8" fill="#0f3028">恢复正常</text>
+
+      <!-- Normal operation resumes -->
+      <rect x="60" y="312" width="720" height="20" rx="3" fill="#e4f0ec" stroke="#9ecfbf"/>
+      <text x="420" y="326" text-anchor="middle" font-size="9" fill="#0f3028">正常调度表恢复运行</text>
+
+      <!-- Wakeup bracket -->
+      <line x1="795" y1="172" x2="795" y2="312" stroke="#1d6b58" stroke-width="1"/>
+      <line x1="791" y1="172" x2="799" y2="172" stroke="#1d6b58" stroke-width="1"/>
+      <line x1="791" y1="312" x2="799" y2="312" stroke="#1d6b58" stroke-width="1"/>
+      <text x="812" y="248" text-anchor="middle" font-size="8" fill="#1d6b58" transform="rotate(90,812,248)">唤醒序列 (~150ms)</text>
+    </svg>
+  </div>
+
+  <div class="sh">Slave 主动唤醒（可选）</div>
+  <div class="box box-moss">某些 LIN 规范允许 Slave 主动发送唤醒脉冲（例如 Slave 检测到按钮按下后触发总线唤醒）。Slave 唤醒脉冲长度为 250μs~5ms 的显性信号。Master 检测到总线活动后进入正常调度流程，并在确认总线活跃后开始发送 Header。</div>
+</div>
+
+<!-- ─ SEQ DIAG ─ -->
+<div class="panel" id="pnl-seq-diag">
+  <div class="ph">
+    <div class="ph-tag">Diagnostic Timing</div>
+    <div class="ph-h1">诊断时序</div>
+    <div class="ph-sub">ReadDataByIdentifier 单帧与多帧诊断完整交互</div>
+  </div>
+
+  <div class="sh">单帧诊断（SF）：ReadByIdentifier</div>
+  <div class="sw">
+    <svg viewBox="0 0 820 300" xmlns="http://www.w3.org/2000/svg" style="font-family:'Inconsolata',monospace;max-width:820px;width:100%;min-width:640px">
+      <defs>
+        <marker id="dq1" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#1d6b58"/></marker>
+        <marker id="dq2" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#3d5c2e"/></marker>
+        <marker id="dq3" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#2a3d5a"/></marker>
+      </defs>
+
+      <rect x="0" y="0" width="820" height="40" fill="#e8edf5"/>
+      <rect x="40" y="5" width="120" height="28" rx="5" fill="#2a3d5a"/>
+      <text x="100" y="23" text-anchor="middle" font-size="10" fill="#fff" font-weight="600">诊断仪 (CAN)</text>
+      <rect x="290" y="5" width="120" height="28" rx="5" fill="#1a4a3c"/>
+      <text x="350" y="23" text-anchor="middle" font-size="10" fill="#fff" font-weight="600">GW/Master</text>
+      <rect x="600" y="5" width="120" height="28" rx="5" fill="#2d5a3e"/>
+      <text x="660" y="23" text-anchor="middle" font-size="10" fill="#fff" font-weight="600">LIN Slave</text>
+
+      <line x1="100" y1="40" x2="100" y2="280" stroke="#a8bcd4" stroke-width="1" stroke-dasharray="5,4"/>
+      <line x1="350" y1="40" x2="350" y2="280" stroke="#9ecfbf" stroke-width="1" stroke-dasharray="5,4"/>
+      <line x1="660" y1="40" x2="660" y2="280" stroke="#aed0c0" stroke-width="1" stroke-dasharray="5,4"/>
+
+      <!-- CAN → GW: UDS Request -->
+      <line x1="100" y1="60" x2="340" y2="60" stroke="#2a3d5a" stroke-width="1.5" marker-end="url(#dq3)"/>
+      <rect x="150" y="46" width="145" height="16" rx="3" fill="#e8edf5"/>
+      <text x="222" y="57" text-anchor="middle" font-size="8" fill="#2a3d5a">UDS 22 F1 90 (ReadDID) via CAN</text>
+
+      <!-- GW switches to Diag Schedule -->
+      <rect x="316" y="70" width="68" height="16" rx="3" fill="#e4f0ec" stroke="#9ecfbf"/>
+      <text x="350" y="81" text-anchor="middle" font-size="8" fill="#0f3028">切诊断调度表</text>
+
+      <!-- GW sends MRF (0x3C) -->
+      <line x1="350" y1="98" x2="650" y2="98" stroke="#1d6b58" stroke-width="1.5" marker-end="url(#dq1)"/>
+      <rect x="375" y="84" width="250" height="16" rx="3" fill="#e4f0ec"/>
+      <text x="500" y="95" text-anchor="middle" font-size="8" fill="#0f3028">MRF(0x3C): NAD=0x01, PCI=0x03, SID=0xB2, ID=0x00 ...</text>
+      <text x="30" y="97" text-anchor="middle" font-size="8" fill="#6a8076">+10ms</text>
+
+      <!-- GW sends SRF Header (0x3D) -->
+      <line x1="350" y1="128" x2="650" y2="128" stroke="#1d6b58" stroke-width="1.5" marker-end="url(#dq1)"/>
+      <rect x="370" y="114" width="240" height="16" rx="3" fill="#e4f0ec"/>
+      <text x="490" y="125" text-anchor="middle" font-size="8" fill="#0f3028">SRF Header (0x3D): Break+Sync+PID</text>
+      <text x="30" y="127" text-anchor="middle" font-size="8" fill="#6a8076">+10ms</text>
+
+      <!-- Slave sends SRF Response -->
+      <line x1="650" y1="158" x2="360" y2="158" stroke="#3d5c2e" stroke-width="1.5" marker-end="url(#dq2)"/>
+      <rect x="390" y="144" width="240" height="16" rx="3" fill="#eaf3ef"/>
+      <text x="510" y="155" text-anchor="middle" font-size="8" fill="#0f3028">SRF Resp: NAD=0x01, PCI=0x04, RSID=0xF2, Data...</text>
+      <text x="30" y="157" text-anchor="middle" font-size="8" fill="#6a8076">+0.5ms</text>
+
+      <!-- GW switches back to Normal Schedule -->
+      <rect x="316" y="174" width="68" height="16" rx="3" fill="#e4f0ec" stroke="#9ecfbf"/>
+      <text x="350" y="185" text-anchor="middle" font-size="8" fill="#0f3028">切回正常调度表</text>
+
+      <!-- GW forwards to CAN -->
+      <line x1="350" y1="202" x2="110" y2="202" stroke="#1d6b58" stroke-width="1.5" marker-end="url(#dq3)"/>
+      <rect x="150" y="188" width="155" height="16" rx="3" fill="#e8edf5"/>
+      <text x="227" y="199" text-anchor="middle" font-size="8" fill="#2a3d5a">UDS 62 F1 90 [DID Data] via CAN</text>
+      <text x="30" y="201" text-anchor="middle" font-size="8" fill="#6a8076">+2ms</text>
+
+      <!-- Note about P2 timer -->
+      <rect x="60" y="228" width="700" height="30" rx="4" fill="#f0fdf8" stroke="#b0d4c4" stroke-width="1"/>
+      <text x="410" y="242" text-anchor="middle" font-size="9" fill="#1d6b58">GW 需在 CAN 侧 P2Server_max 内完成 LIN 诊断并回复</text>
+      <text x="410" y="256" text-anchor="middle" font-size="9" fill="#4a7c6a">LIN 诊断耗时 ≈ 2 × Frame Slot Time（MRF+SRF 各一帧）≈ 20ms</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ─ FLOWCHART ─ -->
+<div class="panel" id="pnl-flowchart">
+  <div class="ph">
+    <div class="ph-tag">Process Flowcharts</div>
+    <div class="ph-h1">流程框图</div>
+    <div class="ph-sub">Master 调度主循环与 Slave 帧处理流程</div>
+  </div>
+
+  <div class="sh">Master 调度主循环流程</div>
+  <div class="sw">
+    <svg viewBox="0 0 700 660" xmlns="http://www.w3.org/2000/svg" style="font-family:'Outfit',sans-serif;max-width:700px;width:100%;min-width:500px">
+      <defs>
+        <marker id="fc1" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#3a4f46"/></marker>
+        <marker id="fc2" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#1d6b58"/></marker>
+        <marker id="fc3" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#4a5e2a"/></marker>
+        <marker id="fc4" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#7a5200"/></marker>
+      </defs>
+
+      <!-- Start -->
+      <ellipse cx="350" cy="30" rx="90" ry="22" fill="#1a4a3c"/>
+      <text x="350" y="34" text-anchor="middle" font-size="11" fill="#fff" font-weight="600">系统上电 / LinIf 启动</text>
+      <line x1="350" y1="52" x2="350" y2="74" stroke="#3a4f46" stroke-width="1.5" marker-end="url(#fc1)"/>
+
+      <!-- Init -->
+      <rect x="225" y="74" width="250" height="38" rx="6" fill="#e4f0ec" stroke="#9ecfbf" stroke-width="1.3"/>
+      <text x="350" y="88" text-anchor="middle" font-size="10" fill="#0f3028" font-weight="600">初始化 LIN 驱动</text>
+      <text x="350" y="103" text-anchor="middle" font-size="8" fill="#4a7c6a">设置波特率、调度表指针归零</text>
+      <line x1="350" y1="112" x2="350" y2="134" stroke="#3a4f46" stroke-width="1.5" marker-end="url(#fc1)"/>
+
+      <!-- Diamond: Schedule change requested? -->
+      <polygon points="350,134 460,162 350,190 240,162" fill="#f0fdf8" stroke="#9ecfbf" stroke-width="1.3"/>
+      <text x="350" y="159" text-anchor="middle" font-size="10" fill="#0f3028">调度表切换</text>
+      <text x="350" y="174" text-anchor="middle" font-size="10" fill="#0f3028">请求?</text>
+      <!-- Yes -->
+      <line x1="460" y1="162" x2="560" y2="162" stroke="#1d6b58" stroke-width="1.3" marker-end="url(#fc2)"/>
+      <text x="495" y="156" font-size="9" fill="#1d6b58">是</text>
+      <rect x="560" y="148" width="110" height="28" rx="4" fill="#e4f0ec" stroke="#9ecfbf"/>
+      <text x="615" y="165" text-anchor="middle" font-size="9" fill="#0f3028">切换调度表</text>
+      <!-- Arrow back -->
+      <line x1="615" y1="176" x2="615" y2="200" stroke="#1d6b58" stroke-width="1.2" stroke-dasharray="3,2"/>
+      <line x1="615" y1="200" x2="462" y2="200" stroke="#1d6b58" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#fc2)"/>
+      <text x="330" y="196" font-size="9" fill="#3a4f46">否</text>
+      <line x1="350" y1="190" x2="350" y2="212" stroke="#3a4f46" stroke-width="1.5" marker-end="url(#fc1)"/>
+
+      <!-- Get next frame from schedule -->
+      <rect x="225" y="212" width="250" height="38" rx="6" fill="#eaf3ef" stroke="#aed0c0" stroke-width="1.3"/>
+      <text x="350" y="226" text-anchor="middle" font-size="10" fill="#0f3028" font-weight="600">取调度表下一帧</text>
+      <text x="350" y="241" text-anchor="middle" font-size="8" fill="#4a7c6a">frameId ← schedule[index++]</text>
+      <line x1="350" y1="250" x2="350" y2="272" stroke="#3a4f46" stroke-width="1.5" marker-end="url(#fc1)"/>
+
+      <!-- Diamond: Sporadic frame? -->
+      <polygon points="350,272 460,300 350,328 240,300" fill="#f0fdf8" stroke="#aed0c0" stroke-width="1.3"/>
+      <text x="350" y="297" text-anchor="middle" font-size="10" fill="#0f3028">偶发帧且</text>
+      <text x="350" y="312" text-anchor="middle" font-size="10" fill="#0f3028">数据未更新?</text>
+      <!-- Yes → skip -->
+      <line x1="460" y1="300" x2="570" y2="300" stroke="#7a5200" stroke-width="1.3" stroke-dasharray="4,3" marker-end="url(#fc4)"/>
+      <text x="495" y="294" font-size="9" fill="#7a5200">是</text>
+      <rect x="570" y="286" width="90" height="28" rx="4" fill="#fdf4e0" stroke="#d4b070"/>
+      <text x="615" y="303" text-anchor="middle" font-size="9" fill="#7a5200">跳过此帧</text>
+      <line x1="615" y1="314" x2="615" y2="360" stroke="#7a5200" stroke-width="1.2" stroke-dasharray="3,2"/>
+      <line x1="615" y1="360" x2="462" y2="360" stroke="#7a5200" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#fc4)"/>
+      <text x="350" y="334" font-size="9" fill="#3a4f46">否</text>
+      <line x1="350" y1="328" x2="350" y2="350" stroke="#3a4f46" stroke-width="1.5" marker-end="url(#fc1)"/>
+
+      <!-- Send Header -->
+      <rect x="225" y="350" width="250" height="38" rx="6" fill="#1a4a3c"/>
+      <text x="350" y="364" text-anchor="middle" font-size="10" fill="#fff" font-weight="600">发送 Header</text>
+      <text x="350" y="379" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.7)">Break + Sync + PID</text>
+      <line x1="350" y1="388" x2="350" y2="410" stroke="#3a4f46" stroke-width="1.5" marker-end="url(#fc1)"/>
+
+      <!-- Diamond: Master or Slave Publisher? -->
+      <polygon points="350,410 460,438 350,466 240,438" fill="#eaf3ef" stroke="#aed0c0" stroke-width="1.3"/>
+      <text x="350" y="435" text-anchor="middle" font-size="10" fill="#0f3028">Master 是</text>
+      <text x="350" y="450" text-anchor="middle" font-size="10" fill="#0f3028">Publisher?</text>
+      <!-- Yes: Master sends response -->
+      <line x1="460" y1="438" x2="555" y2="438" stroke="#1d6b58" stroke-width="1.3" marker-end="url(#fc2)"/>
+      <text x="495" y="432" font-size="9" fill="#1d6b58">是</text>
+      <rect x="555" y="424" width="110" height="28" rx="4" fill="#e4f0ec" stroke="#9ecfbf"/>
+      <text x="610" y="441" text-anchor="middle" font-size="9" fill="#0f3028">Master 发送</text>
+      <text x="610" y="453" text-anchor="middle" font-size="9" fill="#0f3028">Response</text>
+      <!-- No: wait for Slave -->
+      <text x="295" y="472" font-size="9" fill="#3a4f46">否</text>
+      <line x1="350" y1="466" x2="350" y2="488" stroke="#3a4f46" stroke-width="1.5" marker-end="url(#fc1)"/>
+
+      <!-- Wait for Slave Response / timeout -->
+      <rect x="225" y="488" width="250" height="38" rx="6" fill="#eaf3ef" stroke="#aed0c0" stroke-width="1.3"/>
+      <text x="350" y="502" text-anchor="middle" font-size="10" fill="#0f3028" font-weight="600">等待 Slave Response</text>
+      <text x="350" y="517" text-anchor="middle" font-size="8" fill="#4a7c6a">启动 Response 超时定时器</text>
+
+      <!-- Both paths join -->
+      <line x1="610" y1="452" x2="610" y2="540" stroke="#1d6b58" stroke-width="1.2" stroke-dasharray="3,2"/>
+      <line x1="610" y1="540" x2="462" y2="540" stroke="#1d6b58" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#fc2)"/>
+      <line x1="350" y1="526" x2="350" y2="548" stroke="#3a4f46" stroke-width="1.5" marker-end="url(#fc1)"/>
+
+      <!-- Wait slot time -->
+      <rect x="225" y="548" width="250" height="38" rx="6" fill="#f0f5f3" stroke="#b8ccc4" stroke-width="1.3"/>
+      <text x="350" y="562" text-anchor="middle" font-size="10" fill="#0f3028" font-weight="600">等待 Frame Slot Time 结束</text>
+      <text x="350" y="577" text-anchor="middle" font-size="8" fill="#6a8076">检查错误，通知 LinIf 上层</text>
+      <line x1="350" y1="586" x2="350" y2="606" stroke="#3a4f46" stroke-width="1.5" marker-end="url(#fc1)"/>
+
+      <!-- Loop back -->
+      <rect x="225" y="606" width="250" height="30" rx="6" fill="#e4f0ec" stroke="#9ecfbf" stroke-width="1.3"/>
+      <text x="350" y="625" text-anchor="middle" font-size="10" fill="#0f3028">继续下一调度项</text>
+      <!-- Loop arrow -->
+      <line x1="225" y1="621" x2="170" y2="621" stroke="#1d6b58" stroke-width="1.5"/>
+      <line x1="170" y1="621" x2="170" y2="162" stroke="#1d6b58" stroke-width="1.5"/>
+      <line x1="170" y1="162" x2="238" y2="162" stroke="#1d6b58" stroke-width="1.5" marker-end="url(#fc2)"/>
+    </svg>
+  </div>
+</div>
+
+<!-- ─ SCENARIO ─ -->
+<div class="panel" id="pnl-scenario">
+  <div class="ph">
+    <div class="ph-tag">Application Scenarios</div>
+    <div class="ph-h1">典型应用场景</div>
+    <div class="ph-sub">LIN 在汽车各子系统中的具体应用</div>
+  </div>
+
+  <div class="sh">场景一：车门控制模块（DCM）</div>
+  <div class="box box-pine"><strong>典型配置：</strong>BCM 作为 LIN Master，车门控制 ECU（DCM）作为 Slave（NAD=0x01~0x04，对应左前/右前/左后/右后）。<br>
+  <strong>信号列表：</strong>车窗位置（0~100%）、升降速度、防夹力反馈、门锁状态、门把手检测、后视镜角度（H/V）<br>
+  <strong>调度设计：</strong>车窗控制帧 10ms 周期（实时性要求高），门锁状态帧 50ms 周期（低频监测），后视镜 20ms 周期<br>
+  <strong>波特率：</strong>20 kbps，总节点：4 个 Slave，调度表总周期约 40ms</div>
+
+  <div class="sh">场景二：雨刮系统</div>
+  <div class="box box-teal"><strong>典型配置：</strong>BCM 作为 Master，雨刮传感器（雨量传感器 + 光线传感器）作为 Slave。<br>
+  <strong>信号：</strong>雨量值（0~255）、光线强度、雨滴检测状态、建议雨刮速度（0=停、1=慢、2=快、3=间歇）<br>
+  <strong>特点：</strong>传感器仅有读取需求，所有帧均由 Slave 发布（S→M 方向），Master 定期轮询。<br>
+  <strong>调度：</strong>单一调度表，20ms 周期，帧极少（2~3帧），总线利用率 &lt;15%</div>
+
+  <div class="sh">场景三：智能前大灯（AFS）</div>
+  <div class="box box-moss"><strong>典型配置：</strong>BCM/前大灯控制 ECU 作为 Master，左右光源控制 Slave（各 1 个，NAD=0x01/0x02）。<br>
+  <strong>信号：</strong>灯光亮度（PWM占空比）、近光/远光/雾灯状态、光源温度、故障标志<br>
+  <strong>LIN 优势：</strong>单线连接大幅减少灯组内部布线，灯泡直接集成 LIN Slave 芯片（ATA6625Q 等）<br>
+  <strong>特殊需求：</strong>需要 ReadByIdentifier 读取光源序列号以支持更换追踪</div>
+
+  <div class="sh">场景四：座椅控制（Memory Seat）</div>
+  <div class="box box-slate"><strong>典型配置：</strong>BCM/座椅控制 ECU 作为 Master，多个执行器 Slave（前后滑动、靠背、高度、腰托）<br>
+  <strong>信号：</strong>各轴位置反馈（8bit 分辨率）、目标位置指令、运动速度、限位开关状态<br>
+  <strong>记忆功能：</strong>通过 SaveConfiguration 服务将位置数据固化到 Slave NVM，支持多用户记忆<br>
+  <strong>节点数：</strong>通常 4~8 个 Slave，调度表设计需要仔细分配 Slot 时间避免运动延迟</div>
+
+  <div class="sh">场景五：空调 HVAC 系统</div>
+  <div class="box box-rust"><strong>典型配置：</strong>HVAC 控制 ECU 作为 Master，风门执行器、温度传感器、风机调速模块等作为 Slave<br>
+  <strong>信号：</strong>风门开度（0~100%）、出风方向、温度传感器值（内/外/蒸发器）、风机转速<br>
+  <strong>特点：</strong>HVAC 内部使用 LIN 实现系统集成，对外通过 CAN 与 BCM 交互<br>
+  <strong>电源管理：</strong>空调 LIN 子网通过独立 Sleep/Wake 控制，不受整车 CAN NM 直接影响</div>
+</div>
+
+<!-- ─ ERROR HANDLING ─ -->
+<div class="panel" id="pnl-errorhandling">
+  <div class="ph">
+    <div class="ph-tag">Error Handling</div>
+    <div class="ph-h1">错误处理</div>
+    <div class="ph-sub">LIN 通信错误类型、检测机制与处理策略</div>
+  </div>
+
+  <div class="sh">LIN 错误类型</div>
+  <div class="tw"><table>
+    <thead><tr><th>错误类型</th><th>触发条件</th><th>检测方</th><th>处理策略</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge br">Bit Error</span></td><td>发送位与回读位不匹配（总线冲突）</td><td>发送方自监听</td><td>停止发送，上报错误，等待下次调度</td></tr>
+      <tr><td><span class="badge br">Checksum Error</span></td><td>收到的校验和与计算值不符</td><td>接收方（Master/Subscriber）</td><td>丢弃数据，Master 记录 Frame Error，超限报 DTC</td></tr>
+      <tr><td><span class="badge ba">Response Error</span></td><td>Slave 未在规定时间内发送 Response</td><td>Master 超时检测</td><td>Master 标记该帧为 No Response，通知 LinSM</td></tr>
+      <tr><td><span class="badge ba">Framing Error</span></td><td>停止位不为 1，或字节格式错误</td><td>UART 硬件检测</td><td>丢弃该字节，尝试重同步</td></tr>
+      <tr><td><span class="badge bs">Sync Break Error</span></td><td>Break 长度不足（&lt;11位）或同步失败</td><td>Slave</td><td>Slave 忽略该帧，等待下一个 Break</td></tr>
+      <tr><td><span class="badge bg">Parity Error</span></td><td>PID 奇偶校验失败</td><td>Master + Slave</td><td>忽略该帧，Master 重新发送 Header</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="sh">Response Error 信号</div>
+  <div class="box box-teal">每个 LIN Slave 在 LDF 的 Node_attributes 中声明一个 <strong>response_error</strong> 信号（1 bit）。当 Slave 检测到传输错误（自己发送 Response 时 Bit Error 或 Framing Error）时，将 response_error bit 置 1 并随下一个 Response 一起发送。Master 读取此 bit 并上报给应用层，用于 DTC 判断和诊断。</div>
+
+  <div class="sh">错误处理策略</div>
+  <div class="flow">
+    <div class="fstep"><div class="fnum">1</div><div><div class="ft">单次错误容忍</div><div class="fd">偶发性 Checksum Error 或 Response Timeout 不立即报故障，先重试（下次调度自动重发 Header）</div></div></div>
+    <div class="fstep"><div class="fnum">2</div><div><div class="ft">连续错误计数</div><div class="fd">若同一帧连续 N 次（通常 3~5 次）出现错误，将该 Slave 标记为"通信失败"，上报 DTC，并通知上层应用切换到降级模式</div></div></div>
+    <div class="fstep"><div class="fnum">3</div><div><div class="ft">降级模式</div><div class="fd">失联 Slave 对应功能采用默认值（如车窗停止控制、座椅保持当前位置）；Master 继续发送 Header（为了后续恢复时能够重新通信）</div></div></div>
+    <div class="fstep"><div class="fnum">4</div><div><div class="ft">自动恢复</div><div class="fd">若失联后某次 Slave 正常响应，清除错误计数，取消降级模式，通知应用层"节点恢复"</div></div></div>
+  </div>
+</div>
+
+<!-- ─ PARAM ─ -->
+<div class="panel" id="pnl-param">
+  <div class="ph">
+    <div class="ph-tag">Parameter Reference</div>
+    <div class="ph-h1">参数速查表</div>
+    <div class="ph-sub">LIN 2.2A 关键时间参数与配置限值</div>
+  </div>
+
+  <div class="sh">LIN 时间参数</div>
+  <div class="tw"><table>
+    <thead><tr><th>参数</th><th>符号</th><th>最小值</th><th>典型值</th><th>最大值</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>Break 域长度</td><td class="m">T_Break</td><td>13 位</td><td>13 位</td><td>—</td><td>显性位数，LIN 2.0+ 推荐 13 位</td></tr>
+      <tr><td>Break Delimiter</td><td class="m">T_BreakDelim</td><td>1 位</td><td>1 位</td><td>—</td><td>隐性分隔符</td></tr>
+      <tr><td>Sync Byte 容差</td><td class="m">T_Bit 误差</td><td>—</td><td>—</td><td>±14%</td><td>Slave 波特率自适应容差范围</td></tr>
+      <tr><td>帧内字节间隔</td><td class="m">T_IBG</td><td>0</td><td>0</td><td>≤0.5ms</td><td>Response 各字节间的最大间隔</td></tr>
+      <tr><td>唤醒脉冲宽度</td><td class="m">T_WakeUp</td><td>250μs</td><td>—</td><td>5ms</td><td>唤醒显性脉冲宽度</td></tr>
+      <tr><td>唤醒超时</td><td class="m">T_WakeUpTimeout</td><td>100ms</td><td>150ms</td><td>—</td><td>Master 唤醒后等待 Slave 就绪时间</td></tr>
+      <tr><td>Slave Response 延迟</td><td class="m">T_SlaveRespDelay</td><td>0</td><td>—</td><td>T_HeaderMax</td><td>Slave 收到 PID 到发 Response 的延迟</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="sh">Frame Slot Time 计算公式</div>
+  <pre>/* Frame Slot Time 计算（位时间 = 1 / 波特率） */
+T_bit  = 1 / 20000 = 50 μs  （20kbps）
+
+T_header = (1 + 13 + 1 + 10 + 10) × T_bit  /* 停顿+Break+Delim+Sync+PID */
+         = 35 × 50μs = 1.75ms
+
+T_response = (N_data + 1) × 10 × T_bit      /* 数据字节数+1(校验) × 10位帧 */
+           = (8 + 1) × 10 × 50μs = 4.5ms   （8字节数据）
+
+T_frame_min = T_header + T_response = 1.75 + 4.5 = 6.25ms
+T_frame_slot = T_frame_min × 1.4   ≈ 8.75ms  （留14%余量）
+
+/* 不同数据长度的 Response 时间 */
+N=2: T_resp = 1.5ms  → T_slot ≈ 4.5ms
+N=4: T_resp = 2.5ms  → T_slot ≈ 6.0ms
+N=8: T_resp = 4.5ms  → T_slot ≈ 8.75ms</pre>
+
+  <div class="sh">规范文档索引</div>
+  <div class="tw"><table>
+    <thead><tr><th>文档</th><th>版本</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td class="m">LIN Specification</td><td>2.2A (2010)</td><td>LIN 2.2A 完整协议规范（物理层、数据链路层、传输层、配置服务）</td></tr>
+      <tr><td class="m">ISO 17987-1</td><td>2016</td><td>LIN 协议总体框架与术语定义</td></tr>
+      <tr><td class="m">ISO 17987-2</td><td>2016</td><td>传输协议规范（TP层）</td></tr>
+      <tr><td class="m">ISO 17987-3</td><td>2016</td><td>协议规范（数据链路层）</td></tr>
+      <tr><td class="m">ISO 17987-4</td><td>2016</td><td>电气物理层规范（12V系统）</td></tr>
+      <tr><td class="m">ISO 17987-7</td><td>2016</td><td>一致性测试规范</td></tr>
+      <tr><td class="m">SAE J2602</td><td>—</td><td>LIN 北美汽车应用子集规范（10.417kbps + 20kbps）</td></tr>
+      <tr><td class="m">AUTOSAR SWS_LinIf</td><td>R21-11</td><td>AUTOSAR LIN Interface 软件规范</td></tr>
+      <tr><td class="m">AUTOSAR SWS_LinSM</td><td>R21-11</td><td>AUTOSAR LIN State Manager 规范</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+</main>
+</div>
+
+<script>
+function go(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
+  const p=document.getElementById('pnl-'+id);
+  if(p) p.classList.add('on');
+  const n=document.querySelector(`.ni[onclick="go('${id}')"]`);
+  if(n) n.classList.add('on');
+  window.scrollTo(0,0);
+}
+</script>

@@ -1,0 +1,294 @@
+---
+title: "CCC Digital Key — 版本差异分析 R3 vs v4.1.0"
+description: ""
+date: 2026-04-09T15:06:57+08:00
+categories: ["技术文档"]
+tags: []
+draft: false
+---
+
+<style>
+
+:root{--navy:#0d2137;--blue:#1a5fa8;--blue-lt:#3a87d4;--pale:#e8f2fc;--faint:#f4f8fd;--green:#16a34a;--green-pale:#dcfce7;--amber:#b45309;--amber-pale:#fef3c7;--red:#b91c1c;--red-pale:#fee2e2;--gray:#64748b;--gray-lt:#f1f5f9;--border:#e2e8f0;--text:#1e293b;--mono:'Courier New',monospace}.hdr{background:linear-gradient(135deg,var(--navy) 0%,#1a3f6f 60%,var(--blue) 100%);color:#fff;padding:40px 48px 32px}
+.hdr .badge{display:inline-block;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:4px 14px;font-size:12px;margin-bottom:14px}
+.hdr h1{font-size:26px;font-weight:700;margin-bottom:6px}
+.hdr p{font-size:14px;opacity:.75}
+.hdr .meta{display:flex;gap:20px;margin-top:18px;flex-wrap:wrap}
+.hdr .meta span{font-size:12px;opacity:.7;border-left:2px solid rgba(255,255,255,.3);padding-left:12px}
+.hdr .meta span:first-child{border:none;padding:0}
+.wrap{max-width:1200px;margin:0 auto;padding:32px 24px 64px}
+.sec-hdr{font-size:20px;font-weight:700;color:var(--navy);border-bottom:2px solid var(--pale);padding-bottom:8px;margin:36px 0 18px}
+.sub-hdr{font-size:15px;font-weight:600;color:var(--blue);margin:24px 0 12px}
+.prose{font-size:13.5px;line-height:1.7;margin:10px 0}
+
+/* version pills */
+.v3{display:inline-block;background:#e0e7ff;color:#3730a3;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600}
+.v4{display:inline-block;background:var(--green-pale);color:#166534;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600}
+.diff{display:inline-block;background:var(--amber-pale);color:var(--amber);border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600}
+.new{display:inline-block;background:var(--green-pale);color:#166534;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600}
+
+/* tables */
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px;margin:12px 0}
+.tbl thead tr{background:var(--navy);color:#fff}
+.tbl th{text-align:left;padding:9px 12px;font-size:11px;font-weight:600;letter-spacing:.3px}
+.tbl td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+.tbl tr:nth-child(even) td{background:var(--gray-lt)}
+.tbl tr:hover td{background:var(--pale)}
+.ref{font-family:var(--mono);font-size:11px;background:var(--faint);color:var(--blue);border:1px solid var(--pale);padding:1px 6px;border-radius:4px;white-space:nowrap}
+
+/* diff card */
+.diff-card{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.diff-card-hdr{display:flex;align-items:center;gap:14px;padding:16px 22px;border-bottom:1px solid var(--border)}
+.diff-card-hdr .num{width:36px;height:36px;border-radius:9px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0}
+.diff-card-hdr .title h3{font-size:16px;font-weight:600;margin-bottom:2px}
+.diff-card-hdr .title p{font-size:12px;color:var(--gray)}
+.diff-card-/* compare grid */
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0}
+.cmp-box{border-radius:10px;padding:14px 16px}
+.cmp-box.r3{background:#f0f4ff;border:1px solid #c7d2fe}
+.cmp-box.v4{background:var(--green-pale);border:1px solid #86efac}
+.cmp-box h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
+.cmp-box.r3 h4{color:#3730a3}
+.cmp-box.v4 h4{color:#166534}
+.cmp-box ul{padding-left:16px;font-size:12.5px}
+.cmp-box ul li{margin-bottom:4px}
+.cmp-box p{font-size:12.5px}
+
+/* callout */
+.callout{border-radius:10px;padding:13px 16px;font-size:13px;margin:10px 0;display:flex;gap:10px}
+.callout .ico{flex-shrink:0;font-size:15px}
+.callout.info{background:var(--faint);border-left:3px solid var(--blue)}
+.callout.success{background:var(--green-pale);border-left:3px solid var(--green)}
+.callout.warn{background:var(--amber-pale);border-left:3px solid var(--amber)}
+
+/* summary bar */
+.sum-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+.sum-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.sum-card .lbl{font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:.4px}
+.sum-card .val{font-size:22px;font-weight:700;color:var(--blue);margin:4px 0 2px;font-family:var(--mono)}
+.sum-card .sub{font-size:11px;color:var(--gray)}
+
+code{font-family:var(--mono);font-size:12px;background:var(--gray-lt);padding:1px 5px;border-radius:3px}
+@media(max-width:768px){.cmp{grid-template-columns:1fr}.sum-grid{grid-template-columns:1fr 1fr}.hdr{padding:24px 20px}.wrap{padding:20px 16px 48px}}
+
+</style>
+
+<div class="hdr">
+  <div class="badge">CCC-TS-101 版本对比分析</div>
+  <h1>Digital Key 规范版本差异分析</h1>
+  <p>R3 v1.0.0（2021-05，469页）vs v4.1.0（2025-12，675页）</p>
+  <div class="meta">
+    <span>CCC-TS-101</span><span>R3: §全章 · v4: §全章</span><span>差异涵盖：架构 · BLE · UWB · NFC · 密钥共享 · 版本协商</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ── Summary ── -->
+<div class="sum-grid">
+  <div class="sum-card"><div class="lbl">页数增量</div><div class="val">+44%</div><div class="sub">469 → 675 页</div></div>
+  <div class="sum-card"><div class="lbl">新增角色</div><div class="val">+7</div><div class="sub">SBOD/SBFD/FMS/KIS/SPS/Relay/PXW</div></div>
+  <div class="sum-card"><div class="lbl">新增 BLE 消息</div><div class="val">+4</div><div class="sub">UWB_Final_Data + 3×BTCS</div></div>
+  <div class="sum-card"><div class="lbl">新增 GATT 特征</div><div class="val">+4</div><div class="sub">版本协商+TX Power+天线ID</div></div>
+</div>
+
+<!-- ── 1. Architecture ── -->
+<div class="sec-hdr">一、架构与角色变化</div>
+
+<div class="diff-card">
+  <div class="diff-card-hdr">
+    <div class="num">1</div>
+    <div class="title"><h3>新增系统角色（§2.4）</h3><p>v4 大幅扩展生态系统参与者，支持企业/车队/服务商场景</p></div>
+  </div>
+  <div class="diff-card-body">
+    <table class="tbl">
+      <thead><tr><th>新角色</th><th>缩写</th><th>说明</th><th>v4 章节</th></tr></thead>
+      <tbody>
+        <tr><td>服务器式车主设备</td><td><code>SBOD</code></td><td>替代实体车主设备，用于车队/无人管理场景，可执行 infleeting</td><td><span class="ref">§2.4 p.59</span></td></tr>
+        <tr><td>服务器式好友设备</td><td><code>SBFD</code></td><td>服务提供商侧的钥匙分享服务器，可委托签发 Delegate Keys</td><td><span class="ref">§2.4 p.59</span></td></tr>
+        <tr><td>车队管理服务器</td><td><code>FMS</code></td><td>管理车队车辆生命周期，含 infleeting/defleeting API</td><td><span class="ref">§2.4 p.60</span></td></tr>
+        <tr><td>密钥签发服务器</td><td><code>KIS</code></td><td>可独立签发特定服务钥匙</td><td><span class="ref">§2.4 p.60</span></td></tr>
+        <tr><td>服务提供商服务器</td><td><code>SPS</code></td><td>提供车辆服务的第三方服务器</td><td><span class="ref">§2.4 p.60</span></td></tr>
+        <tr><td>中继服务器</td><td><code>Relay Server</code></td><td>SBOD/SBFD 与设备之间的推送通知中继</td><td><span class="ref">§2.4 p.59</span></td></tr>
+        <tr><td>两/三轮摩托车</td><td><code>PXW</code></td><td>ECE L1–L5 类别，"vehicle inside" 定义为周围 2 米半径</td><td><span class="ref">§2.4 p.57</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="diff-card">
+  <div class="diff-card-hdr">
+    <div class="num">2</div>
+    <div class="title"><h3>用户角色模型重构（§2.8）</h3><p>从简单 Owner/Friend 升级为多层 Account Role 体系</p></div>
+  </div>
+  <div class="diff-card-body">
+    <div class="cmp">
+      <div class="cmp-box r3"><h4>R3 v1.0.0</h4><ul><li>Owner（车主）</li><li>Friend（好友）</li><li>User Class 仅 2 种</li><li>共享：仅 Owner → Friend 单层</li></ul></div>
+      <div class="cmp-box v4"><h4>v4.1.0 <span class="new">NEW</span></h4><ul><li>Owner Role（车主角色）</li><li>Type 1 Key（Owner 设备，含 SiaC 权限）</li><li>Type 2 Key（设备间共享钥匙）</li><li>Type 3 Key（SBFD 服务钥匙）</li><li>Sender / Receiver 术语取代 Owner/Friend</li><li>Sharing in a Chain (SiaC)：多层链式共享</li></ul></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 2. Key Sharing ── -->
+<div class="sec-hdr">二、密钥共享体系变化（§11–§12）</div>
+
+<div class="diff-card">
+  <div class="diff-card-hdr"><div class="num">3</div><div class="title"><h3>新增共享模式</h3><p>v4 引入 4 种全新共享模式，支持企业/车队完整生命周期</p></div></div>
+  <div class="diff-card-body">
+    <table class="tbl">
+      <thead><tr><th>共享模式</th><th>R3</th><th>v4.1.0</th><th>章节</th></tr></thead>
+      <tbody>
+        <tr><td>P2P 设备间共享</td><td>✅</td><td>✅</td><td><span class="ref">§11</span></td></tr>
+        <tr><td>Online Sharing PIN</td><td>❌</td><td>✅ <span class="new">NEW</span></td><td><span class="ref">§11.5</span></td></tr>
+        <tr><td>账户内共享（Intra-Account）</td><td>❌</td><td>✅ <span class="new">NEW</span></td><td><span class="ref">§11.6</span></td></tr>
+        <tr><td>Server-Based 密钥共享（SBOD）</td><td>❌</td><td>✅ <span class="new">NEW</span></td><td><span class="ref">§12</span></td></tr>
+        <tr><td>车队密钥共享（Fleet Key Sharing）</td><td>❌</td><td>✅ <span class="new">NEW</span></td><td><span class="ref">§12.3</span></td></tr>
+        <tr><td>委托密钥共享（Delegated via SBFD）</td><td>❌</td><td>✅ <span class="new">NEW</span></td><td><span class="ref">§12.4</span></td></tr>
+        <tr><td>车主共享控制（Owner Sharing Control）</td><td>❌</td><td>✅ <span class="new">NEW</span></td><td><span class="ref">§12.4.4</span></td></tr>
+      </tbody>
+    </table>
+    <div class="callout info"><span class="ico">ℹ️</span><div><strong>Owner Sharing Control：</strong>车主可禁止任何服务器（SBOD/SBFD）为其车辆签发新钥匙，这是 SBOD/SBFD 生态引入必要的安全机制。</div></div>
+  </div>
+</div>
+
+<!-- ── 3. Versioning ── -->
+<div class="sec-hdr">三、版本协商机制新增（§2.10）</div>
+
+<div class="diff-card">
+  <div class="diff-card-hdr"><div class="num">4</div><div class="title"><h3>Domain Versions 体系</h3><p>v4 引入系统化多域版本协商，替代 R3 的无版本协商机制</p></div></div>
+  <div class="diff-card-body">
+    <table class="tbl">
+      <thead><tr><th>Domain</th><th>含义</th><th>当前锚定版本</th><th>协商方式</th><th>v4 章节</th></tr></thead>
+      <tbody>
+        <tr><td><code>V-D-BT</code></td><td>BLE/UWB 协议版本</td><td>3.1 = <code>0x0301h</code></td><td>GATT 特征 + RC-RQ/RS</td><td><span class="ref">§2.10 p.75</span></td></tr>
+        <tr><td><code>V-OD-FW</code></td><td>Owner Pairing 框架版本</td><td><code>0300h</code></td><td>trackKey API</td><td><span class="ref">§2.10 p.77</span></td></tr>
+        <tr><td><code>D-VS</code></td><td>数字签名/密钥结构版本</td><td>3.0</td><td>服务器侧协商</td><td><span class="ref">§2.10 p.94</span></td></tr>
+        <tr><td><code>OD-FDKS</code></td><td>好友钥匙共享版本（SiaC）</td><td>1.0</td><td>服务器侧协商</td><td><span class="ref">§2.10 p.95</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── 4. BLE Interface ── -->
+<div class="sec-hdr">四、BLE 接口变化（§19）</div>
+
+<div class="diff-card">
+  <div class="diff-card-hdr"><div class="num">5</div><div class="title"><h3>新增 GATT 特征（§19.2.1.7–19.2.1.10）</h3><p>v4 从 1 个特征扩展到 5 个，支持版本协商和 BTCS</p></div></div>
+  <div class="diff-card-body">
+    <table class="tbl">
+      <thead><tr><th>特征 UUID</th><th>功能</th><th>权限</th><th>R3</th><th>v4</th><th>v4 位置</th></tr></thead>
+      <tbody>
+        <tr><td><code>D3B5A130-...</code><br>UUID_SPSM</td><td>L2CAP SPSM 值</td><td>只读，无认证</td><td>✅</td><td>✅</td><td><span class="ref">Table 19-7</span></td></tr>
+        <tr><td><code>AE285B91-...</code><br>UUID_SPSM_VDBT_VERSION</td><td>车辆 V-D-BT 版本列表 + SPSM</td><td>只读，被动进入需加密认证</td><td>❌</td><td>✅ <span class="new">NEW</span></td><td><span class="ref">Table 19-9 p.444</span></td></tr>
+        <tr><td><code>BD4B9502-...</code><br>UUID_DEVICE_VDBT_VERSION</td><td>设备写入协商后的版本</td><td>只写，被动进入需加密认证</td><td>❌</td><td>✅ <span class="new">NEW</span></td><td><span class="ref">Table 19-11 p.444</span></td></tr>
+        <tr><td><code>0x2A07</code><br>Tx Power Level</td><td>车辆 BLE 发射功率（dBm）</td><td>只读（可选）</td><td>❌</td><td>✅ <span class="new">NEW</span></td><td><span class="ref">Table 19-16 p.448</span></td></tr>
+        <tr><td>UUID_AntennaIdentifier<br>Antenna Identifier</td><td>车辆天线唯一 ID</td><td>只读（可选）</td><td>❌</td><td>✅ <span class="new">NEW</span></td><td><span class="ref">§19.2.1.10</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="diff-card">
+  <div class="diff-card-hdr"><div class="num">6</div><div class="title"><h3>新增 DK 消息（§19.3.6 / §19.3.10）</h3><p>v4 新增 UWB_Final_Data 和 3 条 BTCS 消息</p></div></div>
+  <div class="diff-card-body">
+    <table class="tbl">
+      <thead><tr><th>ID</th><th>消息名</th><th>类型</th><th>方向</th><th>说明</th><th>v4 位置</th></tr></thead>
+      <tbody>
+        <tr><td><code>0x19</code></td><td>UWB_Final_Data</td><td>Supplementary(5)</td><td>手机→车辆</td><td>UWB Final_Data 经 BLE 冗余传输（加密），需在 3 个连接事件内发送</td><td><span class="ref">Table 19-60 p.469</span></td></tr>
+        <tr><td><code>0x1A</code></td><td>BTCS_Ranging_Procedure_Results_Start</td><td>BTCS(7)</td><td>双向</td><td>BTCS 测距结果起始帧</td><td><span class="ref">Table 19-100 p.499</span></td></tr>
+        <tr><td><code>0x1B</code></td><td>BTCS_Ranging_Procedure_Results_Continue</td><td>BTCS(7)</td><td>双向</td><td>BTCS 结果续帧（大数据分片）</td><td><span class="ref">Table 19-102 p.500</span></td></tr>
+        <tr><td><code>0x1C</code></td><td>BTCS_Ranging_Procedure_Results_Config</td><td>BTCS(7)</td><td>双向</td><td>配置 BTCS 结果传输方向</td><td><span class="ref">Table 19-104 p.500</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="diff-card">
+  <div class="diff-card-hdr"><div class="num">7</div><div class="title"><h3>Feature Bitmap 新增（§19.2.1.8，Table 19-15）</h3><p>v4 在版本协商中加入 14 位能力位图</p></div></div>
+  <div class="diff-card-body">
+    <table class="tbl">
+      <thead><tr><th>Bit</th><th>功能</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>TimeSync Procedure 0</td><td>车辆可选</td></tr>
+        <tr><td>1</td><td>TimeSync Procedure 1</td><td>车辆可选</td></tr>
+        <tr><td>2</td><td>URSK via Standard Transaction</td><td>设备/车辆可选</td></tr>
+        <tr><td>3</td><td>Head Unit Pairing</td><td>设备/车辆可选</td></tr>
+        <tr><td>4</td><td>LE Coded PHY Passive Entry</td><td>设备/车辆可选</td></tr>
+        <tr><td>5</td><td>Encrypted UWB Final Data over BLE</td><td>设备/车辆可选，对应 0x19 消息</td></tr>
+        <tr><td>6</td><td>PDR Data Supported</td><td>行人航迹推算（IMU 传感器）</td></tr>
+        <tr><td>7–12</td><td>Max DK Message Size</td><td>设备最大可接受消息尺寸 = (值+1)×1KB</td></tr>
+        <tr><td>13</td><td>BTCS Supported</td><td>Bluetooth Channel Sounding 测距</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── 5. BTCS ── -->
+<div class="sec-hdr">五、BTCS 新增（§19.9，v4 专有）</div>
+
+<div class="diff-card">
+  <div class="diff-card-hdr"><div class="num">8</div><div class="title"><h3>Bluetooth Channel Sounding 测距服务</h3><p>基于 BT Core Spec 6.0，无需独立 UWB 硬件的测距方案</p></div></div>
+  <div class="diff-card-body">
+    <table class="tbl">
+      <thead><tr><th>对比项</th><th>UWB（§20–23）</th><th>BTCS（§19.9）<span class="new">v4 NEW</span></th></tr></thead>
+      <tbody>
+        <tr><td>标准</td><td>IEEE 802.15.4z HRP</td><td>BT Core Spec 6.0 Channel Sounding</td></tr>
+        <tr><td>测距原理</td><td>ToF（飞行时间）</td><td>PBR（相位测距）+ RTT</td></tr>
+        <tr><td>硬件需求</td><td>独立 UWB 模块</td><td>复用 BLE 控制器</td></tr>
+        <tr><td>结果传输</td><td>UWB 空口（+ 可选 BLE 0x19）</td><td>专用 BTCS 消息（0x1A–0x1C）</td></tr>
+        <tr><td>能力协商</td><td>RC-RQ/RS UWB Config</td><td>Feature Bitmap Bit13</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── 6. UWB ── -->
+<div class="sec-hdr">六、UWB 接口变化（§20–22）</div>
+
+<div class="diff-card">
+  <div class="diff-card-hdr"><div class="num">9</div><div class="title"><h3>UWB 关键变化</h3></div></div>
+  <div class="diff-card-body">
+    <div class="callout success"><span class="ico">🔒</span><div><strong>Final_Data 加密（v4 §22.1.2）：</strong>UWB 测距 Final_Data MAC 负载现在经过 AES-128 加密，密钥由 UWB_Session_ID + Ranging_Block + DURSK 联合确定，防止时间戳伪造攻击。</div></div>
+    <div class="callout info"><span class="ico">📡</span><div><strong>SDS-TWR 明确化：</strong>v4 明确将当前协议标注为 Symmetric Double-Sided Two-Way Ranging（SDS-TWR），在 §20 中有更清晰的协议描述。</div></div>
+    <div class="callout warn"><span class="ico">⚠️</span><div><strong>UWB_Session_ID 长度差异：</strong>Pre-POLL 中仍为 4 字节；BLE UWB_Final_Data(0x19) 消息中的 UWB_Session_ID 扩展为 8 字节。</div></div>
+    <div class="callout info"><span class="ico">📊</span><div><strong>RC-RQ 参数更名：</strong><code>Supported_DK_Protocol_Version</code> → <code>V-D-BT-vehicleList</code>（支持多版本列表）；<code>Selected_DK_Protocol_Version</code> → <code>V-D-BT-agreedVersion</code>。</div></div>
+  </div>
+</div>
+
+<!-- ── 7. NFC ── -->
+<div class="sec-hdr">七、NFC 接口变化（§3）</div>
+
+<div class="diff-card">
+  <div class="diff-card-hdr"><div class="num">10</div><div class="title"><h3>NFC 技术扩展</h3></div></div>
+  <div class="diff-card-body">
+    <table class="tbl">
+      <thead><tr><th>NFC 技术</th><th>R3 车辆</th><th>R3 手机</th><th>v4 车辆</th><th>v4 手机</th><th>v4 章节</th></tr></thead>
+      <tbody>
+        <tr><td><strong>NFC-A（Type 4A）</strong></td><td>✅ 必选</td><td>✅ 必选</td><td>✅ 必选</td><td>✅ 必选</td><td><span class="ref">§3.1</span></td></tr>
+        <tr><td>NFC-B（Type 4B）</td><td>❌</td><td>❌</td><td>可选 <span class="new">NEW</span></td><td>可选 <span class="new">NEW</span></td><td><span class="ref">§3.1 v4</span></td></tr>
+        <tr><td>NFC-F（Type 3）</td><td>❌</td><td>❌</td><td>可选 <span class="new">NEW</span></td><td>可选 <span class="new">NEW</span></td><td><span class="ref">§NFC-F Support p.648</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── 8. Additional ── -->
+<div class="sec-hdr">八、其他重要变化</div>
+
+<div class="diff-card">
+  <div class="diff-card-hdr"><div class="num">11</div><div class="title"><h3>RKE 扩展 + PDR + 钥匙转换</h3></div></div>
+  <div class="diff-card-body">
+    <table class="tbl">
+      <thead><tr><th>变化项</th><th>R3</th><th>v4.1.0</th><th>v4 章节</th></tr></thead>
+      <tbody>
+        <tr><td>RKE-Hands-Free</td><td>❌</td><td>✅ 手势/声音触发，无需点击 <span class="new">NEW</span></td><td><span class="ref">§19.8</span></td></tr>
+        <tr><td>PDR Data SubEvent</td><td>❌</td><td>✅ 行人航迹推算数据（Pdr_x/y/z，mm） <span class="new">NEW</span></td><td><span class="ref">§19.5.9.x</span></td></tr>
+        <tr><td>Digital Key Conversion</td><td>❌</td><td>✅ R3→R4 钥匙转换（无需重新配对）<span class="new">NEW</span></td><td><span class="ref">§2.10.11</span></td></tr>
+        <tr><td>Fleet 终止流程</td><td>❌</td><td>✅ REV_FMS_100–504，含 FMS/车辆/设备多方触发 <span class="new">NEW</span></td><td><span class="ref">§13.8–13.11</span></td></tr>
+        <tr><td>Head Unit Pairing：Apple Wired Carplay</td><td>❌</td><td>✅ Vehicle capabilities Bit[4] <span class="new">NEW</span></td><td><span class="ref">Table 19-65 p.471</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</div>

@@ -1,0 +1,1409 @@
+---
+title: "蓝牙 RPA 地址解析技术报告"
+description: ""
+date: 2026-04-15T09:09:46+08:00
+categories: ["技术文档"]
+tags: []
+draft: false
+---
+
+<style>
+
+  :root {
+    --bg:         #f7f8fa;
+    --bg2:        #ffffff;
+    --bg3:        #eef1f6;
+    --border:     #dde2eb;
+    --border2:    #c8d0dc;
+    --accent:     #1a6fd4;
+    --accent2:    #1558b0;
+    --accent3:    #0d9e6e;
+    --accent4:    #d4500a;
+    --accent5:    #7c3aed;
+    --text:       #1a2030;
+    --text2:      #3d4d63;
+    --text3:      #7a8ba0;
+    --warn:       #b45309;
+    --code-bg:    #f0f3f8;
+    --tag-blue:   rgba(26,111,212,0.07);
+    --tag-green:  rgba(13,158,110,0.07);
+    --tag-orange: rgba(212,80,10,0.07);
+    --tag-purple: rgba(124,58,237,0.07);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }/* ── Noise texture overlay ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    opacity: 0.018;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 256px;
+    pointer-events: none;
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg3); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent2); }
+
+  /* ── Layout ── */
+  .page-wrapper { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 2rem 6rem; }
+
+  /* ── Hero Header ── */
+  .hero {
+    position: relative;
+    padding: 5rem 0 4rem;
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .hero::after {
+    content: 'RPA';
+    position: absolute;
+    right: -2rem; top: 1rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 18rem;
+    font-weight: 700;
+    color: #e8ecf3;
+    letter-spacing: -0.05em;
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+  }
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.15em;
+    color: var(--accent); text-transform: uppercase;
+    border: 1px solid rgba(0,212,255,0.3);
+    padding: 0.3rem 0.8rem; border-radius: 2px;
+    margin-bottom: 1.5rem;
+  }
+  .hero-tag::before { content: ''; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+  .hero h1 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--text);
+    margin-bottom: 1rem;
+    position: relative; z-index: 1;
+  }
+  .hero h1 span { color: var(--accent); }
+
+  .hero-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text2);
+    margin-bottom: 2rem;
+    position: relative; z-index: 1;
+  }
+
+  .hero-meta {
+    display: flex; flex-wrap: wrap; gap: 1.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem; color: var(--text3);
+    position: relative; z-index: 1;
+  }
+  .hero-meta span { display: flex; align-items: center; gap: 0.4rem; }
+  .hero-meta span::before { content: '▸'; color: var(--accent3); }
+
+  /* ── TOC ── */
+  .toc {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 1.5rem 2rem;
+    margin: 3rem 0;
+    border-radius: 0 4px 4px 0;
+  }
+  .toc-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.12em;
+    color: var(--accent); text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+  .toc ol { list-style: none; counter-reset: toc; }
+  .toc li { counter-increment: toc; margin: 0.35rem 0; }
+  .toc a {
+    color: var(--text2);
+    text-decoration: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    transition: color 0.2s;
+    display: flex; align-items: center; gap: 0.8rem;
+  }
+  .toc a::before {
+    content: counter(toc, decimal-leading-zero);
+    color: var(--border2); font-size: 0.7rem; min-width: 2rem;
+  }
+  .toc a:hover { color: var(--accent); }
+  .toc .toc-sub { padding-left: 2.8rem; }
+  .toc .toc-sub a { font-size: 0.78rem; color: var(--text3); }
+  .toc .toc-sub a::before { content: '└'; color: var(--border2); font-size: 0.7rem; }
+
+  /* ── Section ── */
+  .section {
+    margin: 4rem 0;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .section.visible { opacity: 1; transform: translateY(0); }
+
+  .section-header {
+    display: flex; align-items: flex-start; gap: 1.2rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem; font-weight: 700;
+    color: var(--accent); letter-spacing: 0.1em;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 2px; white-space: nowrap;
+    margin-top: 0.3rem;
+  }
+  .section h2 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 1.6rem; font-weight: 600;
+    color: var(--text); line-height: 1.3;
+  }
+  .section h3 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 1.1rem; font-weight: 600;
+    color: var(--text); margin: 2rem 0 0.8rem;
+    padding-left: 0.8rem;
+    border-left: 2px solid var(--accent3);
+  }
+  .section h4 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem; font-weight: 600;
+    color: var(--accent4); margin: 1.5rem 0 0.5rem;
+    letter-spacing: 0.05em;
+  }
+
+  p { color: var(--text2); margin-bottom: 1rem; }
+  strong { color: var(--text); font-weight: 600; }
+  em { color: var(--accent3); font-style: normal; }
+
+  /* ── Code blocks ── */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.5rem;
+    overflow-x: auto;
+    margin: 1.2rem 0;
+    position: relative;
+  }
+  pre::before {
+    content: attr(data-lang);
+    position: absolute; top: 0.6rem; right: 0.8rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem; letter-spacing: 0.1em;
+    color: var(--text3); text-transform: uppercase;
+  }
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: #1a2030;
+  }
+  p code, li code {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 0.15em 0.45em;
+    border-radius: 3px;
+    font-size: 0.82em;
+    color: #0d5e40;
+  }
+
+  /* Syntax coloring — light theme */
+  .kw  { color: #7c3aed; }
+  .fn  { color: #1a6fd4; }
+  .str { color: #0d7a4e; }
+  .cmt { color: #8e9fad; font-style: italic; }
+  .num { color: #d4500a; }
+  .typ { color: #b45309; }
+  .pp  { color: #1558b0; }
+
+  /* ── Callout boxes ── */
+  .callout {
+    border-radius: 4px;
+    padding: 1.2rem 1.5rem;
+    margin: 1.5rem 0;
+    display: flex; gap: 1rem;
+    align-items: flex-start;
+  }
+  .callout-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+  .callout-.callout-title { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.4rem; font-weight: 700; }
+  .callout p { margin: 0; font-size: 0.88rem; }
+
+  .callout.info    { background: var(--tag-blue);   border: 1px solid rgba(0,212,255,0.2); }
+  .callout.info    .callout-title { color: var(--accent); }
+  .callout.success { background: var(--tag-green);  border: 1px solid rgba(0,255,157,0.2); }
+  .callout.success .callout-title { color: var(--accent3); }
+  .callout.warn    { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); }
+  .callout.warn    .callout-title { color: var(--warn); }
+  .callout.danger  { background: var(--tag-orange); border: 1px solid rgba(255,107,53,0.2); }
+  .callout.danger  .callout-title { color: var(--accent4); }
+  .callout.spec    { background: var(--tag-purple); border: 1px solid rgba(192,132,252,0.2); }
+  .callout.spec    .callout-title { color: var(--accent5); }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--accent); font-weight: 600;
+    padding: 0.8rem 1rem;
+    background: var(--bg3);
+    border-bottom: 2px solid var(--border2);
+    text-align: left;
+  }
+  td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text2);
+    font-size: 0.88rem;
+    vertical-align: top;
+  }
+  tr:hover td { background: var(--bg3); }
+  td code { font-size: 0.8em; }
+
+  /* ── Address diagram ── */
+  .addr-diagram {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 2rem;
+    margin: 2rem 0;
+    overflow-x: auto;
+  }
+  .addr-bits {
+    display: flex;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    margin-bottom: 0.4rem;
+  }
+  .bit-group {
+    display: flex; flex-direction: column; align-items: center;
+    border: 1px solid var(--border2);
+    flex: 1; min-width: 0;
+  }
+  .bit-label {
+    padding: 0.4rem 0.2rem;
+    font-size: 0.65rem; color: var(--text3);
+    border-bottom: 1px solid var(--border2);
+    width: 100%; text-align: center;
+  }
+  .bit-val {
+    padding: 0.5rem 0.2rem;
+    width: 100%; text-align: center;
+    font-weight: 700;
+  }
+  .bit-group.grp-flag  { background: rgba(251,191,36,0.08); }
+  .bit-group.grp-prand { background: var(--tag-blue); }
+  .bit-group.grp-hash  { background: var(--tag-green); }
+  .bit-group.grp-flag  .bit-val  { color: var(--warn); }
+  .bit-group.grp-prand .bit-val  { color: var(--accent); }
+  .bit-group.grp-hash  .bit-val  { color: var(--accent3); }
+  .addr-legend {
+    display: flex; flex-wrap: wrap; gap: 1rem;
+    margin-top: 1rem; font-size: 0.78rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .legend-item { display: flex; align-items: center; gap: 0.5rem; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  /* ── Flow diagram ── */
+  .flow {
+    display: flex; flex-direction: column; gap: 0;
+    margin: 2rem 0;
+    position: relative;
+  }
+  .flow-step {
+    display: flex; gap: 1.5rem; align-items: flex-start;
+    position: relative; padding-bottom: 1.5rem;
+  }
+  .flow-step:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 1.1rem; top: 2.8rem;
+    width: 2px; height: calc(100% - 2rem);
+    background: linear-gradient(to bottom, var(--border2), transparent);
+  }
+  .flow-num {
+    width: 2.4rem; height: 2.4rem; flex-shrink: 0;
+    background: var(--bg3); border: 2px solid var(--border2);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace; font-size: 0.72rem; font-weight: 700;
+    color: var(--accent); margin-top: 0.1rem;
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .flow-step:hover .flow-num { border-color: var(--accent); background: rgba(0,212,255,0.08); }
+  .flow-content { flex: 1; }
+  .flow-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; font-size: 0.88rem;
+    color: var(--text); margin-bottom: 0.3rem;
+  }
+  .flow-desc { color: var(--text2); font-size: 0.88rem; margin: 0; }
+
+  /* ── Spec reference badge ── */
+  .spec-ref {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--tag-purple);
+    border: 1px solid rgba(192,132,252,0.25);
+    padding: 0.25rem 0.7rem;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; color: var(--accent5);
+    text-decoration: none;
+    margin: 0.3rem 0;
+    cursor: default;
+  }
+  .spec-ref::before { content: '§'; }
+
+  /* ── Security matrix ── */
+  .sec-matrix {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem; margin: 2rem 0;
+  }
+  .sec-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.3rem;
+    transition: border-color 0.3s, transform 0.2s;
+  }
+  .sec-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+  .sec-card-icon { font-size: 1.5rem; margin-bottom: 0.7rem; }
+  .sec-card-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem; font-weight: 700;
+    color: var(--text); margin-bottom: 0.5rem;
+    letter-spacing: 0.05em;
+  }
+  .sec-card p { font-size: 0.82rem; color: var(--text3); margin: 0; }
+
+  /* ── Divider ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border2), transparent);
+    margin: 3rem 0;
+  }
+
+  /* ── Footer ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 3rem 0 2rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; color: var(--text3);
+    display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between;
+    align-items: center;
+  }
+  footer span { display: flex; align-items: center; gap: 0.5rem; }
+  footer .dot { color: var(--accent); }
+
+  /* ── Lists ── */
+  ul, ol { padding-left: 1.5rem; color: var(--text2); }
+  li { margin: 0.4rem 0; font-size: 0.92rem; }
+  li::marker { color: var(--accent); }
+
+  /* ── Highlight spans ── */
+  .hl-blue   { color: var(--accent); font-weight: 600; }
+  .hl-green  { color: var(--accent3); font-weight: 600; }
+  .hl-orange { color: var(--accent4); font-weight: 600; }
+  .hl-purple { color: var(--accent5); font-weight: 600; }
+  .hl-warn   { color: var(--warn); font-weight: 600; }
+
+  /* ── Math-style formula block ── */
+  .formula {
+    background: var(--code-bg);
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--accent5);
+    padding: 1rem 1.5rem;
+    margin: 1rem 0;
+    border-radius: 0 4px 4px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88rem;
+    color: var(--text);
+    line-height: 2;
+  }
+  .formula .f-label { color: var(--text3); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.5rem; }
+  .formula .f-eq { color: var(--accent5); }
+  .formula .f-fn { color: var(--accent); }
+  .formula .f-var { color: var(--accent3); }
+  .formula .f-note { color: var(--text3); font-size: 0.78rem; }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    .page-wrapper { padding: 0 1rem 4rem; }
+    .hero::after { font-size: 8rem; right: -1rem; }
+    .hero h1 { font-size: 1.8rem; }
+    .sec-matrix { grid-template-columns: 1fr; }
+  }
+
+  /* ── Scroll reveal ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+</style>
+
+<div class="page-wrapper">
+
+  <!-- ══════════════════ HERO ══════════════════ -->
+  <header class="hero">
+    <div class="hero-tag">Technical Report · Bluetooth LE Privacy</div>
+    <h1>蓝牙 <span>RPA</span> 地址解析<br>与 IRK 技术深度报告</h1>
+    <p class="hero-sub">Resolvable Private Address Resolution via Identity Resolving Key</p>
+    <div class="hero-meta">
+      <span>BT Core Spec 5.4</span>
+      <span>Vol 3 · Part H · §2.4</span>
+      <span>AES-128 / ah() 函数</span>
+      <span>NFC / BLE 铁将军数字钥匙适用</span>
+    </div>
+  </header>
+
+  <!-- ══════════════════ TOC ══════════════════ -->
+  <nav class="toc">
+    <div class="toc-title">▸ 目录 Table of Contents</div>
+    <ol>
+      <li><a href="#s1">背景与动机：蓝牙隐私保护的必要性</a></li>
+      <li><a href="#s2">规范位置与版本索引</a></li>
+      <li><a href="#s3">RPA 地址结构详解</a></li>
+      <li><a href="#s4">IRK 与 ah() 函数原理</a></li>
+      <li><a href="#s5">完整解析流程</a></li>
+      <li><a href="#s6">代码设计与实现</a>
+        <div class="toc-sub">
+          <ol>
+            <li><a href="#s6-1">AES-128 实现</a></li>
+            <li><a href="#s6-2">ah() 函数实现</a></li>
+            <li><a href="#s6-3">字节序处理</a></li>
+            <li><a href="#s6-4">RPA 验证主函数</a></li>
+          </ol>
+        </div>
+      </li>
+      <li><a href="#s7">安全思路与威胁模型</a></li>
+      <li><a href="#s8">实现方式：跨平台与工程实践</a></li>
+      <li><a href="#s9">常见错误与调试</a></li>
+      <li><a href="#s10">在 CCC 数字钥匙中的应用</a></li>
+    </ol>
+  </nav>
+
+  <!-- ══════════════════ §1 ══════════════════ -->
+  <section class="section" id="s1">
+    <div class="section-header">
+      <span class="section-num">§ 01</span>
+      <h2>背景与动机：蓝牙隐私保护的必要性</h2>
+    </div>
+
+    <p>蓝牙低功耗（BLE）设备在广播时会持续对外发送本机 MAC 地址。若使用固定的公开地址，攻击者可轻易对特定设备进行长期追踪——无论是记录用户每日通勤路线，还是在商场中绘制个人活动轨迹，固定 MAC 地址都将成为严重的隐私漏洞。</p>
+
+    <div class="callout danger">
+      <div class="callout-icon">⚠</div>
+      <div class="callout-body">
+        <div class="callout-title">威胁场景</div>
+        <p>攻击者在公共场所部署多个 BLE 监听节点，通过固定 MAC 地址关联同一设备的广播，可实现用户位置跟踪、行为分析，乃至设备指纹识别。</p>
+      </div>
+    </div>
+
+    <p>蓝牙核心规范在 4.0 版本引入了<strong>私有地址（Private Address）</strong>机制，并在 4.2 版本强化了<strong>可解析私有地址（Resolvable Private Address, RPA）</strong>。其核心思路是：</p>
+
+    <ul>
+      <li>设备广播时使用<em>随机生成</em>的临时地址，每隔一定时间（默认 15 分钟）轮换一次</li>
+      <li>已配对的可信设备持有 <strong>IRK（Identity Resolving Key）</strong>，可以从该随机地址中"认出"对方</li>
+      <li>未持有 IRK 的第三方无法将前后两次广播关联到同一设备</li>
+    </ul>
+
+    <div class="callout success">
+      <div class="callout-icon">✓</div>
+      <div class="callout-body">
+        <div class="callout-title">设计目标</div>
+        <p>在<strong>隐私性</strong>（对陌生人不可追踪）与<strong>可用性</strong>（对已配对设备可识别）之间取得平衡，同时不依赖在线服务器，纯本地运算即可完成解析。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ §2 ══════════════════ -->
+  <section class="section" id="s2">
+    <div class="section-header">
+      <span class="section-num">§ 02</span>
+      <h2>规范位置与版本索引</h2>
+    </div>
+
+    <div class="callout spec">
+      <div class="callout-icon">📖</div>
+      <div class="callout-body">
+        <div class="callout-title">主要规范引用</div>
+        <p>以下所有技术细节均以 <strong>Bluetooth Core Specification 5.4</strong> 为基准，向下兼容至 4.2。</p>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>规范章节</th>
+            <th>内容</th>
+            <th>关键定义</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="spec-ref">Vol 3, Part H, §2.4.2.2</span></td>
+            <td>ah() 函数定义</td>
+            <td>AES-128 地址哈希核心算法</td>
+          </tr>
+          <tr>
+            <td><span class="spec-ref">Vol 3, Part H, §2.4.2.3</span></td>
+            <td>RPA 生成（Generate）</td>
+            <td>如何从 IRK 生成合法 RPA</td>
+          </tr>
+          <tr>
+            <td><span class="spec-ref">Vol 3, Part H, §2.4.2.4</span></td>
+            <td>RPA 解析（Resolve）</td>
+            <td>如何用 IRK 验证 RPA</td>
+          </tr>
+          <tr>
+            <td><span class="spec-ref">Vol 6, Part B, §1.3.2</span></td>
+            <td>设备地址类型</td>
+            <td>Public / Random / RPA / NRPA 区别</td>
+          </tr>
+          <tr>
+            <td><span class="spec-ref">Vol 3, Part H, §3.6.3</span></td>
+            <td>IRK 分发</td>
+            <td>SMP 配对过程中 IRK 的交换</td>
+          </tr>
+          <tr>
+            <td><span class="spec-ref">Vol 3, Part C, §10.7</span></td>
+            <td>RPA 轮换策略</td>
+            <td>默认 15 分钟轮换，可配置</td>
+          </tr>
+          <tr>
+            <td><span class="spec-ref">CSS v11, Part A, §1.3</span></td>
+            <td>测试向量</td>
+            <td>官方 ah() 函数验证样本</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>地址类型速查</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>类型</th><th>高2bit</th><th>可解析</th><th>隐私性</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Public Address</strong></td>
+            <td>—</td>
+            <td>N/A</td>
+            <td>❌ 无</td>
+            <td>固定 IEEE 分配地址</td>
+          </tr>
+          <tr>
+            <td><strong>Static Random</strong></td>
+            <td><code>11</code></td>
+            <td>否</td>
+            <td>△ 弱</td>
+            <td>上电后固定，重启可变</td>
+          </tr>
+          <tr>
+            <td class="hl-blue"><strong>RPA (可解析)</strong></td>
+            <td><code class="hl-warn">01</code></td>
+            <td>✅ 是</td>
+            <td>✅ 强</td>
+            <td>配对设备可识别，推荐使用</td>
+          </tr>
+          <tr>
+            <td><strong>NRPA (不可解析)</strong></td>
+            <td><code>00</code></td>
+            <td>否</td>
+            <td>✅ 强</td>
+            <td>无需识别的一次性广播</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════════════════ §3 ══════════════════ -->
+  <section class="section" id="s3">
+    <div class="section-header">
+      <span class="section-num">§ 03</span>
+      <h2>RPA 地址结构详解</h2>
+    </div>
+
+    <p>RPA 是一个 48 位（6 字节）的蓝牙随机地址，其内部被分为两个功能区域：</p>
+
+    <div class="addr-diagram">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:var(--text3);margin-bottom:0.8rem;letter-spacing:0.08em;">▸ 地址位布局（MSB → LSB，即 addr[5] → addr[0]）</div>
+      <div class="addr-bits">
+        <div class="bit-group grp-flag" style="flex:2;">
+          <div class="bit-label">bit 47:46</div>
+          <div class="bit-val">0b01</div>
+        </div>
+        <div class="bit-group grp-prand" style="flex:22;">
+          <div class="bit-label">bit 45:24 — prand[21:0]</div>
+          <div class="bit-val">随机数（22 位）</div>
+        </div>
+        <div class="bit-group grp-hash" style="flex:24;">
+          <div class="bit-label">bit 23:0 — hash[23:0]</div>
+          <div class="bit-val">AES hash（24 位）</div>
+        </div>
+      </div>
+      <div class="addr-legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--warn);"></div>
+          <span style="color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:0.75rem;">标识位 0b01（固定，标识 RPA 类型）</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--accent);"></div>
+          <span style="color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:0.75rem;">prand：每次轮换随机生成的 22 位随机数</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--accent3);"></div>
+          <span style="color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:0.75rem;">hash：ah(IRK, prand) 的低 24 位</span>
+        </div>
+      </div>
+    </div>
+
+    <h3>字节级映射（实际内存布局）</h3>
+    <p>蓝牙地址以 <strong>little-endian</strong> 存储，<code>addr[0]</code> 为最低有效字节：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>字节索引</th><th>内容</th><th>备注</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>addr[0]</code></td><td>hash[7:0]</td><td>hash 最低字节</td></tr>
+          <tr><td><code>addr[1]</code></td><td>hash[15:8]</td><td>hash 中间字节</td></tr>
+          <tr><td><code>addr[2]</code></td><td>hash[23:16]</td><td>hash 最高字节</td></tr>
+          <tr><td><code>addr[3]</code></td><td>prand[7:0]</td><td>prand 最低字节</td></tr>
+          <tr><td><code>addr[4]</code></td><td>prand[15:8]</td><td>prand 中间字节</td></tr>
+          <tr><td><code class="hl-warn">addr[5]</code></td><td>prand[23:16]</td><td class="hl-warn">最高字节，bit7:6 固定为 0b01</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-icon">⚡</div>
+      <div class="callout-body">
+        <div class="callout-title">易混淆点</div>
+        <p>蓝牙规范文本通常以 <code>XX:XX:XX:XX:XX:XX</code> 格式展示地址，其中<strong>最左侧</strong>字节是 <code>addr[5]</code>（高位），<strong>最右侧</strong>是 <code>addr[0]</code>（低位）。编程时要特别注意这与字节数组索引方向<strong>相反</strong>。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ §4 ══════════════════ -->
+  <section class="section" id="s4">
+    <div class="section-header">
+      <span class="section-num">§ 04</span>
+      <h2>IRK 与 ah() 函数原理</h2>
+    </div>
+
+    <h3>IRK（Identity Resolving Key）</h3>
+    <p><strong>IRK</strong> 是一个 128 位（16 字节）的对称密钥，在 SMP（Security Manager Protocol）配对过程中由双方设备相互交换，存储于本地安全存储（Resolving List）。它是识别对端设备真实身份的"钥匙"。</p>
+
+    <div class="callout info">
+      <div class="callout-icon">ℹ</div>
+      <div class="callout-body">
+        <div class="callout-title">IRK 的安全属性</div>
+        <p>IRK 具有单向性：持有 IRK 可以验证 RPA，但无法从 RPA 反推 IRK。这是因为 AES-128 在密码学意义上是不可逆的伪随机置换。</p>
+      </div>
+    </div>
+
+    <h3>ah() 函数定义</h3>
+    <p>规范定义了专用的地址哈希函数 <code>ah(k, r)</code>，其数学描述如下：</p>
+
+    <div class="formula">
+      <div class="f-label">BT Core Spec Vol 3, Part H, §2.4.2.2 — ah 函数</div>
+      <div><span class="f-fn">ah</span>(<span class="f-var">k</span>, <span class="f-var">r</span>) <span class="f-eq">=</span> <span class="f-fn">e</span>(<span class="f-var">k</span>, <span class="f-var">r'</span>)[<span class="num">0</span>:<span class="num">24</span>]</div>
+      <div style="margin-top:0.5rem;">
+        其中：<span class="f-var">r'</span> <span class="f-eq">=</span> <span class="f-var">r</span> <span class="f-eq">||</span> <span class="num">0x00000000000000000000000000</span>  <span class="f-note">（r 后补 0 至 128 位）</span>
+      </div>
+      <div><span class="f-fn">e</span>(<span class="f-var">k</span>, <span class="f-var">x</span>) <span class="f-eq">=</span> <span class="f-fn">AES-128</span>(<span class="f-var">k</span>, <span class="f-var">x</span>)  <span class="f-note">（标准 AES-128 加密，k 为密钥）</span></div>
+      <div><span class="f-note">取结果最低 24 bit 作为输出</span></div>
+    </div>
+
+    <h3>算法步骤分解</h3>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-num">01</div>
+        <div class="flow-content">
+          <div class="flow-title">构造 r'（填充输入）</div>
+          <p class="flow-desc">将 24 位 prand 放入一个 128 位（16 字节）缓冲区的<strong>最低位</strong>，其余高位全部填充 0x00。得到 r'[16]。</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">02</div>
+        <div class="flow-content">
+          <div class="flow-title">字节序转换</div>
+          <p class="flow-desc">蓝牙规范内部使用 little-endian，标准 AES 块操作使用 big-endian。必须将 IRK（k）和 r' 各自<strong>字节反转</strong>后，才能送入标准 AES 实现。</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">03</div>
+        <div class="flow-content">
+          <div class="flow-title">AES-128 加密</div>
+          <p class="flow-desc">以反转后的 IRK 为密钥，对反转后的 r' 执行一次标准 AES-128 加密，得到 128 位密文 e。</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">04</div>
+        <div class="flow-content">
+          <div class="flow-title">提取低 24 位</div>
+          <p class="flow-desc">在 big-endian AES 输出中，取最后 3 个字节（<code>e[13]</code>、<code>e[14]</code>、<code>e[15]</code>）并<strong>逆序</strong>，得到 little-endian 的 24 位 hash 值。</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">05</div>
+        <div class="flow-content">
+          <div class="flow-title">比较 hash</div>
+          <p class="flow-desc">将计算出的 hash 与 RPA 地址中的 hash 字段（addr[0..2]）逐字节比较。完全一致则解析成功，说明此 RPA 由本 IRK 生成。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ §5 ══════════════════ -->
+  <section class="section" id="s5">
+    <div class="section-header">
+      <span class="section-num">§ 05</span>
+      <h2>完整解析流程</h2>
+    </div>
+
+    <p>实际系统中，控制器（Controller）通常维护一个 <strong>Resolving List</strong>，其中存储了所有已配对对端的 IRK。当收到一个 RPA 广播时，解析流程如下：</p>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-num">①</div>
+        <div class="flow-content">
+          <div class="flow-title">格式检查</div>
+          <p class="flow-desc">检查 <code>addr[5]</code> 高 2 位是否为 <code>0b01</code>（即 <code>(addr[5] & 0xC0) == 0x40</code>）。若不符合则非 RPA，直接跳过。</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">②</div>
+        <div class="flow-content">
+          <div class="flow-title">提取 prand 与 hash</div>
+          <p class="flow-desc"><code>prand = {addr[5], addr[4], addr[3]}</code>，<code>hash_addr = {addr[2], addr[1], addr[0]}</code></p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">③</div>
+        <div class="flow-content">
+          <div class="flow-title">遍历 Resolving List</div>
+          <p class="flow-desc">对 Resolving List 中每一条记录的 IRK，执行 <code>hash_calc = ah(IRK, prand)</code>。</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">④</div>
+        <div class="flow-content">
+          <div class="flow-title">哈希比较</div>
+          <p class="flow-desc">若 <code>hash_calc == hash_addr</code>，则该 IRK 对应的设备就是 RPA 的真实身份，解析成功，返回该设备的 Identity Address。</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">⑤</div>
+        <div class="flow-content">
+          <div class="flow-title">遍历完毕未命中</div>
+          <p class="flow-desc">若所有 IRK 均不匹配，则该 RPA 来自未知/未配对设备，或地址已损坏，返回解析失败。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <div class="callout-title">硬件加速</div>
+        <p>高端蓝牙控制器（如 Nordic nRF5340、TI CC2652）支持<strong>硬件 RPA 解析</strong>，Controller 层自动完成，Host 层直接收到已解析的 Identity Address。软件协议栈（如 Zephyr、NimBLE）也提供此功能的软件实现。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ §6 ══════════════════ -->
+  <section class="section" id="s6">
+    <div class="section-header">
+      <span class="section-num">§ 06</span>
+      <h2>代码设计与实现</h2>
+    </div>
+
+    <p>以下为完整的、无外部依赖的 C 实现，包含 AES-128 软件实现、ah() 函数以及 RPA 验证逻辑。每个模块均经过单独设计，便于移植到嵌入式平台。</p>
+
+    <!-- §6.1 -->
+    <h3 id="s6-1">6.1 AES-128 纯软件实现</h3>
+    <p>为保持可移植性，不依赖 OpenSSL 等外部库，自行实现 AES-128。包含密钥扩展（Key Schedule）、字节替换（SubBytes）、行移位（ShiftRows）、列混淆（MixColumns）和轮密钥加（AddRoundKey）五个子操作。</p>
+
+<pre data-lang="c"><code><span class="cmt">/* ── S-Box 查找表（AES 标准） ── */</span>
+<span class="kw">static const</span> <span class="typ">uint8_t</span> sbox[<span class="num">256</span>] = {
+    <span class="num">0x63</span>,<span class="num">0x7c</span>,<span class="num">0x77</span>,<span class="num">0x7b</span>,<span class="num">0xf2</span>,<span class="num">0x6b</span>,<span class="num">0x6f</span>,<span class="num">0xc5</span>,
+    <span class="cmt">/* ... 完整 256 字节查找表 ... */</span>
+};
+
+<span class="cmt">/* ── 轮常量（RCON） ── */</span>
+<span class="kw">static const</span> <span class="typ">uint8_t</span> rcon[<span class="num">11</span>] = {
+    <span class="num">0x00</span>,<span class="num">0x01</span>,<span class="num">0x02</span>,<span class="num">0x04</span>,<span class="num">0x08</span>,
+    <span class="num">0x10</span>,<span class="num">0x20</span>,<span class="num">0x40</span>,<span class="num">0x80</span>,<span class="num">0x1b</span>,<span class="num">0x36</span>
+};
+
+<span class="cmt">/* GF(2^8) 乘法 */</span>
+<span class="kw">static</span> <span class="typ">uint8_t</span> <span class="fn">gmul</span>(<span class="typ">uint8_t</span> a, <span class="typ">uint8_t</span> b) {
+    <span class="typ">uint8_t</span> p = <span class="num">0</span>;
+    <span class="kw">for</span> (<span class="typ">int</span> i = <span class="num">0</span>; i &lt; <span class="num">8</span>; i++) {
+        <span class="kw">if</span> (b &amp; <span class="num">1</span>) p ^= a;
+        <span class="typ">uint8_t</span> hi = a &amp; <span class="num">0x80</span>;
+        a &lt;&lt;= <span class="num">1</span>;
+        <span class="kw">if</span> (hi) a ^= <span class="num">0x1b</span>;  <span class="cmt">/* GF 模多项式 x^8+x^4+x^3+x+1 */</span>
+        b &gt;&gt;= <span class="num">1</span>;
+    }
+    <span class="kw">return</span> p;
+}
+
+<span class="kw">typedef struct</span> { <span class="typ">uint8_t</span> rk[<span class="num">11</span>][<span class="num">16</span>]; } <span class="typ">AES128_CTX</span>;
+
+<span class="cmt">/* 密钥扩展：生成 11 轮轮密钥 */</span>
+<span class="kw">static void</span> <span class="fn">aes128_key_expand</span>(<span class="typ">AES128_CTX</span> *ctx, <span class="kw">const</span> <span class="typ">uint8_t</span> key[<span class="num">16</span>]) {
+    memcpy(ctx-&gt;rk[<span class="num">0</span>], key, <span class="num">16</span>);
+    <span class="kw">for</span> (<span class="typ">int</span> i = <span class="num">1</span>; i &lt;= <span class="num">10</span>; i++) {
+        <span class="typ">uint8_t</span> *prev = ctx-&gt;rk[i<span class="num">-1</span>], *cur = ctx-&gt;rk[i];
+        cur[<span class="num">0</span>]  = prev[<span class="num">0</span>]  ^ sbox[prev[<span class="num">13</span>]] ^ rcon[i];
+        cur[<span class="num">1</span>]  = prev[<span class="num">1</span>]  ^ sbox[prev[<span class="num">14</span>]];
+        cur[<span class="num">2</span>]  = prev[<span class="num">2</span>]  ^ sbox[prev[<span class="num">15</span>]];
+        cur[<span class="num">3</span>]  = prev[<span class="num">3</span>]  ^ sbox[prev[<span class="num">12</span>]];
+        <span class="kw">for</span> (<span class="typ">int</span> j = <span class="num">4</span>; j &lt; <span class="num">16</span>; j++)
+            cur[j] = prev[j] ^ cur[j<span class="num">-4</span>];
+    }
+}
+
+<span class="cmt">/* AES-128 单块加密（128-bit 输入 → 128-bit 输出） */</span>
+<span class="kw">static void</span> <span class="fn">aes128_encrypt_block</span>(<span class="kw">const</span> <span class="typ">AES128_CTX</span> *ctx,
+                                  <span class="kw">const</span> <span class="typ">uint8_t</span> in[<span class="num">16</span>], <span class="typ">uint8_t</span> out[<span class="num">16</span>]) {
+    <span class="typ">uint8_t</span> s[<span class="num">16</span>];
+    <span class="cmt">/* Round 0: AddRoundKey */</span>
+    <span class="kw">for</span> (<span class="typ">int</span> i = <span class="num">0</span>; i &lt; <span class="num">16</span>; i++) s[i] = in[i] ^ ctx-&gt;rk[<span class="num">0</span>][i];
+
+    <span class="kw">for</span> (<span class="typ">int</span> rnd = <span class="num">1</span>; rnd &lt;= <span class="num">10</span>; rnd++) {
+        <span class="cmt">/* SubBytes */</span>
+        <span class="kw">for</span> (<span class="typ">int</span> i = <span class="num">0</span>; i &lt; <span class="num">16</span>; i++) s[i] = sbox[s[i]];
+        <span class="cmt">/* ShiftRows：行移位 */</span>
+        <span class="typ">uint8_t</span> t;
+        t=s[<span class="num">1</span>]; s[<span class="num">1</span>]=s[<span class="num">5</span>]; s[<span class="num">5</span>]=s[<span class="num">9</span>]; s[<span class="num">9</span>]=s[<span class="num">13</span>]; s[<span class="num">13</span>]=t;
+        t=s[<span class="num">2</span>]; s[<span class="num">2</span>]=s[<span class="num">10</span>]; s[<span class="num">10</span>]=t;
+        t=s[<span class="num">6</span>]; s[<span class="num">6</span>]=s[<span class="num">14</span>]; s[<span class="num">14</span>]=t;
+        t=s[<span class="num">15</span>]; s[<span class="num">15</span>]=s[<span class="num">11</span>]; s[<span class="num">11</span>]=s[<span class="num">7</span>]; s[<span class="num">7</span>]=s[<span class="num">3</span>]; s[<span class="num">3</span>]=t;
+        <span class="cmt">/* MixColumns（最后一轮跳过）*/</span>
+        <span class="kw">if</span> (rnd &lt; <span class="num">10</span>) {
+            <span class="kw">for</span> (<span class="typ">int</span> c = <span class="num">0</span>; c &lt; <span class="num">4</span>; c++) {
+                <span class="typ">uint8_t</span> *col = s + c*<span class="num">4</span>;
+                <span class="typ">uint8_t</span> a0=col[<span class="num">0</span>],a1=col[<span class="num">1</span>],a2=col[<span class="num">2</span>],a3=col[<span class="num">3</span>];
+                col[<span class="num">0</span>]=<span class="fn">gmul</span>(<span class="num">0x02</span>,a0)^<span class="fn">gmul</span>(<span class="num">0x03</span>,a1)^a2^a3;
+                col[<span class="num">1</span>]=a0^<span class="fn">gmul</span>(<span class="num">0x02</span>,a1)^<span class="fn">gmul</span>(<span class="num">0x03</span>,a2)^a3;
+                col[<span class="num">2</span>]=a0^a1^<span class="fn">gmul</span>(<span class="num">0x02</span>,a2)^<span class="fn">gmul</span>(<span class="num">0x03</span>,a3);
+                col[<span class="num">3</span>]=<span class="fn">gmul</span>(<span class="num">0x03</span>,a0)^a1^a2^<span class="fn">gmul</span>(<span class="num">0x02</span>,a3);
+            }
+        }
+        <span class="cmt">/* AddRoundKey */</span>
+        <span class="kw">for</span> (<span class="typ">int</span> i = <span class="num">0</span>; i &lt; <span class="num">16</span>; i++) s[i] ^= ctx-&gt;rk[rnd][i];
+    }
+    memcpy(out, s, <span class="num">16</span>);
+}</code></pre>
+
+    <!-- §6.2 -->
+    <h3 id="s6-2">6.2 ah() 函数实现</h3>
+
+<pre data-lang="c"><code><span class="cmt">/**
+ * @brief  ah(k, r) — BT Core Spec Vol 3, Part H, §2.4.2.2
+ * @param  k    IRK，16字节，little-endian (index 0 = LSB)
+ * @param  r    prand，3字节，little-endian
+ * @param  out  输出 hash，3字节，little-endian
+ */</span>
+<span class="kw">static void</span> <span class="fn">bt_ah</span>(<span class="kw">const</span> <span class="typ">uint8_t</span> k[<span class="num">16</span>],
+                  <span class="kw">const</span> <span class="typ">uint8_t</span> r[<span class="num">3</span>],
+                  <span class="typ">uint8_t</span> out[<span class="num">3</span>])
+{
+    <span class="cmt">/* Step 1: 构造 r'，将 prand 放入 16 字节缓冲区低位，其余补 0 */</span>
+    <span class="typ">uint8_t</span> r_prime[<span class="num">16</span>] = {<span class="num">0</span>};
+    r_prime[<span class="num">0</span>] = r[<span class="num">0</span>];   <span class="cmt">/* prand LSB */</span>
+    r_prime[<span class="num">1</span>] = r[<span class="num">1</span>];
+    r_prime[<span class="num">2</span>] = r[<span class="num">2</span>];   <span class="cmt">/* prand MSB */</span>
+
+    <span class="cmt">/* Step 2: 字节反转（LE → BE），准备送入标准 AES */</span>
+    <span class="typ">uint8_t</span> k_be[<span class="num">16</span>], r_be[<span class="num">16</span>], e_be[<span class="num">16</span>];
+    <span class="kw">for</span> (<span class="typ">int</span> i = <span class="num">0</span>; i &lt; <span class="num">16</span>; i++) {
+        k_be[i] = k[<span class="num">15</span> - i];        <span class="cmt">/* IRK 反转 */</span>
+        r_be[i] = r_prime[<span class="num">15</span> - i];   <span class="cmt">/* r' 反转 */</span>
+    }
+
+    <span class="cmt">/* Step 3: AES-128(k, r') */</span>
+    <span class="typ">AES128_CTX</span> ctx;
+    <span class="fn">aes128_key_expand</span>(&amp;ctx, k_be);
+    <span class="fn">aes128_encrypt_block</span>(&amp;ctx, r_be, e_be);
+
+    <span class="cmt">/* Step 4: 取 BE 结果末 3 字节，逆序写出（转回 LE） */</span>
+    out[<span class="num">0</span>] = e_be[<span class="num">15</span>];  <span class="cmt">/* hash LSB */</span>
+    out[<span class="num">1</span>] = e_be[<span class="num">14</span>];
+    out[<span class="num">2</span>] = e_be[<span class="num">13</span>];  <span class="cmt">/* hash MSB */</span>
+}</code></pre>
+
+    <!-- §6.3 -->
+    <h3 id="s6-3">6.3 字节序处理要点</h3>
+    <p>这是最容易出 bug 的地方。蓝牙规范定义的数学运算与实际内存布局之间存在字节序差异：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>数据</th><th>规范描述</th><th>内存存储</th><th>送入 AES 前</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>IRK（k）</td>
+            <td>128-bit 整数，MSB 在左</td>
+            <td>little-endian，<code>k[0]=LSB</code></td>
+            <td>需反转：<code>k_be[i] = k[15-i]</code></td>
+          </tr>
+          <tr>
+            <td>prand（r）</td>
+            <td>24-bit 整数，MSB 在左</td>
+            <td>little-endian，<code>r[0]=LSB</code></td>
+            <td>补零后反转</td>
+          </tr>
+          <tr>
+            <td>AES 输出（e）</td>
+            <td>128-bit，MSB 在左</td>
+            <td>big-endian 数组</td>
+            <td>取 <code>e[13:15]</code>，逆序写出</td>
+          </tr>
+          <tr>
+            <td>RPA 地址</td>
+            <td><code>addr[5]:addr[0]</code></td>
+            <td>little-endian，<code>addr[0]=LSB</code></td>
+            <td>—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- §6.4 -->
+    <h3 id="s6-4">6.4 RPA 验证主函数</h3>
+
+<pre data-lang="c"><code><span class="cmt">/**
+ * @brief  使用 IRK 验证 RPA 地址
+ * @param  irk   16字节 IRK，little-endian
+ * @param  addr  6字节 RPA，little-endian（addr[0]=最低字节）
+ * @return true = IRK 匹配，解析成功
+ */</span>
+<span class="typ">bool</span> <span class="fn">bt_resolve_rpa</span>(<span class="kw">const</span> <span class="typ">uint8_t</span> irk[<span class="num">16</span>], <span class="kw">const</span> <span class="typ">uint8_t</span> addr[<span class="num">6</span>])
+{
+    <span class="cmt">/* Step 1: 格式校验 — addr[5] 高2位必须是 0b01 */</span>
+    <span class="kw">if</span> ((addr[<span class="num">5</span>] &amp; <span class="num">0xC0</span>) != <span class="num">0x40</span>) <span class="kw">return</span> <span class="kw">false</span>;
+
+    <span class="cmt">/* Step 2: 分离 prand 和 hash */</span>
+    <span class="typ">uint8_t</span> prand[<span class="num">3</span>] = { addr[<span class="num">3</span>], addr[<span class="num">4</span>], addr[<span class="num">5</span>] };
+    <span class="typ">uint8_t</span> hash[<span class="num">3</span>]  = { addr[<span class="num">0</span>], addr[<span class="num">1</span>], addr[<span class="num">2</span>] };
+
+    <span class="cmt">/* Step 3: 计算期望 hash */</span>
+    <span class="typ">uint8_t</span> hash_calc[<span class="num">3</span>];
+    <span class="fn">bt_ah</span>(irk, prand, hash_calc);
+
+    <span class="cmt">/* Step 4: 常数时间比较（防侧信道）*/</span>
+    <span class="typ">uint8_t</span> diff = hash[<span class="num">0</span>] ^ hash_calc[<span class="num">0</span>]
+                 | hash[<span class="num">1</span>] ^ hash_calc[<span class="num">1</span>]
+                 | hash[<span class="num">2</span>] ^ hash_calc[<span class="num">2</span>];
+    <span class="kw">return</span> (diff == <span class="num">0</span>);
+}
+
+<span class="cmt">/* ── 批量解析：遍历 Resolving List ── */</span>
+<span class="kw">typedef struct</span> {
+    <span class="typ">uint8_t</span> irk[<span class="num">16</span>];
+    <span class="typ">uint8_t</span> identity_addr[<span class="num">6</span>];
+    <span class="typ">uint8_t</span> addr_type;  <span class="cmt">/* 0=public, 1=static_random */</span>
+} <span class="typ">resolving_entry_t</span>;
+
+<span class="kw">const</span> <span class="typ">resolving_entry_t</span> *<span class="fn">bt_find_identity</span>(
+    <span class="kw">const</span> <span class="typ">uint8_t</span> rpa[<span class="num">6</span>],
+    <span class="kw">const</span> <span class="typ">resolving_entry_t</span> *list, <span class="typ">int</span> count)
+{
+    <span class="kw">for</span> (<span class="typ">int</span> i = <span class="num">0</span>; i &lt; count; i++) {
+        <span class="kw">if</span> (<span class="fn">bt_resolve_rpa</span>(list[i].irk, rpa))
+            <span class="kw">return</span> &amp;list[i];
+    }
+    <span class="kw">return</span> <span class="pp">NULL</span>;  <span class="cmt">/* 未找到 */</span>
+}</code></pre>
+
+    <div class="callout success">
+      <div class="callout-icon">✓</div>
+      <div class="callout-body">
+        <div class="callout-title">常数时间比较</div>
+        <p>使用按位或（<code>|</code>）代替短路逻辑（<code>&&</code>）进行 hash 比较，可防止计时侧信道攻击（timing side-channel）：无论数据内容如何，比较操作耗时恒定。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ §7 ══════════════════ -->
+  <section class="section" id="s7">
+    <div class="section-header">
+      <span class="section-num">§ 07</span>
+      <h2>安全思路与威胁模型</h2>
+    </div>
+
+    <h3>威胁模型概览</h3>
+    <div class="sec-matrix">
+      <div class="sec-card">
+        <div class="sec-card-icon">👁</div>
+        <div class="sec-card-title">被动追踪攻击</div>
+        <p>攻击者长期监听 BLE 广播，尝试关联同一设备的历史地址。RPA 每次轮换使地址不可关联，有效抵御此类攻击。</p>
+      </div>
+      <div class="sec-card">
+        <div class="sec-card-icon">🔑</div>
+        <div class="sec-card-title">IRK 泄漏风险</div>
+        <p>若 IRK 被窃取，攻击者可重放解析所有历史 RPA。IRK 必须存储于 Secure Storage，设备绑定删除时应彻底清除。</p>
+      </div>
+      <div class="sec-card">
+        <div class="sec-card-icon">⏱</div>
+        <div class="sec-card-title">地址轮换频率</div>
+        <p>轮换间隔越短隐私越好，但对合法对端的识别延迟增加。规范推荐 15 分钟，实践中部分设备采用 5~30 分钟可配置。</p>
+      </div>
+      <div class="sec-card">
+        <div class="sec-card-icon">📡</div>
+        <div class="sec-card-title">碰撞概率</div>
+        <p>hash 仅 24 bit，理论碰撞概率约 1/2²⁴（约百万分之一）。攻击者无法从碰撞中获益：即使两个不同 IRK 产生相同 hash，设备业务层仍会通过握手拒绝伪造方。</p>
+      </div>
+      <div class="sec-card">
+        <div class="sec-card-icon">🕵</div>
+        <div class="sec-card-title">Resolving List 侧信道</div>
+        <p>遍历 List 时，提前返回会泄露列表长度/位置信息。生产实现应使用恒定时间遍历，或硬件解析器统一处理。</p>
+      </div>
+      <div class="sec-card">
+        <div class="sec-card-icon">🔄</div>
+        <div class="sec-card-title">重放攻击</div>
+        <p>RPA 每个轮换周期内固定，攻击者无法在本周期外重放（地址已更换）。周期内重放属于正常通信，无法带来额外权限。</p>
+      </div>
+    </div>
+
+    <h3>安全设计原则</h3>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-num">P1</div>
+        <div class="flow-content">
+          <div class="flow-title">最小暴露面原则</div>
+          <p class="flow-desc">IRK 不应跨进程/跨网络传输，仅在本地安全存储与蓝牙控制器之间流通。Host 层不应将 IRK 明文记录到日志。</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">P2</div>
+        <div class="flow-content">
+          <div class="flow-title">防御降级攻击</div>
+          <p class="flow-desc">部分旧设备支持关闭 RPA，退化为静态随机地址。实现时应强制要求对端使用 RPA，或明确接受的地址类型范围。</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">P3</div>
+        <div class="flow-content">
+          <div class="flow-title">配对安全绑定</div>
+          <p class="flow-desc">IRK 通过 SMP LE Secure Connections 交换时受 ECDH 密钥协商保护（BT 4.2+）。应禁用旧版 Just Works 配对以防 MitM。</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">P4</div>
+        <div class="flow-content">
+          <div class="flow-title">密钥生命周期管理</div>
+          <p class="flow-desc">解除配对时应同时从 Resolving List 删除对端 IRK，并清零内存中的临时副本（<code>memset_s</code> 或等效安全擦除函数）。</p>
+        </div>
+      </div>
+    </div>
+
+    <h3>AES-128 作为 ah() 基础的安全性</h3>
+    <p>使用 AES-128 而非更简单哈希（如 CRC/MD5）的原因在于：</p>
+    <ul>
+      <li><strong>伪随机性</strong>：AES 输出与真随机不可区分（PRF 假设），使攻击者无法从 RPA 推导任何 IRK 信息</li>
+      <li><strong>密钥绑定</strong>：输出与 IRK 强绑定，不同 IRK 生成完全不同的 hash，不存在共享密钥弱点</li>
+      <li><strong>硬件普及</strong>：现代 SoC 普遍带 AES 硬件加速（ARM TrustZone CryptoCell、Intel AES-NI），计算开销极低</li>
+    </ul>
+  </section>
+
+  <!-- ══════════════════ §8 ══════════════════ -->
+  <section class="section" id="s8">
+    <div class="section-header">
+      <span class="section-num">§ 08</span>
+      <h2>实现方式：跨平台与工程实践</h2>
+    </div>
+
+    <h3>平台实现对比</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>平台/框架</th><th>AES 来源</th><th>RPA 解析位置</th><th>API</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Linux BlueZ</strong></td>
+            <td>内核 crypto API</td>
+            <td>Controller（HCI LE Set Resolving List）</td>
+            <td><code>hci_le_add_device_to_resolving_list</code></td>
+          </tr>
+          <tr>
+            <td><strong>Zephyr RTOS</strong></td>
+            <td><code>psa_cipher_encrypt</code></td>
+            <td>Host（<code>bt_id.c</code>）</td>
+            <td><code>bt_rpa_resolve()</code></td>
+          </tr>
+          <tr>
+            <td><strong>NimBLE</strong></td>
+            <td>TinyCrypt / mbedTLS</td>
+            <td>Host（<code>ble_sm_alg.c</code>）</td>
+            <td><code>ble_sm_alg_ah()</code></td>
+          </tr>
+          <tr>
+            <td><strong>Android</strong></td>
+            <td>BoringSSL / HW</td>
+            <td>Bluedroid Controller</td>
+            <td>Java: <code>BluetoothAdapter.getBluetoothLeAdvertiser()</code></td>
+          </tr>
+          <tr>
+            <td><strong>iOS / macOS</strong></td>
+            <td>CryptoKit / SecureEnclave</td>
+            <td>CoreBluetooth 内部</td>
+            <td>透明处理，应用层不可见</td>
+          </tr>
+          <tr>
+            <td><strong>Windows WinRT</strong></td>
+            <td>BCryptEncrypt</td>
+            <td>蓝牙驱动</td>
+            <td><code>Windows.Devices.Bluetooth</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>嵌入式平台优化建议</h3>
+    <ul>
+      <li>使用 <strong>查表法（T-table）</strong> 替代 <code>gmul()</code> 按位运算，在 Cortex-M4 上速度可提升 3~5 倍</li>
+      <li>Nordic nRF5340 等芯片提供 <strong>CryptoCell-312</strong> 硬件加速，通过 <code>nrf_cc312_lib</code> 调用</li>
+      <li>若 Resolving List 很长（10+ 条目），可采用 <strong>并行 AES 流水线</strong> 或 SIMD 指令（Cortex-A 平台的 NEON AES）</li>
+      <li>ROM 受限设备可使用 <code>aes_sbox_compute()</code> 动态计算 S-Box，以代码空间换 256 字节 ROM</li>
+    </ul>
+
+    <h3>使用 OpenSSL 的简化版 ah()</h3>
+<pre data-lang="c"><code><span class="pp">#include &lt;openssl/aes.h&gt;</span>
+
+<span class="cmt">/**
+ * OpenSSL 版 bt_ah() — 适用于 Linux 桌面/服务器调试
+ * 注意：OpenSSL AES 使用 big-endian，仍需做字节序转换
+ */</span>
+<span class="kw">void</span> <span class="fn">bt_ah_openssl</span>(<span class="kw">const</span> <span class="typ">uint8_t</span> k[<span class="num">16</span>], <span class="kw">const</span> <span class="typ">uint8_t</span> r[<span class="num">3</span>], <span class="typ">uint8_t</span> out[<span class="num">3</span>]) {
+    <span class="typ">uint8_t</span> r_prime[<span class="num">16</span>] = {<span class="num">0</span>};
+    r_prime[<span class="num">0</span>] = r[<span class="num">0</span>]; r_prime[<span class="num">1</span>] = r[<span class="num">1</span>]; r_prime[<span class="num">2</span>] = r[<span class="num">2</span>];
+
+    <span class="typ">uint8_t</span> k_be[<span class="num">16</span>], r_be[<span class="num">16</span>], e_be[<span class="num">16</span>];
+    <span class="kw">for</span> (<span class="typ">int</span> i = <span class="num">0</span>; i &lt; <span class="num">16</span>; i++) {
+        k_be[i] = k[<span class="num">15</span>-i];
+        r_be[i] = r_prime[<span class="num">15</span>-i];
+    }
+
+    <span class="typ">AES_KEY</span> aes_key;
+    <span class="fn">AES_set_encrypt_key</span>(k_be, <span class="num">128</span>, &amp;aes_key);
+    <span class="fn">AES_encrypt</span>(r_be, e_be, &amp;aes_key);
+
+    out[<span class="num">0</span>] = e_be[<span class="num">15</span>];
+    out[<span class="num">1</span>] = e_be[<span class="num">14</span>];
+    out[<span class="num">2</span>] = e_be[<span class="num">13</span>];
+}</code></pre>
+
+    <h3>Python 验证脚本（调试用）</h3>
+<pre data-lang="python"><code><span class="kw">from</span> Crypto.Cipher <span class="kw">import</span> AES  <span class="cmt"># pip install pycryptodome</span>
+
+<span class="kw">def</span> <span class="fn">bt_ah</span>(irk_le: bytes, prand_le: bytes) -&gt; bytes:
+    <span class="str">"""
+    irk_le:   16-byte IRK, little-endian
+    prand_le:  3-byte prand, little-endian
+    returns:   3-byte hash, little-endian
+    """</span>
+    <span class="cmt"># 构造 r'</span>
+    r_prime = prand_le + <span class="fn">bytes</span>(<span class="num">13</span>)  <span class="cmt"># 补 13 个 0x00</span>
+    <span class="cmt"># 字节反转 → big-endian</span>
+    k_be = <span class="fn">bytes</span>(<span class="fn">reversed</span>(irk_le))
+    r_be = <span class="fn">bytes</span>(<span class="fn">reversed</span>(r_prime))
+    <span class="cmt"># AES-128 加密</span>
+    cipher = AES.<span class="fn">new</span>(k_be, AES.MODE_ECB)
+    e_be = cipher.<span class="fn">encrypt</span>(r_be)
+    <span class="cmt"># 取末 3 字节，逆序</span>
+    <span class="kw">return</span> <span class="fn">bytes</span>([e_be[<span class="num">15</span>], e_be[<span class="num">14</span>], e_be[<span class="num">13</span>]])
+
+<span class="kw">def</span> <span class="fn">resolve_rpa</span>(irk_le: bytes, rpa_le: bytes) -&gt; bool:
+    <span class="kw">assert</span> (rpa_le[<span class="num">5</span>] &amp; <span class="num">0xC0</span>) == <span class="num">0x40</span>, <span class="str">"Not an RPA"</span>
+    prand = rpa_le[<span class="num">3</span>:<span class="num">6</span>]
+    hash_addr = rpa_le[<span class="num">0</span>:<span class="num">3</span>]
+    hash_calc = <span class="fn">bt_ah</span>(irk_le, prand)
+    <span class="kw">return</span> hash_addr == hash_calc
+
+<span class="cmt"># 示例</span>
+irk = <span class="fn">bytes</span>.fromhex(<span class="str">"0f0e0d0c0b0a09080706050403020100"</span>)
+rpa = <span class="fn">bytes</span>.fromhex(<span class="str">"aabbcc112273"</span>)  <span class="cmt"># 按 LE 字节序</span>
+<span class="fn">print</span>(<span class="str">"Resolved:"</span>, <span class="fn">resolve_rpa</span>(irk, rpa))</code></pre>
+  </section>
+
+  <!-- ══════════════════ §9 ══════════════════ -->
+  <section class="section" id="s9">
+    <div class="section-header">
+      <span class="section-num">§ 09</span>
+      <h2>常见错误与调试</h2>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>症状</th><th>根本原因</th><th>解决方法</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>hash 计算始终错误</td>
+            <td>IRK 或 r' 未字节反转</td>
+            <td>确认 <code>k_be[i] = k[15-i]</code> 逻辑正确</td>
+          </tr>
+          <tr>
+            <td>偶尔匹配失败</td>
+            <td>prand 提取字节顺序错误</td>
+            <td>确认 <code>prand = {addr[3],addr[4],addr[5]}</code></td>
+          </tr>
+          <tr>
+            <td>格式检查总是失败</td>
+            <td>地址字节序传入反了</td>
+            <td>检查 <code>addr[5]</code> 是否确实是最高字节</td>
+          </tr>
+          <tr>
+            <td>AES 输出 hash 全错</td>
+            <td>MixColumns 最后一轮未跳过</td>
+            <td>第 10 轮循环中 <code>if (rnd &lt; 10)</code> 才执行 MixColumns</td>
+          </tr>
+          <tr>
+            <td>与参考实现差3字节</td>
+            <td>取 AES 输出位置错误</td>
+            <td>应取 <code>e_be[13]、e_be[14]、e_be[15]</code>（末 3 字节）</td>
+          </tr>
+          <tr>
+            <td>编译警告/undefined behavior</td>
+            <td><code>gmul</code> 左移溢出</td>
+            <td>用 <code>uint8_t</code> 中间变量接收，避免隐式 int 提升</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>调试建议</h3>
+    <p>使用官方测试向量（CSS v11 Part A §1.3）逐步验证每个函数：</p>
+    <ol>
+      <li>先单独测试 AES-128 加密，对照 NIST FIPS 197 附录 B 测试向量</li>
+      <li>再测试 <code>bt_ah()</code>，对照 CSS 提供的 <code>ah</code> 函数示例值</li>
+      <li>最后组装 RPA 验证，手动构造一个已知 IRK+prand 的合法 RPA 进行自验</li>
+    </ol>
+  </section>
+
+  <!-- ══════════════════ §10 ══════════════════ -->
+  <section class="section" id="s10">
+    <div class="section-header">
+      <span class="section-num">§ 10</span>
+      <h2>在 CCC 数字钥匙中的应用</h2>
+    </div>
+
+    <p>CCC Digital Key（车联网联盟数字钥匙）规范深度依赖蓝牙 LE 隐私机制。RPA 在数字钥匙场景中扮演关键角色：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>场景</th><th>RPA 的作用</th><th>相关规范</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>车辆广播</td>
+            <td>车辆使用 RPA 广播，仅已配对手机可识别，防止非配对设备追踪</td>
+            <td>CCC DK R3 §5.x</td>
+          </tr>
+          <tr>
+            <td>手机扫描</td>
+            <td>手机扫描周边 BLE 设备，用已存储的车辆 IRK 快速识别目标车辆</td>
+            <td>CCC DK R3 §6.x</td>
+          </tr>
+          <tr>
+            <td>被动无感进入</td>
+            <td>后台 RPA 解析完成设备识别，无需用户操作即可触发解锁流程</td>
+            <td>CCC DK R3 §7.x</td>
+          </tr>
+          <tr>
+            <td>数字钥匙共享</td>
+            <td>好友设备获得新 IRK 后，可独立解析车辆 RPA，无需原车主在场</td>
+            <td>CCC DK R3 §11.x</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout spec">
+      <div class="callout-icon">🔑</div>
+      <div class="callout-body">
+        <div class="callout-title">与 DK 规范的结合</div>
+        <p>CCC R3 在 BLE 层之上叠加了自己的应用层安全（ECDH + AES-GCM），但底层蓝牙隐私机制（RPA/IRK）是通信发现阶段的第一道防线。IRK 由 CCC 的 SE（Secure Element）安全保管，与数字钥匙私钥一同受到硬件安全保护。</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>总结</h3>
+    <p>RPA 机制以极低的计算代价（单次 AES-128 运算，~1μs 量级）实现了实用的蓝牙隐私保护。其设计精妙之处在于：</p>
+    <ul>
+      <li><strong>对称性</strong>：生成与验证使用同一 IRK 和相同 ah() 函数，无需非对称运算</li>
+      <li><strong>本地性</strong>：完全离线，不依赖任何网络服务器，天然适合车载/嵌入式场景</li>
+      <li><strong>可扩展性</strong>：一个设备可存储多个对端 IRK，支持一对多的识别关系</li>
+      <li><strong>标准化</strong>：作为蓝牙核心规范的一部分，全球所有合规蓝牙芯片均支持</li>
+    </ul>
+  </section>
+
+  <!-- ══════════════════ FOOTER ══════════════════ -->
+  <footer>
+    <span><span class="dot">▸</span> Bluetooth Core Spec 5.4 · Vol 3, Part H, §2.4</span>
+    <span><span class="dot">▸</span> CCC Digital Key R3/R4 参考</span>
+    <span><span class="dot">▸</span> 铁将军技术报告 · 2026</span>
+  </footer>
+
+</div>
+
+<script>
+  // Scroll reveal
+  const sections = document.querySelectorAll('.section');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.05, rootMargin: '0px 0px -40px 0px' });
+  sections.forEach(s => observer.observe(s));
+
+  // Active TOC highlight
+  const headings = document.querySelectorAll('section[id]');
+  const tocLinks = document.querySelectorAll('.toc a');
+  const ioToc = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        tocLinks.forEach(a => a.style.color = '');
+        const active = document.querySelector(`.toc a[href="#${e.target.id}"]`);
+        if (active) active.style.color = 'var(--accent)';
+      }
+    });
+  }, { threshold: 0.3 });
+  headings.forEach(h => ioToc.observe(h));
+</script>

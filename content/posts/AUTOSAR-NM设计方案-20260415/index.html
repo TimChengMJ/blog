@@ -1,0 +1,1365 @@
+---
+title: "AUTOSAR 网络管理框架参考手册"
+description: ""
+date: 2026-04-15T08:47:04+08:00
+categories: ["技术文档"]
+tags: []
+draft: false
+---
+
+<style>
+
+:root{
+  --bg:#f6f7f9;--surface:#fff;--surface2:#f0f3f8;--surface3:#e8ecf5;
+  --border:#dde3ef;--border2:#c8d0e4;
+  --navy:#1e3a5f;--navy-l:#e6edf7;
+  --blue:#1a5fb4;--blue-l:#e8f0fb;--blue-m:#2d6fd4;
+  --teal:#0d6e72;--teal-l:#e0f5f5;
+  --amber:#8a4800;--amber-l:#fef3e0;
+  --green:#1d6b45;--green-l:#e5f5ec;
+  --red:#b91c1c;--red-l:#fef2f2;
+  --purple:#5b2d8e;--purple-l:#f3eeff;
+  --text:#1a2235;--text2:#3d4f6a;--text3:#7a8eaa;
+  --mono:'JetBrains Mono',monospace;
+  --serif:'Noto Serif SC',serif;
+  --body:'Crimson Pro',serif;
+}::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── App shell ── */
+.shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+
+/* ── Sidebar ── */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;flex-shrink:0}
+.sb-brand{padding:1.6rem 1.4rem 1.2rem;border-bottom:1px solid var(--border)}
+.sb-brand-title{font-family:var(--serif);font-size:1rem;font-weight:600;color:var(--navy);line-height:1.3}
+.sb-brand-sub{font-family:var(--mono);font-size:.65rem;color:var(--text3);margin-top:3px;letter-spacing:.06em}
+.sb-sec{padding:.9rem 0 .2rem 1.4rem;font-family:var(--mono);font-size:.62rem;font-weight:600;color:var(--text3);letter-spacing:.12em;text-transform:uppercase}
+.sb-item{display:flex;align-items:center;gap:8px;padding:6px 1.4rem;font-family:var(--body);font-size:.88rem;color:var(--text2);cursor:pointer;border-left:2px solid transparent;transition:all .14s;user-select:none}
+.sb-item:hover{background:var(--surface2);color:var(--text)}
+.sb-item.on{background:var(--navy-l);color:var(--navy);border-left-color:var(--navy);font-weight:600}
+.sb-dot{width:5px;height:5px;border-radius:50%;background:var(--border2);flex-shrink:0;transition:background .14s}
+.sb-item.on .sb-dot{background:var(--navy)}
+
+/* ── Content ── */
+.content{padding:2.4rem 3rem 5rem;max-width:1080px}
+
+/* ── Panels ── */
+.panel{display:none}.panel.on{display:block;animation:fadeUp .22s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Page header ── */
+.ph{margin-bottom:2rem;padding-bottom:1.2rem;border-bottom:1px solid var(--border)}
+.ph-eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.12em;color:var(--blue);text-transform:uppercase;margin-bottom:.4rem}
+.ph-title{font-family:var(--serif);font-size:1.8rem;font-weight:600;color:var(--navy);line-height:1.2;margin-bottom:.35rem}
+.ph-sub{font-family:var(--mono);font-size:.78rem;color:var(--text3)}
+
+/* ── Section heading ── */
+.sh{font-family:var(--serif);font-size:1.15rem;font-weight:600;color:var(--navy);margin:2rem 0 .8rem;display:flex;align-items:center;gap:8px}
+.sh::before{content:'';width:3px;height:1.1em;background:var(--blue);border-radius:2px;flex-shrink:0}
+.sh2{font-family:var(--serif);font-size:.98rem;font-weight:600;color:var(--text);margin:1.4rem 0 .6rem}
+
+/* ── Prose ── */
+p{color:var(--text2);margin-bottom:.8rem;font-size:.95rem}
+strong{color:var(--text);font-weight:600}
+em{font-style:normal;color:var(--blue)}
+
+/* ── Info boxes ── */
+.box{border-radius:6px;padding:.9rem 1.1rem;margin:.9rem 0;font-size:.88rem;line-height:1.7}
+.box strong{font-size:.9rem}
+.box-blue{background:var(--blue-l);border:1px solid #c4d8f5;color:var(--text2)}
+.box-amber{background:var(--amber-l);border:1px solid #f0d090;color:#5a3000}
+.box-green{background:var(--green-l);border:1px solid #a8dfc0;color:#0f4027}
+.box-red{background:var(--red-l);border:1px solid #fcc;color:#7b1c1c}
+.box-teal{background:var(--teal-l);border:1px solid #9ee0e4;color:#0a4547}
+.box-navy{background:var(--navy-l);border:1px solid #b8cce8;color:var(--navy)}
+
+/* ── Badges ── */
+.badge{display:inline-block;padding:2px 9px;border-radius:4px;font-family:var(--mono);font-size:.68rem;font-weight:500;white-space:nowrap;vertical-align:middle}
+.b-navy{background:var(--navy-l);color:#0f2a48}
+.b-blue{background:var(--blue-l);color:#0c3d7a}
+.b-teal{background:var(--teal-l);color:#0a4547}
+.b-amber{background:var(--amber-l);color:#6b3600}
+.b-green{background:var(--green-l);color:#0f4027}
+.b-red{background:var(--red-l);color:#7b1c1c}
+.b-purple{background:var(--purple-l);color:#3b1a68}
+.b-gray{background:var(--surface2);color:var(--text2)}
+
+/* ── Tables ── */
+.tw{overflow-x:auto;border:1px solid var(--border);border-radius:8px;margin:.9rem 0}
+table{width:100%;border-collapse:collapse;font-size:.84rem}
+thead tr{background:var(--surface2)}
+th{padding:9px 14px;text-align:left;font-family:var(--mono);font-size:.68rem;font-weight:600;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid var(--border)}
+td{padding:8px 14px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top;line-height:1.55}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafbfe}
+.mono{font-family:var(--mono);font-size:.78rem}
+
+/* ── Cards ── */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:.9rem 0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.1rem;transition:box-shadow .18s}
+.card:hover{box-shadow:0 2px 14px rgba(30,58,95,.08)}
+.card-icon{font-size:1.3rem;margin-bottom:.5rem}
+.card-title{font-family:var(--serif);font-size:.92rem;font-weight:600;color:var(--navy);margin-bottom:.3rem}
+.card-/* ── Stat cards ── */
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:.9rem 0}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.9rem;text-align:center}
+.stat-n{font-family:var(--mono);font-size:1.5rem;font-weight:600;color:var(--blue)}
+.stat-l{font-size:.72rem;color:var(--text3);margin-top:2px}
+
+/* ── Flow / Steps ── */
+.flow{display:flex;flex-direction:column}
+.flow-step{display:flex;gap:12px;padding:10px 0;border-bottom:1px dashed var(--border);align-items:flex-start}
+.flow-step:last-child{border-bottom:none}
+.fsn{width:26px;height:26px;border-radius:50%;background:var(--navy-l);color:var(--navy);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.7rem;font-weight:600;flex-shrink:0;margin-top:1px}
+.fs-title{font-size:.88rem;font-weight:600;color:var(--text);margin-bottom:2px;font-family:var(--serif)}
+.fs-desc{font-size:.82rem;color:var(--text2);line-height:1.6}
+.fs-code{font-family:var(--mono);font-size:.72rem;background:var(--surface2);border:1px solid var(--border);padding:3px 9px;border-radius:4px;display:inline-block;margin-top:5px;color:var(--text)}
+
+/* ── SVG containers ── */
+.svg-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.2rem;margin:.9rem 0}
+.svg-wrap svg{display:block;min-width:580px}
+
+/* ── Code block ── */
+pre{background:#f0f3f8;border:1px solid var(--border);border-radius:6px;padding:1rem 1.2rem;overflow-x:auto;margin:.8rem 0;font-family:var(--mono);font-size:.78rem;line-height:1.7;color:var(--text)}
+code{font-family:var(--mono);font-size:.82rem;background:var(--surface2);border:1px solid var(--border);padding:.1em .4em;border-radius:3px;color:var(--navy)}
+
+/* ── State machine ── */
+.sm-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.2rem;margin:.9rem 0}
+
+/* ── Divider ── */
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);margin:2rem 0}
+
+/* ── Responsive ── */
+@media(max-width:800px){
+  .shell{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .content{padding:1.2rem}
+  .card-grid{grid-template-columns:1fr}
+}
+
+</style>
+
+<div class="shell">
+
+<!-- ════════ SIDEBAR ════════ -->
+<nav class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-brand-title">AUTOSAR 网络管理<br>框架参考手册</div>
+    <div class="sb-brand-sub">AUTOSAR R21-11 · CanNm / UdpNm</div>
+  </div>
+
+  <div class="sb-sec">基础</div>
+  <div class="sb-item on" onclick="go('overview')"><div class="sb-dot"></div>总览与背景</div>
+  <div class="sb-item" onclick="go('concepts')"><div class="sb-dot"></div>基础概念</div>
+  <div class="sb-item" onclick="go('arch')"><div class="sb-dot"></div>架构与分层</div>
+
+  <div class="sb-sec">核心机制</div>
+  <div class="sb-item" onclick="go('states')"><div class="sb-dot"></div>网络状态机</div>
+  <div class="sb-item" onclick="go('modes')"><div class="sb-dot"></div>总线模式控制</div>
+  <div class="sb-item" onclick="go('msg')"><div class="sb-dot"></div>NM 报文结构</div>
+  <div class="sb-item" onclick="go('timer')"><div class="sb-dot"></div>定时器与参数</div>
+
+  <div class="sb-sec">协议变体</div>
+  <div class="sb-item" onclick="go('cannm')"><div class="sb-dot"></div>CanNm 详解</div>
+  <div class="sb-item" onclick="go('udpnm')"><div class="sb-dot"></div>UdpNm 详解</div>
+  <div class="sb-item" onclick="go('linnm')"><div class="sb-dot"></div>LinNm / FrNm</div>
+
+  <div class="sb-sec">设计与配置</div>
+  <div class="sb-item" onclick="go('design')"><div class="sb-dot"></div>设计方式</div>
+  <div class="sb-item" onclick="go('model')"><div class="sb-dot"></div>模型配置</div>
+  <div class="sb-item" onclick="go('coord')"><div class="sb-dot"></div>网络协调</div>
+
+  <div class="sb-sec">流程与时序</div>
+  <div class="sb-item" onclick="go('seq')"><div class="sb-dot"></div>唤醒与休眠时序</div>
+  <div class="sb-item" onclick="go('pnc')"><div class="sb-dot"></div>PNC 部分网络</div>
+  <div class="sb-item" onclick="go('scenario')"><div class="sb-dot"></div>典型应用场景</div>
+
+  <div class="sb-sec">参考</div>
+  <div class="sb-item" onclick="go('param')"><div class="sb-dot"></div>参数速查表</div>
+</nav>
+
+<!-- ════════ CONTENT ════════ -->
+<main class="content">
+
+<!-- ── OVERVIEW ── -->
+<div class="panel on" id="pnl-overview">
+  <div class="ph">
+    <div class="ph-eyebrow">AUTOSAR Network Management</div>
+    <div class="ph-title">网络管理框架总览</div>
+    <div class="ph-sub">AUTOSAR R21-11 · ISO 17356 · 适用于 CAN / LIN / FlexRay / Ethernet</div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat"><div class="stat-n">4</div><div class="stat-l">NM 协议变体</div></div>
+    <div class="stat"><div class="stat-n">3</div><div class="stat-l">总线模式</div></div>
+    <div class="stat"><div class="stat-n">7</div><div class="stat-l">NM 状态</div></div>
+    <div class="stat"><div class="stat-n">32</div><div class="stat-l">最大 PNC 数量</div></div>
+  </div>
+
+  <div class="box box-navy"><strong>什么是 AUTOSAR NM？</strong><br>
+  AUTOSAR Network Management（NM）是 AUTOSAR 基础软件（BSW）的标准化网络管理模块，负责协调整车 ECU 节点的上电唤醒、通信建立、进入休眠和异常检测。它通过定义统一的状态机、报文格式和定时器，使不同 OEM 和 Tier-1 的 ECU 可以在同一网络中协调工作，无需专有协议。</div>
+
+  <div class="sh">为什么需要网络管理</div>
+  <p>现代汽车包含数十至上百个 ECU，它们通过 CAN、LIN、FlexRay 或以太网互联。如果每个 ECU 独立决定何时睡眠和唤醒，将产生：</p>
+  <div class="card-grid">
+    <div class="card"><div class="card-icon">⚡</div><div class="card-title">暗电流超标</div><div class="card-body">部分 ECU 无法进入睡眠，持续消耗电流，导致蓄电池亏电</div></div>
+    <div class="card"><div class="card-icon">🔄</div><div class="card-title">通信竞争</div><div class="card-body">节点各自决定休眠时机，导致报文丢失或总线冲突</div></div>
+    <div class="card"><div class="card-icon">🔗</div><div class="card-title">唤醒失败</div><div class="card-body">某节点已休眠，无法响应其他节点的请求，造成功能失效</div></div>
+    <div class="card"><div class="card-icon">🛡</div><div class="card-title">诊断障碍</div><div class="card-body">诊断仪无法预判 ECU 状态，导致诊断失败或 DTC 误报</div></div>
+  </div>
+
+  <div class="sh">AUTOSAR NM 的核心价值</div>
+  <div class="card-grid">
+    <div class="card"><div class="card-title">协调唤醒与休眠</div><div class="card-body">通过 NM 报文和状态机确保所有节点同步进入 Sleep/Active</div></div>
+    <div class="card"><div class="card-title">总线负载管理</div><div class="card-body">网络安静后统一关闭通信，降低 EMI 和功耗</div></div>
+    <div class="card"><div class="card-title">部分网络（PNC）</div><div class="card-body">仅激活所需的 ECU 子集，实现精细化电源管理</div></div>
+    <div class="card"><div class="card-title">主动/被动模式</div><div class="card-body">无通信需求的节点可进入被动模式，节省资源</div></div>
+  </div>
+
+  <div class="sh">NM 在 AUTOSAR 软件栈中的位置</div>
+  <div class="svg-wrap">
+    <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" style="font-family:'JetBrains Mono',monospace;max-width:720px;width:100%">
+      <defs>
+        <marker id="a0" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#7a8eaa"/></marker>
+      </defs>
+      <!-- Layer boxes -->
+      <rect x="10" y="10" width="700" height="44" rx="6" fill="#e6edf7" stroke="#b8cce8" stroke-width="1.2"/>
+      <text x="360" y="28" text-anchor="middle" font-size="11" fill="#0f2a48" font-weight="600">应用层 / RTE</text>
+      <text x="360" y="44" text-anchor="middle" font-size="9" fill="#3d4f6a">ComM (Communication Manager) · NvM · Dcm</text>
+
+      <rect x="10" y="64" width="700" height="44" rx="6" fill="#e0f5f5" stroke="#9ee0e4" stroke-width="1.2"/>
+      <text x="360" y="82" text-anchor="middle" font-size="11" fill="#0a4547" font-weight="600">网络管理层 — NM Interface (Nm)</text>
+      <text x="360" y="98" text-anchor="middle" font-size="9" fill="#0d6e72">CanNm · UdpNm · LinNm · FrNm · J1939Nm</text>
+
+      <rect x="10" y="118" width="330" height="44" rx="6" fill="#e8f0fb" stroke="#c4d8f5" stroke-width="1.2"/>
+      <text x="175" y="136" text-anchor="middle" font-size="11" fill="#0c3d7a" font-weight="600">PDUR (PDU Router)</text>
+      <text x="175" y="152" text-anchor="middle" font-size="9" fill="#1a5fb4">路由 NM PDU 至下层</text>
+
+      <rect x="380" y="118" width="330" height="44" rx="6" fill="#f3eeff" stroke="#c8b4e8" stroke-width="1.2"/>
+      <text x="545" y="136" text-anchor="middle" font-size="11" fill="#3b1a68" font-weight="600">ComM (Bus 侧)</text>
+      <text x="545" y="152" text-anchor="middle" font-size="9" fill="#5b2d8e">总线通信模式控制</text>
+
+      <rect x="10" y="172" width="700" height="44" rx="6" fill="#fef3e0" stroke="#f0d090" stroke-width="1.2"/>
+      <text x="360" y="190" text-anchor="middle" font-size="11" fill="#5a3000" font-weight="600">通信驱动层</text>
+      <text x="360" y="206" text-anchor="middle" font-size="9" fill="#8a4800">CanIf · SoAd · LinIf · FrIf — 总线抽象接口</text>
+
+      <rect x="10" y="226" width="700" height="44" rx="6" fill="#e5f5ec" stroke="#a8dfc0" stroke-width="1.2"/>
+      <text x="360" y="244" text-anchor="middle" font-size="11" fill="#0f4027" font-weight="600">硬件抽象层 MCAL</text>
+      <text x="360" y="260" text-anchor="middle" font-size="9" fill="#1d6b45">Can / Eth / Lin / FlexRay Driver</text>
+
+      <!-- Arrows -->
+      <line x1="360" y1="54" x2="360" y2="64" stroke="#7a8eaa" stroke-width="1.2" marker-end="url(#a0)"/>
+      <line x1="360" y1="108" x2="175" y2="118" stroke="#7a8eaa" stroke-width="1.2" marker-end="url(#a0)"/>
+      <line x1="360" y1="108" x2="545" y2="118" stroke="#7a8eaa" stroke-width="1.2" marker-end="url(#a0)"/>
+      <line x1="175" y1="162" x2="360" y2="172" stroke="#7a8eaa" stroke-width="1.2" marker-end="url(#a0)"/>
+      <line x1="545" y1="162" x2="360" y2="172" stroke="#7a8eaa" stroke-width="1.2" marker-end="url(#a0)"/>
+      <line x1="360" y1="216" x2="360" y2="226" stroke="#7a8eaa" stroke-width="1.2" marker-end="url(#a0)"/>
+    </svg>
+  </div>
+</div>
+
+<!-- ── CONCEPTS ── -->
+<div class="panel" id="pnl-concepts">
+  <div class="ph">
+    <div class="ph-eyebrow">Fundamental Concepts</div>
+    <div class="ph-title">基础概念</div>
+    <div class="ph-sub">理解 AUTOSAR NM 所需的核心术语与原理</div>
+  </div>
+
+  <div class="sh">核心术语速查</div>
+  <div class="tw"><table>
+    <thead><tr><th>术语</th><th>英文全称</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td class="mono" style="color:var(--navy);font-weight:600">NM</td><td>Network Management</td><td>AUTOSAR 网络管理模块，协调所有节点的唤醒与休眠</td></tr>
+      <tr><td class="mono" style="color:var(--navy);font-weight:600">ComM</td><td>Communication Manager</td><td>管理 ECU 的通信模式（Full/Silent/No Communication）</td></tr>
+      <tr><td class="mono" style="color:var(--navy);font-weight:600">NM PDU</td><td>NM Protocol Data Unit</td><td>NM 专用的网络管理报文帧，用于节点间协调</td></tr>
+      <tr><td class="mono" style="color:var(--navy);font-weight:600">CBV</td><td>Control Bit Vector</td><td>NM PDU 中的控制字节，包含 Repeat、NM Coord、PNI 等标志位</td></tr>
+      <tr><td class="mono" style="color:var(--navy);font-weight:600">NID</td><td>Source Node Identifier</td><td>NM PDU 中的发送节点 ID（0x01~0xFE，各节点唯一）</td></tr>
+      <tr><td class="mono" style="color:var(--navy);font-weight:600">PNC</td><td>Partial Network Cluster</td><td>部分网络簇，一组逻辑上相关的 ECU，可独立唤醒/休眠</td></tr>
+      <tr><td class="mono" style="color:var(--navy);font-weight:600">NM Coord</td><td>Network Management Coordinator</td><td>总线协调节点，负责同步协调多总线或整车的休眠决策</td></tr>
+      <tr><td class="mono" style="color:var(--navy);font-weight:600">Bus-Sleep</td><td>Bus Sleep Mode</td><td>总线进入休眠，节点停止收发，电流消耗最低</td></tr>
+      <tr><td class="mono" style="color:var(--navy);font-weight:600">RMS</td><td>Remote Sleep Indication</td><td>远端休眠指示，其他节点已准备好休眠的标志</td></tr>
+      <tr><td class="mono" style="color:var(--navy);font-weight:600">NM-Timeout</td><td>NM Timeout Timer</td><td>NM 超时定时器，超时后节点进入 Prepare Bus-Sleep</td></tr>
+      <tr><td class="mono" style="color:var(--navy);font-weight:600">NM-Repeat</td><td>Repeat Message Timer</td><td>重复报文定时器，节点切换到 Repeat 状态时的持续发报时间</td></tr>
+      <tr><td class="mono" style="color:var(--navy);font-weight:600">WakeUp</td><td>Wake-Up Reason</td><td>唤醒源（总线活动、ECU 内部事件、硬件中断等）</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="sh">NM 节点类型</div>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-title"><span class="badge b-blue">Active Node</span> 主动节点</div>
+      <div class="card-body">发送 NM 报文，参与网络协调。有通信需求时必须是 Active。典型：BCM、GW、TCU</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="badge b-gray">Passive Node</span> 被动节点</div>
+      <div class="card-body">只接收不发送 NM 报文，监听网络状态。无需主动参与协调的 ECU（如某些传感器）</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="badge b-amber">Coordinator</span> 协调节点</div>
+      <div class="card-body">跨总线/跨通道的网络管理协调者，通常是网关 ECU（GW）。负责同步多条总线的休眠</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="badge b-teal">Remote Node</span> 远端节点</div>
+      <div class="card-body">同一网络中的其他参与者，本地节点通过收到其 NM PDU 来感知其状态</div>
+    </div>
+  </div>
+
+  <div class="sh">通信模式三态</div>
+  <p>ComM 模块将 ECU 的通信能力划分为三种模式，由上层应用通过 <code>ComM_RequestComMode()</code> 切换：</p>
+  <div class="tw"><table>
+    <thead><tr><th>模式</th><th>NM 发送</th><th>应用报文</th><th>描述</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge b-green">Full Communication</span></td><td>✅ 发送</td><td>✅ 正常</td><td>完整通信，节点活跃参与网络</td></tr>
+      <tr><td><span class="badge b-amber">Silent Communication</span></td><td>❌ 停止</td><td>❌ 停止发送</td><td>只接收，网络安静阶段过渡</td></tr>
+      <tr><td><span class="badge b-red">No Communication</span></td><td>❌ 停止</td><td>❌ 停止</td><td>完全关闭，Bus-Sleep 状态</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="sh">唤醒源分类</div>
+  <div class="card-grid">
+    <div class="card"><div class="card-title">总线唤醒</div><div class="card-body">CAN 总线出现活动（隐性→显性跳变），触发硬件唤醒中断，ECU 重新上电</div></div>
+    <div class="card"><div class="card-title">内部唤醒</div><div class="card-body">ECU 内部事件（RTC 定时、诊断请求、KL15 上电），无需总线活动触发</div></div>
+    <div class="card"><div class="card-title">NM PDU 唤醒</div><div class="card-body">收到其他节点的 NM 报文，因总线已活跃而触发自身进入 Active 状态</div></div>
+    <div class="card"><div class="card-title">PNC 唤醒</div><div class="card-body">PNC 位向量请求特定部分网络激活，仅唤醒相关节点子集</div></div>
+  </div>
+</div>
+
+<!-- ── ARCH ── -->
+<div class="panel" id="pnl-arch">
+  <div class="ph">
+    <div class="ph-eyebrow">Architecture</div>
+    <div class="ph-title">架构与分层设计</div>
+    <div class="ph-sub">AUTOSAR NM 模块内部结构与模块间接口</div>
+  </div>
+
+  <div class="sh">NM 模块内部组成</div>
+  <div class="card-grid">
+    <div class="card"><div class="card-title">Nm (NM Interface)</div><div class="card-body">NM 统一接口层，屏蔽底层协议差异，为 ComM 提供统一 API（Nm_PassiveStartUp、Nm_NetworkRequest 等）</div></div>
+    <div class="card"><div class="card-title">CanNm / UdpNm</div><div class="card-body">具体总线上的 NM 协议实现，实现状态机、发报、收报和定时器管理</div></div>
+    <div class="card"><div class="card-title">NmOsek (Osek NM)</div><div class="card-body">传统 OSEK 网络管理兼容实现，用于老平台或 J1939 环境</div></div>
+    <div class="card"><div class="card-title">PNC Manager</div><div class="card-body">管理 PNC 位向量的聚合与分发，与 ComM 配合决定哪些 PNC 需要激活</div></div>
+  </div>
+
+  <div class="sh">模块间接口关系</div>
+  <div class="svg-wrap">
+    <svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg" style="font-family:'JetBrains Mono',monospace;max-width:720px;width:100%">
+      <defs>
+        <marker id="a1" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#1a5fb4"/></marker>
+        <marker id="a2" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#1d6b45"/></marker>
+        <marker id="a3" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#8a4800"/></marker>
+      </defs>
+
+      <!-- Application -->
+      <rect x="260" y="10" width="200" height="40" rx="6" fill="#e6edf7" stroke="#b8cce8" stroke-width="1.5"/>
+      <text x="360" y="34" text-anchor="middle" font-size="11" fill="#0f2a48" font-weight="600">Application SW-C</text>
+
+      <!-- ComM -->
+      <rect x="160" y="80" width="160" height="40" rx="6" fill="#e0f5f5" stroke="#9ee0e4" stroke-width="1.5"/>
+      <text x="240" y="104" text-anchor="middle" font-size="11" fill="#0a4547" font-weight="600">ComM</text>
+
+      <!-- DCM -->
+      <rect x="400" y="80" width="160" height="40" rx="6" fill="#f3eeff" stroke="#c8b4e8" stroke-width="1.5"/>
+      <text x="480" y="104" text-anchor="middle" font-size="11" fill="#3b1a68" font-weight="600">Dcm (诊断)</text>
+
+      <!-- Nm Interface -->
+      <rect x="220" y="158" width="260" height="44" rx="6" fill="#e8f0fb" stroke="#c4d8f5" stroke-width="1.8"/>
+      <text x="350" y="176" text-anchor="middle" font-size="12" fill="#0c3d7a" font-weight="700">Nm (Interface)</text>
+      <text x="350" y="194" text-anchor="middle" font-size="9" fill="#1a5fb4">统一 NM 抽象层</text>
+
+      <!-- CanNm -->
+      <rect x="60" y="240" width="140" height="40" rx="6" fill="#fef3e0" stroke="#f0d090" stroke-width="1.5"/>
+      <text x="130" y="264" text-anchor="middle" font-size="11" fill="#5a3000" font-weight="600">CanNm</text>
+
+      <!-- UdpNm -->
+      <rect x="230" y="240" width="140" height="40" rx="6" fill="#fef3e0" stroke="#f0d090" stroke-width="1.5"/>
+      <text x="300" y="264" text-anchor="middle" font-size="11" fill="#5a3000" font-weight="600">UdpNm</text>
+
+      <!-- FrNm -->
+      <rect x="400" y="240" width="140" height="40" rx="6" fill="#fef3e0" stroke="#f0d090" stroke-width="1.5"/>
+      <text x="470" y="264" text-anchor="middle" font-size="11" fill="#5a3000" font-weight="600">FrNm</text>
+
+      <!-- LinNm -->
+      <rect x="570" y="240" width="120" height="40" rx="6" fill="#e5f5ec" stroke="#a8dfc0" stroke-width="1.5"/>
+      <text x="630" y="264" text-anchor="middle" font-size="11" fill="#0f4027" font-weight="600">LinNm</text>
+
+      <!-- Lower buses -->
+      <rect x="60" y="320" width="140" height="36" rx="5" fill="#f0f3f8" stroke="#c8d0e4" stroke-width="1"/>
+      <text x="130" y="342" text-anchor="middle" font-size="10" fill="#3d4f6a">CanIf</text>
+      <rect x="230" y="320" width="140" height="36" rx="5" fill="#f0f3f8" stroke="#c8d0e4" stroke-width="1"/>
+      <text x="300" y="342" text-anchor="middle" font-size="10" fill="#3d4f6a">SoAd / EthIf</text>
+      <rect x="400" y="320" width="140" height="36" rx="5" fill="#f0f3f8" stroke="#c8d0e4" stroke-width="1"/>
+      <text x="470" y="342" text-anchor="middle" font-size="10" fill="#3d4f6a">FrIf</text>
+      <rect x="570" y="320" width="120" height="36" rx="5" fill="#f0f3f8" stroke="#c8d0e4" stroke-width="1"/>
+      <text x="630" y="342" text-anchor="middle" font-size="10" fill="#3d4f6a">LinIf</text>
+
+      <!-- Connections App→ComM -->
+      <line x1="340" y1="50" x2="260" y2="80" stroke="#1a5fb4" stroke-width="1.2" marker-end="url(#a1)"/>
+      <text x="288" y="70" font-size="8" fill="#1a5fb4">RequestComMode</text>
+      <!-- App→Dcm -->
+      <line x1="380" y1="50" x2="460" y2="80" stroke="#5b2d8e" stroke-width="1.2" marker-end="url(#a1)"/>
+      <!-- ComM→Nm -->
+      <line x1="280" y1="120" x2="320" y2="158" stroke="#0d6e72" stroke-width="1.2" marker-end="url(#a2)"/>
+      <text x="272" y="145" font-size="8" fill="#0d6e72">NetworkRequest</text>
+      <!-- Dcm→Nm -->
+      <line x1="440" y1="120" x2="390" y2="158" stroke="#5b2d8e" stroke-width="1.2" marker-end="url(#a1)"/>
+      <!-- Nm→CanNm -->
+      <line x1="290" y1="202" x2="160" y2="240" stroke="#8a4800" stroke-width="1.2" marker-end="url(#a3)"/>
+      <!-- Nm→UdpNm -->
+      <line x1="340" y1="202" x2="310" y2="240" stroke="#8a4800" stroke-width="1.2" marker-end="url(#a3)"/>
+      <!-- Nm→FrNm -->
+      <line x1="390" y1="202" x2="450" y2="240" stroke="#8a4800" stroke-width="1.2" marker-end="url(#a3)"/>
+      <!-- Nm→LinNm -->
+      <line x1="460" y1="202" x2="610" y2="240" stroke="#1d6b45" stroke-width="1.2" marker-end="url(#a2)"/>
+      <!-- Lower arrows -->
+      <line x1="130" y1="280" x2="130" y2="320" stroke="#7a8eaa" stroke-width="1" marker-end="url(#a1)"/>
+      <line x1="300" y1="280" x2="300" y2="320" stroke="#7a8eaa" stroke-width="1" marker-end="url(#a1)"/>
+      <line x1="470" y1="280" x2="470" y2="320" stroke="#7a8eaa" stroke-width="1" marker-end="url(#a1)"/>
+      <line x1="630" y1="280" x2="630" y2="320" stroke="#7a8eaa" stroke-width="1" marker-end="url(#a1)"/>
+    </svg>
+  </div>
+
+  <div class="sh">关键 API 接口</div>
+  <div class="tw"><table>
+    <thead><tr><th>接口</th><th>方向</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">Nm_NetworkRequest()</td><td>ComM → Nm</td><td>请求保持网络活跃（上层有通信需求时调用）</td></tr>
+      <tr><td class="mono">Nm_NetworkRelease()</td><td>ComM → Nm</td><td>释放网络需求（上层不再需要通信）</td></tr>
+      <tr><td class="mono">Nm_PassiveStartUp()</td><td>ComM → Nm</td><td>被动启动，进入 NM 但不主动发报（被动节点）</td></tr>
+      <tr><td class="mono">Nm_BusSleepMode()</td><td>Nm → ComM</td><td>通知 ComM 总线已进入睡眠</td></tr>
+      <tr><td class="mono">Nm_NetworkMode()</td><td>Nm → ComM</td><td>通知 ComM 网络已激活（Bus-Sleep 退出）</td></tr>
+      <tr><td class="mono">Nm_RemoteSleepIndication()</td><td>Nm → ComM</td><td>所有远端节点均已准备好休眠</td></tr>
+      <tr><td class="mono">CanNm_RxIndication()</td><td>CanIf → CanNm</td><td>收到 NM PDU，触发状态机处理</td></tr>
+      <tr><td class="mono">CanNm_TxConfirmation()</td><td>CanIf → CanNm</td><td>NM PDU 发送成功确认</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- ── STATES ── -->
+<div class="panel" id="pnl-states">
+  <div class="ph">
+    <div class="ph-eyebrow">State Machine</div>
+    <div class="ph-title">网络管理状态机</div>
+    <div class="ph-sub">CanNm / UdpNm 完整状态转换（ISO 17356-5 / AUTOSAR SWS CanNm）</div>
+  </div>
+
+  <div class="box box-blue"><strong>状态机概述：</strong>AUTOSAR NM 状态机定义了节点在网络中的行为模式。每个节点独立维护自己的状态机，通过发送/接收 NM PDU 和定时器超时驱动状态转换。状态机统一由 <code>CanNm_MainFunction()</code> 在 OS Task 中周期调用推进。</div>
+
+  <!-- State machine SVG -->
+  <div class="sm-wrap">
+    <svg viewBox="0 0 840 520" xmlns="http://www.w3.org/2000/svg" style="font-family:'JetBrains Mono',monospace;max-width:840px;width:100%;min-width:640px">
+      <defs>
+        <marker id="sm1" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#1a5fb4"/></marker>
+        <marker id="sm2" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#1d6b45"/></marker>
+        <marker id="sm3" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#b91c1c"/></marker>
+        <marker id="sm4" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3z" fill="#8a4800"/></marker>
+      </defs>
+
+      <!-- Bus-Sleep (initial) -->
+      <ellipse cx="120" cy="260" rx="90" ry="34" fill="#fef2f2" stroke="#b91c1c" stroke-width="2"/>
+      <text x="120" y="256" text-anchor="middle" font-size="11" fill="#7b1c1c" font-weight="700">Bus-Sleep</text>
+      <text x="120" y="272" text-anchor="middle" font-size="9" fill="#b91c1c">休眠/初始</text>
+      <!-- double border for initial -->
+      <ellipse cx="120" cy="260" rx="84" ry="28" fill="none" stroke="#b91c1c" stroke-width="1" stroke-dasharray="3,3"/>
+
+      <!-- Prepare Bus-Sleep -->
+      <ellipse cx="120" cy="420" rx="100" ry="34" fill="#fef3e0" stroke="#8a4800" stroke-width="2"/>
+      <text x="120" y="416" text-anchor="middle" font-size="11" fill="#5a3000" font-weight="700">Prepare</text>
+      <text x="120" y="430" text-anchor="middle" font-size="11" fill="#5a3000" font-weight="700">Bus-Sleep</text>
+      <text x="120" y="446" text-anchor="middle" font-size="8" fill="#8a4800">等待总线安静</text>
+
+      <!-- Network Mode group box -->
+      <rect x="290" y="60" width="500" height="400" rx="12" fill="#f0f8ff" stroke="#c4d8f5" stroke-width="1.5" stroke-dasharray="6,3"/>
+      <text x="540" y="82" text-anchor="middle" font-size="10" fill="#1a5fb4" font-weight="600">Network Mode</text>
+
+      <!-- Repeat Message State -->
+      <ellipse cx="420" cy="160" rx="100" ry="36" fill="#e8f0fb" stroke="#1a5fb4" stroke-width="2"/>
+      <text x="420" y="156" text-anchor="middle" font-size="11" fill="#0c3d7a" font-weight="700">Repeat</text>
+      <text x="420" y="170" text-anchor="middle" font-size="11" fill="#0c3d7a" font-weight="700">Message</text>
+      <text x="420" y="184" text-anchor="middle" font-size="8" fill="#1a5fb4">发送 NM PDU</text>
+
+      <!-- Normal Operation State -->
+      <ellipse cx="660" cy="260" rx="100" ry="36" fill="#e0f5f5" stroke="#0d6e72" stroke-width="2"/>
+      <text x="660" y="256" text-anchor="middle" font-size="11" fill="#0a4547" font-weight="700">Normal</text>
+      <text x="660" y="270" text-anchor="middle" font-size="11" fill="#0a4547" font-weight="700">Operation</text>
+      <text x="660" y="284" text-anchor="middle" font-size="8" fill="#0d6e72">正常通信</text>
+
+      <!-- Ready Sleep State -->
+      <ellipse cx="420" cy="380" rx="100" ry="36" fill="#e5f5ec" stroke="#1d6b45" stroke-width="2"/>
+      <text x="420" y="376" text-anchor="middle" font-size="11" fill="#0f4027" font-weight="700">Ready</text>
+      <text x="420" y="390" text-anchor="middle" font-size="11" fill="#0f4027" font-weight="700">Sleep</text>
+      <text x="420" y="404" text-anchor="middle" font-size="8" fill="#1d6b45">准备休眠</text>
+
+      <!-- Transitions -->
+      <!-- BusSleep → RepeatMsg (WakeUp) -->
+      <path d="M 200 240 Q 280 180 320 160" stroke="#1a5fb4" stroke-width="1.8" fill="none" marker-end="url(#sm1)"/>
+      <text x="238" y="190" font-size="9" fill="#1a5fb4">唤醒事件</text>
+      <text x="238" y="202" font-size="9" fill="#1a5fb4">NetworkRequest</text>
+
+      <!-- RepeatMsg → NormalOp (Repeat timer expires + no release) -->
+      <path d="M 520 160 Q 600 180 660 224" stroke="#0d6e72" stroke-width="1.8" fill="none" marker-end="url(#sm2)"/>
+      <text x="580" y="175" font-size="9" fill="#0d6e72">Repeat Timer 超时</text>
+      <text x="580" y="187" font-size="9" fill="#0d6e72">且有网络需求</text>
+
+      <!-- RepeatMsg → ReadySleep (Repeat timer + released) -->
+      <path d="M 420 196 L 420 344" stroke="#1d6b45" stroke-width="1.8" fill="none" marker-end="url(#sm2)"/>
+      <text x="428" y="280" font-size="9" fill="#1d6b45">Repeat Timer 超时</text>
+      <text x="428" y="292" font-size="9" fill="#1d6b45">已 Release</text>
+
+      <!-- NormalOp → ReadySleep (NetworkRelease) -->
+      <path d="M 660 296 Q 600 360 520 380" stroke="#1d6b45" stroke-width="1.8" fill="none" marker-end="url(#sm2)"/>
+      <text x="600" y="350" font-size="9" fill="#1d6b45">NetworkRelease</text>
+
+      <!-- NormalOp → RepeatMsg (NetworkRequest) -->
+      <path d="M 600 240 Q 560 200 520 175" stroke="#1a5fb4" stroke-width="1.8" fill="none" marker-end="url(#sm1)" stroke-dasharray="5,3"/>
+      <text x="520" y="218" font-size="9" fill="#1a5fb4">收到其他节点</text>
+      <text x="520" y="230" font-size="9" fill="#1a5fb4">Repeat 报文</text>
+
+      <!-- ReadySleep → RepeatMsg (NetworkRequest again) -->
+      <path d="M 360 356 Q 310 280 340 200" stroke="#1a5fb4" stroke-width="1.8" fill="none" marker-end="url(#sm1)" stroke-dasharray="5,3"/>
+      <text x="290" y="300" font-size="9" fill="#1a5fb4">NetworkRequest</text>
+
+      <!-- ReadySleep → PrepareBusSleep (NM Timeout) -->
+      <path d="M 320 395 Q 220 400 215 420" stroke="#8a4800" stroke-width="1.8" fill="none" marker-end="url(#sm4)"/>
+      <text x="230" y="390" font-size="9" fill="#8a4800">NM-Timeout 超时</text>
+
+      <!-- PrepareBusSleep → BusSleep (Wait Bus Sleep Timer) -->
+      <path d="M 120 386 L 120 294" stroke="#b91c1c" stroke-width="1.8" fill="none" marker-end="url(#sm3)"/>
+      <text x="30" y="340" font-size="9" fill="#b91c1c">WaitBusSleep</text>
+      <text x="30" y="352" font-size="9" fill="#b91c1c">Timer 超时</text>
+
+      <!-- PrepareBusSleep → RepeatMsg (Bus activity detected) -->
+      <path d="M 220 410 Q 340 430 340 390" stroke="#1a5fb4" stroke-width="1.8" fill="none" marker-end="url(#sm1)" stroke-dasharray="5,3"/>
+      <text x="265" y="446" font-size="9" fill="#1a5fb4">总线活动检测</text>
+
+      <!-- Legend -->
+      <rect x="630" y="440" width="190" height="66" rx="4" fill="white" stroke="#dde3ef" stroke-width="1"/>
+      <line x1="640" y1="458" x2="670" y2="458" stroke="#1a5fb4" stroke-width="1.5"/>
+      <text x="676" y="462" font-size="9" fill="#3d4f6a">正常转换</text>
+      <line x1="640" y1="476" x2="670" y2="476" stroke="#1a5fb4" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="676" y="480" font-size="9" fill="#3d4f6a">触发转换(被动)</text>
+      <line x1="640" y1="494" x2="670" y2="494" stroke="#b91c1c" stroke-width="1.5"/>
+      <text x="676" y="498" font-size="9" fill="#3d4f6a">超时驱动</text>
+    </svg>
+  </div>
+
+  <div class="sh">各状态详解</div>
+  <div class="tw"><table>
+    <thead><tr><th>状态</th><th>行为</th><th>退出条件</th><th>典型耗时</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge b-red">Bus-Sleep</span></td>
+        <td>节点完全休眠，CAN 收发器关闭，NM 停止运行</td>
+        <td>检测到总线活动 / KL15 上电 / 内部唤醒</td>
+        <td>不定（直到唤醒）</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-blue">Repeat Message</span></td>
+        <td>节点发送 NM PDU（含 Repeat 位=1），其他节点检测到此报文时也进入 Repeat 状态</td>
+        <td>NM-Repeat-Message-Timer 超时</td>
+        <td>20~200ms（OEM定义）</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-teal">Normal Operation</span></td>
+        <td>节点有通信需求，周期发送 NM PDU，保持网络活跃</td>
+        <td>上层调用 NetworkRelease()</td>
+        <td>运行期间持续</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-green">Ready Sleep</span></td>
+        <td>节点释放网络需求，停止发送 NM PDU，等待 NM 超时</td>
+        <td>NM-Timeout 超时 / 收到他节点 Repeat 报文</td>
+        <td>NM-Timeout（通常≤1s）</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-amber">Prepare Bus-Sleep</span></td>
+        <td>所有节点已进入 Ready Sleep，等待总线完全安静</td>
+        <td>WaitBusSleep Timer 超时</td>
+        <td>10~100ms</td>
+      </tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- ── MODES ── -->
+<div class="panel" id="pnl-modes">
+  <div class="ph">
+    <div class="ph-eyebrow">Bus Mode Control</div>
+    <div class="ph-title">总线模式控制</div>
+    <div class="ph-sub">ComM 模式请求机制与 NM 的协作</div>
+  </div>
+
+  <div class="sh">ComM 模式请求流程</div>
+  <p>应用软件组件（SW-C）通过 RTE 向 ComM 发起模式请求，ComM 汇总所有用户的请求后决定总线模式，再调用 NM 接口保持或释放网络。</p>
+  <div class="flow">
+    <div class="flow-step"><div class="fsn">01</div><div class="fs-content"><div class="fs-title">SW-C 发起请求</div><div class="fs-desc">应用组件调用 <code>Rte_Call_ComM_UserRequest(ComM_FULL_COM)</code>，请求 Full Communication</div></div></div>
+    <div class="flow-step"><div class="fsn">02</div><div class="fs-content"><div class="fs-title">ComM 汇总用户请求</div><div class="fs-desc">ComM 检查该 Channel 上所有用户的请求，任一用户请求 FULL 则维持 Full；所有用户释放则可进入 SILENT</div></div></div>
+    <div class="flow-step"><div class="fsn">03</div><div class="fs-content"><div class="fs-title">ComM → Nm 发起网络请求</div><div class="fs-desc">ComM 调用 <code>Nm_NetworkRequest(NetworkHandle)</code>，Nm 层转发至具体协议（CanNm）</div><div class="fs-code">CanNm: Bus-Sleep → Repeat Message State</div></div></div>
+    <div class="flow-step"><div class="fsn">04</div><div class="fs-content"><div class="fs-title">NM 通知 ComM 网络已激活</div><div class="fs-desc">CanNm 状态进入 Network Mode 后，回调 <code>Nm_NetworkMode()</code> → ComM 收到通知 → 开启 Full Communication</div></div></div>
+    <div class="flow-step"><div class="fsn">05</div><div class="fs-content"><div class="fs-title">SW-C 释放通信需求</div><div class="fs-desc">应用完成通信后调用 <code>Rte_Call_ComM_UserRequest(ComM_NO_COM)</code></div></div></div>
+    <div class="flow-step"><div class="fsn">06</div><div class="fs-content"><div class="fs-title">ComM 检查并释放网络</div><div class="fs-desc">若所有用户均释放，ComM 调用 <code>Nm_NetworkRelease()</code>，CanNm 进入 Ready Sleep</div></div></div>
+    <div class="flow-step"><div class="fsn">07</div><div class="fs-content"><div class="fs-title">Bus-Sleep 通知</div><div class="fs-desc">NM 超时后 CanNm 进入 Bus-Sleep，回调 <code>Nm_BusSleepMode()</code> → ComM 切换到 No Communication</div></div></div>
+  </div>
+
+  <div class="sh">Inhibit 抑制机制</div>
+  <div class="box box-amber"><strong>ComM Inhibit：</strong>当 ECU 需要禁止总线唤醒时（如工厂模式、运输模式），可设置 ComM Inhibit，阻止上层的 Full Communication 请求生效。分为 <strong>Wake-up Inhibition</strong>（阻止唤醒）和 <strong>Mode Limitation</strong>（限制模式切换）两种。</div>
+</div>
+
+<!-- ── MSG ── -->
+<div class="panel" id="pnl-msg">
+  <div class="ph">
+    <div class="ph-eyebrow">NM PDU Structure</div>
+    <div class="ph-title">NM 报文结构</div>
+    <div class="ph-sub">CanNm PDU 字节布局与控制位含义</div>
+  </div>
+
+  <div class="sh">CanNm PDU 格式（8字节）</div>
+  <div class="svg-wrap">
+    <svg viewBox="0 0 720 180" xmlns="http://www.w3.org/2000/svg" style="font-family:'JetBrains Mono',monospace;max-width:720px;width:100%">
+      <!-- CAN ID header -->
+      <rect x="10" y="10" width="100" height="50" rx="4" fill="#e6edf7" stroke="#b8cce8" stroke-width="1.5"/>
+      <text x="60" y="30" text-anchor="middle" font-size="9" fill="#0f2a48">CAN ID</text>
+      <text x="60" y="46" text-anchor="middle" font-size="10" fill="#1e3a5f" font-weight="600">0x500+NID</text>
+      <text x="60" y="56" text-anchor="middle" font-size="8" fill="#7a8eaa">（OEM定义）</text>
+
+      <!-- Byte 0: Source NID -->
+      <rect x="120" y="10" width="80" height="50" rx="4" fill="#e8f0fb" stroke="#c4d8f5" stroke-width="1.5"/>
+      <text x="160" y="28" text-anchor="middle" font-size="9" fill="#0c3d7a">Byte 0</text>
+      <text x="160" y="44" text-anchor="middle" font-size="10" fill="#1a5fb4" font-weight="600">Source NID</text>
+      <text x="160" y="56" text-anchor="middle" font-size="8" fill="#7a8eaa">节点 ID</text>
+
+      <!-- Byte 1: CBV -->
+      <rect x="210" y="10" width="80" height="50" rx="4" fill="#f3eeff" stroke="#c8b4e8" stroke-width="1.5"/>
+      <text x="250" y="28" text-anchor="middle" font-size="9" fill="#3b1a68">Byte 1</text>
+      <text x="250" y="44" text-anchor="middle" font-size="10" fill="#5b2d8e" font-weight="600">CBV</text>
+      <text x="250" y="56" text-anchor="middle" font-size="8" fill="#7a8eaa">控制位向量</text>
+
+      <!-- Byte 2-7: User Data -->
+      <rect x="300" y="10" width="410" height="50" rx="4" fill="#e5f5ec" stroke="#a8dfc0" stroke-width="1.5"/>
+      <text x="505" y="28" text-anchor="middle" font-size="9" fill="#0f4027">Byte 2 ~ 7</text>
+      <text x="505" y="44" text-anchor="middle" font-size="11" fill="#1d6b45" font-weight="600">User Data / PNC Bits</text>
+      <text x="505" y="56" text-anchor="middle" font-size="8" fill="#7a8eaa">用户数据（可携带 PNC 请求位图）</text>
+
+      <!-- CBV bit detail -->
+      <rect x="210" y="80" width="500" height="90" rx="6" fill="#fafbfe" stroke="#dde3ef" stroke-width="1"/>
+      <text x="460" y="98" text-anchor="middle" font-size="10" fill="#3b1a68" font-weight="600">CBV (Control Bit Vector) 位定义</text>
+      <!-- bits -->
+      <rect x="220" y="106" width="56" height="28" rx="3" fill="#f3eeff" stroke="#c8b4e8" stroke-width="1"/>
+      <text x="248" y="118" text-anchor="middle" font-size="8" fill="#5b2d8e">Bit 0</text>
+      <text x="248" y="130" text-anchor="middle" font-size="7" fill="#3b1a68">Repeat Msg</text>
+
+      <rect x="284" y="106" width="56" height="28" rx="3" fill="#e8f0fb" stroke="#c4d8f5" stroke-width="1"/>
+      <text x="312" y="118" text-anchor="middle" font-size="8" fill="#1a5fb4">Bit 1</text>
+      <text x="312" y="130" text-anchor="middle" font-size="7" fill="#0c3d7a">RFU</text>
+
+      <rect x="348" y="106" width="56" height="28" rx="3" fill="#fef3e0" stroke="#f0d090" stroke-width="1"/>
+      <text x="376" y="118" text-anchor="middle" font-size="8" fill="#8a4800">Bit 2</text>
+      <text x="376" y="130" text-anchor="middle" font-size="7" fill="#5a3000">NM Coord Sleep</text>
+
+      <rect x="412" y="106" width="56" height="28" rx="3" fill="#e0f5f5" stroke="#9ee0e4" stroke-width="1"/>
+      <text x="440" y="118" text-anchor="middle" font-size="8" fill="#0d6e72">Bit 3</text>
+      <text x="440" y="130" text-anchor="middle" font-size="7" fill="#0a4547">NM Coord Active</text>
+
+      <rect x="476" y="106" width="56" height="28" rx="3" fill="#e5f5ec" stroke="#a8dfc0" stroke-width="1"/>
+      <text x="504" y="118" text-anchor="middle" font-size="8" fill="#1d6b45">Bit 4</text>
+      <text x="504" y="130" text-anchor="middle" font-size="7" fill="#0f4027">PNI (PN Info)</text>
+
+      <rect x="540" y="106" width="56" height="28" rx="3" fill="#fef2f2" stroke="#fcc" stroke-width="1"/>
+      <text x="568" y="118" text-anchor="middle" font-size="8" fill="#b91c1c">Bit 5</text>
+      <text x="568" y="130" text-anchor="middle" font-size="7" fill="#7b1c1c">RFU</text>
+
+      <rect x="604" y="106" width="56" height="28" rx="3" fill="#f0f3f8" stroke="#c8d0e4" stroke-width="1"/>
+      <text x="632" y="118" text-anchor="middle" font-size="8" fill="#3d4f6a">Bit 6-7</text>
+      <text x="632" y="130" text-anchor="middle" font-size="7" fill="#1a2235">RFU</text>
+
+      <!-- connector line -->
+      <line x1="250" y1="60" x2="460" y2="80" stroke="#c8b4e8" stroke-width="1" stroke-dasharray="3,2"/>
+    </svg>
+  </div>
+
+  <div class="sh">关键控制位说明</div>
+  <div class="tw"><table>
+    <thead><tr><th>位</th><th>名称</th><th>含义</th><th>置 1 时行为</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">Bit 0</td><td>Repeat Message Request</td><td>请求目标节点发送 Repeat 报文</td><td>接收方进入/维持 Repeat Message State</td></tr>
+      <tr><td class="mono">Bit 2</td><td>NM Coord Sleep Ready</td><td>协调节点已准备好协调休眠</td><td>协调节点发起跨总线休眠流程</td></tr>
+      <tr><td class="mono">Bit 3</td><td>NM Coord Active</td><td>该节点当前是激活的 NM 协调者</td><td>其他节点认可此节点的协调权</td></tr>
+      <tr><td class="mono">Bit 4</td><td>Partial Network Information (PNI)</td><td>User Data 中包含 PNC 请求位图</td><td>接收方解析 Byte 2~7 的 PNC 位图</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- ── TIMER ── -->
+<div class="panel" id="pnl-timer">
+  <div class="ph">
+    <div class="ph-eyebrow">Timers & Parameters</div>
+    <div class="ph-title">定时器与关键参数</div>
+    <div class="ph-sub">CanNm 定时器配置及典型值</div>
+  </div>
+
+  <div class="sh">定时器总览</div>
+  <div class="tw"><table>
+    <thead><tr><th>定时器名称</th><th>AUTOSAR 参数名</th><th>典型值</th><th>作用</th></tr></thead>
+    <tbody>
+      <tr><td class="mono" style="color:var(--blue);font-weight:600">NM-Msg-Cycle-Time</td><td>CanNmMsgCycleTime</td><td>20ms</td><td>Normal Operation 状态下 NM PDU 周期发送间隔</td></tr>
+      <tr><td class="mono" style="color:var(--blue);font-weight:600">NM-Msg-Timeout</td><td>CanNmMsgTimeoutTime</td><td>100ms</td><td>NM PDU 发送后等待确认的超时时间</td></tr>
+      <tr><td class="mono" style="color:var(--amber);font-weight:600">NM-Timeout</td><td>CanNmTimeoutTime</td><td>300ms</td><td>Ready Sleep 状态下等待 NM PDU 的超时，超时则进入 Prepare Bus-Sleep</td></tr>
+      <tr><td class="mono" style="color:var(--amber);font-weight:600">NM-Repeat-Msg-Time</td><td>CanNmRepeatMessageTime</td><td>1000ms</td><td>Repeat Message 状态持续时间，超时后退出 Repeat 状态</td></tr>
+      <tr><td class="mono" style="color:var(--red);font-weight:600">NM-Wait-Bus-Sleep</td><td>CanNmWaitBusSleepTime</td><td>10ms</td><td>Prepare Bus-Sleep 持续时间，等待总线活动停止后进入 Bus-Sleep</td></tr>
+      <tr><td class="mono" style="color:var(--green);font-weight:600">NM-Remote-Sleep-Ind</td><td>CanNmRemoteSleepIndTime</td><td>1000ms</td><td>检测到所有远端节点都进入 Ready Sleep 的确认延时</td></tr>
+      <tr><td class="mono" style="color:var(--teal);font-weight:600">NM-Msg-Cycle-Offset</td><td>CanNmMsgCycleOffset</td><td>0~10ms</td><td>NM PDU 发送偏移，错开不同节点的发送时机，避免总线冲突</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box box-amber"><strong>参数调优原则：</strong>
+  NM-Timeout 必须大于 NM-Msg-Cycle-Time，确保正常周期发报不会误触发超时（通常 NM-Timeout ≥ 3 × NM-Msg-Cycle-Time）。
+  NM-Repeat-Msg-Time 应足够长，保证所有节点在该窗口内都能检测到 Repeat 报文并跟随进入 Network Mode。</div>
+
+  <div class="sh">时间轴示意</div>
+  <div class="svg-wrap">
+    <svg viewBox="0 0 740 220" xmlns="http://www.w3.org/2000/svg" style="font-family:'JetBrains Mono',monospace;max-width:740px;width:100%;min-width:580px">
+      <defs>
+        <marker id="ta" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3z" fill="#7a8eaa"/></marker>
+      </defs>
+      <!-- Timeline -->
+      <line x1="40" y1="110" x2="720" y2="110" stroke="#cdd3e0" stroke-width="1.5" marker-end="url(#ta)"/>
+      <text x="725" y="114" font-size="9" fill="#7a8eaa">t</text>
+
+      <!-- Wake-up point -->
+      <line x1="60" y1="96" x2="60" y2="124" stroke="#b91c1c" stroke-width="2"/>
+      <text x="60" y="90" text-anchor="middle" font-size="9" fill="#b91c1c" font-weight="600">唤醒</text>
+
+      <!-- Repeat Message phase -->
+      <rect x="60" y="48" width="160" height="28" rx="4" fill="#e8f0fb" stroke="#1a5fb4" stroke-width="1.5"/>
+      <text x="140" y="67" text-anchor="middle" font-size="10" fill="#0c3d7a" font-weight="600">Repeat Message</text>
+      <line x1="60" y1="76" x2="60" y2="110" stroke="#1a5fb4" stroke-width="1" stroke-dasharray="3,2"/>
+      <line x1="220" y1="76" x2="220" y2="110" stroke="#1a5fb4" stroke-width="1" stroke-dasharray="3,2"/>
+      <!-- Repeat timer bracket -->
+      <line x1="60" y1="40" x2="220" y2="40" stroke="#1a5fb4" stroke-width="1"/>
+      <line x1="60" y1="36" x2="60" y2="44" stroke="#1a5fb4" stroke-width="1"/>
+      <line x1="220" y1="36" x2="220" y2="44" stroke="#1a5fb4" stroke-width="1"/>
+      <text x="140" y="33" text-anchor="middle" font-size="8" fill="#1a5fb4">RepeatMsgTime (1000ms)</text>
+
+      <!-- Normal Operation -->
+      <rect x="220" y="48" width="220" height="28" rx="4" fill="#e0f5f5" stroke="#0d6e72" stroke-width="1.5"/>
+      <text x="330" y="67" text-anchor="middle" font-size="10" fill="#0a4547" font-weight="600">Normal Operation</text>
+
+      <!-- NM PDU cycle markers -->
+      <line x1="240" y1="110" x2="240" y2="96" stroke="#0d6e72" stroke-width="1.5"/>
+      <line x1="260" y1="110" x2="260" y2="96" stroke="#0d6e72" stroke-width="1.5"/>
+      <line x1="280" y1="110" x2="280" y2="96" stroke="#0d6e72" stroke-width="1.5"/>
+      <line x1="300" y1="110" x2="300" y2="96" stroke="#0d6e72" stroke-width="1.5"/>
+      <line x1="320" y1="110" x2="320" y2="96" stroke="#0d6e72" stroke-width="1.5"/>
+      <line x1="340" y1="110" x2="340" y2="96" stroke="#0d6e72" stroke-width="1.5"/>
+      <text x="290" y="90" text-anchor="middle" font-size="7" fill="#0d6e72">NM PDU (20ms周期)</text>
+
+      <!-- Ready Sleep -->
+      <line x1="440" y1="110" x2="440" y2="76" stroke="#1d6b45" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <text x="430" y="72" text-anchor="end" font-size="8" fill="#1d6b45">NetworkRelease</text>
+      <rect x="440" y="48" width="140" height="28" rx="4" fill="#e5f5ec" stroke="#1d6b45" stroke-width="1.5"/>
+      <text x="510" y="67" text-anchor="middle" font-size="10" fill="#0f4027" font-weight="600">Ready Sleep</text>
+      <!-- NM-Timeout bracket -->
+      <line x1="440" y1="40" x2="580" y2="40" stroke="#8a4800" stroke-width="1"/>
+      <line x1="440" y1="36" x2="440" y2="44" stroke="#8a4800" stroke-width="1"/>
+      <line x1="580" y1="36" x2="580" y2="44" stroke="#8a4800" stroke-width="1"/>
+      <text x="510" y="33" text-anchor="middle" font-size="8" fill="#8a4800">NM-Timeout (300ms)</text>
+
+      <!-- Prepare Bus-Sleep -->
+      <rect x="580" y="48" width="80" height="28" rx="4" fill="#fef3e0" stroke="#8a4800" stroke-width="1.5"/>
+      <text x="620" y="62" text-anchor="middle" font-size="9" fill="#5a3000" font-weight="600">Prepare</text>
+      <text x="620" y="74" text-anchor="middle" font-size="9" fill="#5a3000" font-weight="600">Bus-Sleep</text>
+      <line x1="580" y1="40" x2="580" y2="110" stroke="#8a4800" stroke-width="1" stroke-dasharray="3,2"/>
+      <!-- WaitBusSleep bracket -->
+      <line x1="580" y1="148" x2="660" y2="148" stroke="#b91c1c" stroke-width="1"/>
+      <line x1="580" y1="144" x2="580" y2="152" stroke="#b91c1c" stroke-width="1"/>
+      <line x1="660" y1="144" x2="660" y2="152" stroke="#b91c1c" stroke-width="1"/>
+      <text x="620" y="162" text-anchor="middle" font-size="8" fill="#b91c1c">WaitBusSleep (10ms)</text>
+
+      <!-- Bus-Sleep -->
+      <line x1="660" y1="96" x2="660" y2="124" stroke="#b91c1c" stroke-width="2"/>
+      <text x="680" y="104" font-size="9" fill="#b91c1c" font-weight="600">Bus-Sleep</text>
+
+      <!-- State labels on timeline -->
+      <text x="50" y="130" font-size="8" fill="#7a8eaa">唤醒</text>
+      <text x="620" y="130" font-size="8" fill="#7a8eaa">休眠</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ── CANNM ── -->
+<div class="panel" id="pnl-cannm">
+  <div class="ph">
+    <div class="ph-eyebrow">Protocol Variant</div>
+    <div class="ph-title">CanNm 详解</div>
+    <div class="ph-sub">AUTOSAR SWS CanNm · ISO 11898 · 适用于 CAN 和 CAN FD 网络</div>
+  </div>
+
+  <div class="sh">CanNm 特性</div>
+  <div class="card-grid">
+    <div class="card"><div class="card-title">分布式策略</div><div class="card-body">所有节点平等参与，无中心协调者（除非配置 NM Coordinator）。每个节点独立运行状态机</div></div>
+    <div class="card"><div class="card-title">NM PDU 广播</div><div class="card-body">NM PDU 发送至广播或多播 CAN ID，所有节点均可收到并更新本地的远端节点存活信息</div></div>
+    <div class="card"><div class="card-title">Node Detection</div><div class="card-body">通过接收各节点 NM PDU 中的 Source NID，维护在线节点位图（NM Node Detection Bit Array）</div></div>
+    <div class="card"><div class="card-title">PN 支持</div><div class="card-body">支持部分网络（Partial Network），CBV Bit 4 置 1 时 User Data 携带 PNC 请求位图</div></div>
+  </div>
+
+  <div class="sh">CanNm 配置关键参数</div>
+  <div class="tw"><table>
+    <thead><tr><th>配置参数</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">CanNmNodeId</td><td>uint8</td><td>本节点 Source NID，范围 0x01~0xFE，整网唯一</td></tr>
+      <tr><td class="mono">CanNmPduNidPosition</td><td>enum</td><td>Source NID 在 PDU 中的位置（Byte 0 或 Byte 1）</td></tr>
+      <tr><td class="mono">CanNmPduCbvPosition</td><td>enum</td><td>CBV 在 PDU 中的位置（Byte 0 或 Byte 1）</td></tr>
+      <tr><td class="mono">CanNmPassiveModeEnabled</td><td>bool</td><td>被动模式开关，True 时不发送 NM PDU</td></tr>
+      <tr><td class="mono">CanNmNodeDetectionEnabled</td><td>bool</td><td>是否开启节点检测功能</td></tr>
+      <tr><td class="mono">CanNmRepeatMsgIndEnabled</td><td>bool</td><td>是否向上层回调 Repeat Message 指示</td></tr>
+      <tr><td class="mono">CanNmRemoteSleepIndEnabled</td><td>bool</td><td>是否开启 Remote Sleep Indication 功能</td></tr>
+      <tr><td class="mono">CanNmBusLoadReductionEnabled</td><td>bool</td><td>总线负载降低，Ready Sleep 中降低 NM PDU 发送频率</td></tr>
+      <tr><td class="mono">CanNmCoordClusterIndex</td><td>uint8</td><td>NM 协调簇索引，用于多总线协调场景</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="sh">CanNm 主函数调用</div>
+  <pre>/* CanNm 主函数，需在 OS Task 中周期调用，周期 = CanNmMsgCycleTime */
+void CanNm_MainFunction(void)
+{
+    /* 1. 推进状态机（定时器递减，检测超时） */
+    CanNm_Internal_StateTransition();
+
+    /* 2. 若在 Network Mode 且发送定时器到期，发送 NM PDU */
+    if (CanNm_Internal_IsTxTimerExpired()) {
+        CanNm_Internal_TransmitNmPdu();
+    }
+
+    /* 3. 更新 Remote Sleep Indication 检测 */
+    CanNm_Internal_UpdateRemoteSleepInd();
+}</pre>
+</div>
+
+<!-- ── UDPNM ── -->
+<div class="panel" id="pnl-udpnm">
+  <div class="ph">
+    <div class="ph-eyebrow">Protocol Variant</div>
+    <div class="ph-title">UdpNm 详解</div>
+    <div class="ph-sub">AUTOSAR SWS UdpNm · 以太网车载网络管理</div>
+  </div>
+
+  <div class="sh">UdpNm 与 CanNm 的主要差异</div>
+  <div class="tw"><table>
+    <thead><tr><th>特性</th><th>CanNm</th><th>UdpNm</th></tr></thead>
+    <tbody>
+      <tr><td>传输载体</td><td>CAN / CAN FD</td><td>UDP/IP over Ethernet</td></tr>
+      <tr><td>PDU 大小</td><td>8 字节（固定）</td><td>可变（8~64 字节）</td></tr>
+      <tr><td>NM 报文寻址</td><td>广播 CAN ID</td><td>UDP 多播（224.x.x.x）</td></tr>
+      <tr><td>带宽</td><td>受 CAN 总线限制（1Mbps）</td><td>100Mbps / 1Gbps</td></tr>
+      <tr><td>PNC 支持</td><td>支持（受字节数限制）</td><td>支持（User Data 更大）</td></tr>
+      <tr><td>NM-Msg-Cycle</td><td>通常 10~20ms</td><td>通常 100~1000ms</td></tr>
+      <tr><td>协调复杂度</td><td>中</td><td>高（需 VLAN + SOME/IP 配合）</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box box-teal"><strong>UdpNm 典型配置：</strong>在以太网 backbone 上，UdpNm 报文发送至组播地址（如 <code>224.0.0.1:36200</code>），所有 VLAN 内节点订阅该组播组。NM 协调节点（通常是中央网关）同时运行 CanNm（接 CAN 子网）和 UdpNm（接以太网），桥接两种网络的唤醒/休眠决策。</div>
+
+  <div class="sh">DoIP 与 NM 的关系</div>
+  <p>车载以太网场景中，<strong>DoIP（Diagnostics over IP）</strong>负责诊断通信，<strong>UdpNm</strong>负责网络管理。DoIP 流量不参与 NM 状态决策，但诊断激活时 ComM 会保持 Full Communication，防止 NM 触发休眠。</p>
+</div>
+
+<!-- ── LINNM ── -->
+<div class="panel" id="pnl-linnm">
+  <div class="ph">
+    <div class="ph-eyebrow">Protocol Variant</div>
+    <div class="ph-title">LinNm / FrNm</div>
+    <div class="ph-sub">LIN 网络管理与 FlexRay 网络管理简介</div>
+  </div>
+
+  <div class="sh">LinNm</div>
+  <div class="box box-green"><strong>LinNm 特点：</strong>LIN 网络是主从结构，网络管理由 LIN Master（通常是 BCM）统一控制。LinNm 极为简化：Master 决定 LIN 集群的唤醒与休眠，Slave 节点通过 LIN Sleep Command（LD_ASSIGN_NAD/LD_CONDITIONAL_CHANGE）进入睡眠，无需独立 NM PDU。LinNm 仅向 NM Interface 提供标准回调（NetworkMode / BusSleepMode），上层 ComM 无需感知底层差异。</div>
+
+  <div class="sh">FrNm</div>
+  <div class="box box-blue"><strong>FrNm 特点：</strong>FlexRay 网络管理基于 TDMA 调度，NM 报文在专用 NM Slot 中传输。节点在 Active 状态下周期占用 NM Slot 发送向量（NM Vote），当所有节点的 Vote 都表示可休眠时，整网协调进入睡眠。FrNm 的休眠协调比 CanNm 更精确，但 FlexRay 在新平台中逐渐被 CAN FD + Ethernet 取代，FrNm 主要存在于老平台中。</div>
+</div>
+
+<!-- ── DESIGN ── -->
+<div class="panel" id="pnl-design">
+  <div class="ph">
+    <div class="ph-eyebrow">Design Methodology</div>
+    <div class="ph-title">设计方式</div>
+    <div class="ph-sub">AUTOSAR NM 工程化设计流程与最佳实践</div>
+  </div>
+
+  <div class="sh">NM 设计整体流程</div>
+  <div class="flow">
+    <div class="flow-step"><div class="fsn">01</div><div class="fs-content"><div class="fs-title">网络拓扑分析</div><div class="fs-desc">梳理整车 CAN / LIN / ETH 网络拓扑，确定各总线上的节点数量、节点类型（Active/Passive/Coordinator）和网关连接关系</div></div></div>
+    <div class="flow-step"><div class="fsn">02</div><div class="fs-content"><div class="fs-title">NM Node ID 分配</div><div class="fs-desc">为每条 CAN 总线上的每个 Active 节点分配唯一的 Source Node ID（0x01~0xFE）。Node ID 规划需考虑调试便利性（通常按 ECU 功能域分段）</div><div class="fs-code">例：BCM=0x01, GW=0x02, TCU=0x03, ...</div></div></div>
+    <div class="flow-step"><div class="fsn">03</div><div class="fs-content"><div class="fs-title">唤醒源设计</div><div class="fs-desc">确定每个 ECU 的唤醒源（KL15、KL30、总线唤醒、内部 RTC 等），设计唤醒滤波逻辑，防止误唤醒</div></div></div>
+    <div class="flow-step"><div class="fsn">04</div><div class="fs-content"><div class="fs-title">PNC 规划</div><div class="fs-desc">按功能域划分 PNC（如 PNC 0=娱乐系统、PNC 1=ADAS、PNC 2=车窗控制），定义哪些 ECU 属于哪些 PNC，设计 PNC 请求位图分布</div></div></div>
+    <div class="flow-step"><div class="fsn">05</div><div class="fs-content"><div class="fs-title">定时器参数设计</div><div class="fs-desc">根据网络负载、OEM 规范和休眠响应时间要求，设计 NM-Timeout、NM-Repeat-Msg-Time、WaitBusSleep 等定时器值</div></div></div>
+    <div class="flow-step"><div class="fsn">06</div><div class="fs-content"><div class="fs-title">协调节点设计</div><div class="fs-desc">在跨总线场景中，设计网关 ECU（GW）的 NM Coordinator 策略：哪条总线先协调，协调超时如何处理</div></div></div>
+    <div class="flow-step"><div class="fsn">07</div><div class="fs-content"><div class="fs-title">AUTOSAR 工具链配置</div><div class="fs-desc">使用 Vector DaVinci / EB tresos / ETAS ISOLAR 等工具完成 NM 模块的 ARXML 配置，生成代码</div></div></div>
+    <div class="flow-step"><div class="fsn">08</div><div class="fs-content"><div class="fs-title">集成验证</div><div class="fs-desc">通过 HIL/SIL 仿真和整车联调验证唤醒时间、休眠可靠性、PNC 精度和暗电流指标</div></div></div>
+  </div>
+
+  <div class="sh">常见设计错误</div>
+  <div class="tw"><table>
+    <thead><tr><th>错误</th><th>现象</th><th>解决方案</th></tr></thead>
+    <tbody>
+      <tr><td>NM-Timeout 设置过小</td><td>节点频繁进入 Ready Sleep / Bus-Sleep，通信不稳定</td><td>确保 NM-Timeout ≥ 3×NM-Msg-Cycle-Time</td></tr>
+      <tr><td>未配置 Msg-Cycle-Offset</td><td>多个节点同时发送 NM PDU，CAN 总线冲突率高</td><td>为每个节点设置不同 Offset，错开发送窗口</td></tr>
+      <tr><td>被动节点错配为主动</td><td>网络无法正常休眠（该节点一直发 NM PDU 保持总线活跃）</td><td>核查节点类型，PassiveMode=True 的节点不发 NM</td></tr>
+      <tr><td>PNC 位映射错误</td><td>唤醒错误的 ECU，或目标 ECU 未被唤醒</td><td>重新核对 PNC 位图与 ECU 对应关系</td></tr>
+      <tr><td>协调节点未同步休眠</td><td>部分总线休眠，部分总线持续活跃，暗电流超标</td><td>检查 NM Coordinator 的 Cluster 配置和同步逻辑</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- ── MODEL ── -->
+<div class="panel" id="pnl-model">
+  <div class="ph">
+    <div class="ph-eyebrow">Model & Configuration</div>
+    <div class="ph-title">模型配置方式</div>
+    <div class="ph-sub">AUTOSAR XML (ARXML) 模型结构与 BSW 配置要点</div>
+  </div>
+
+  <div class="sh">ARXML 模型层次</div>
+  <p>AUTOSAR NM 配置以 ARXML 描述，主要涉及以下配置容器：</p>
+  <div class="tw"><table>
+    <thead><tr><th>ARXML 容器</th><th>路径</th><th>配置内容</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">CanNmGlobalConfig</td><td>/AUTOSAR/CanNm/CanNmGlobalConfig</td><td>全局参数：ComMChannelRef、PDU 引用等</td></tr>
+      <tr><td class="mono">CanNmChannelConfig</td><td>…/CanNmChannelConfig</td><td>每个通道的定时器、NID、模式配置</td></tr>
+      <tr><td class="mono">ComMConfigSet</td><td>/AUTOSAR/ComM/ComMConfigSet</td><td>ComM Channel、用户、Inhibition 配置</td></tr>
+      <tr><td class="mono">NmConfig</td><td>/AUTOSAR/Nm/NmConfig</td><td>NM Interface 层，将 ComM Channel 映射到具体 NM 模块</td></tr>
+      <tr><td class="mono">EcucModuleConfiguration</td><td>ECU Extract</td><td>ECU 级配置：激活哪些 NM 通道、PNC 位图映射</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="sh">关键 ARXML 片段示例</div>
+  <pre>&lt;!-- CanNm Channel 配置示例 --&gt;
+&lt;CANNM-CHANNEL-CONFIG&gt;
+  &lt;SHORT-NAME&gt;CanNmChannel_Comfort&lt;/SHORT-NAME&gt;
+  &lt;CANNM-NODE-ID&gt;1&lt;/CANNM-NODE-ID&gt;           &lt;!-- Source NID = 0x01 --&gt;
+  &lt;CANNM-MSG-CYCLE-TIME&gt;0.02&lt;/CANNM-MSG-CYCLE-TIME&gt;   &lt;!-- 20ms --&gt;
+  &lt;CANNM-TIMEOUT-TIME&gt;0.3&lt;/CANNM-TIMEOUT-TIME&gt;         &lt;!-- 300ms --&gt;
+  &lt;CANNM-REPEAT-MSG-TIME&gt;1.0&lt;/CANNM-REPEAT-MSG-TIME&gt;   &lt;!-- 1000ms --&gt;
+  &lt;CANNM-WAIT-BUS-SLEEP-TIME&gt;0.01&lt;/CANNM-WAIT-BUS-SLEEP-TIME&gt;
+  &lt;CANNM-PASSIVE-MODE-ENABLED&gt;false&lt;/CANNM-PASSIVE-MODE-ENABLED&gt;
+  &lt;CANNM-PN-ENABLED&gt;true&lt;/CANNM-PN-ENABLED&gt;  &lt;!-- 启用 PNC --&gt;
+  &lt;CANNM-COM-CONTROL-ENABLED&gt;true&lt;/CANNM-COM-CONTROL-ENABLED&gt;
+&lt;/CANNM-CHANNEL-CONFIG&gt;</pre>
+
+  <div class="sh">配置工具链</div>
+  <div class="card-grid">
+    <div class="card"><div class="card-title">Vector DaVinci Developer</div><div class="card-body">业界最广泛使用的 AUTOSAR 配置工具，支持完整的 NM / ComM / CanIf 配置，可视化依赖检查</div></div>
+    <div class="card"><div class="card-title">EB tresos Studio</div><div class="card-body">Elektrobit 出品，AUTOSAR 合规验证能力强，适用于功能安全（ISO 26262）项目</div></div>
+    <div class="card"><div class="card-title">ETAS ISOLAR-A</div><div class="card-body">基于 Eclipse，支持 AUTOSAR Adaptive 和 Classic，与 ETAS 仿真工具深度集成</div></div>
+    <div class="card"><div class="card-title">MATLAB/Simulink + AUTOSAR Toolbox</div><div class="card-body">模型驱动开发，从 Simulink 模型直接生成 AUTOSAR XML，适合控制算法开发</div></div>
+  </div>
+</div>
+
+<!-- ── COORD ── -->
+<div class="panel" id="pnl-coord">
+  <div class="ph">
+    <div class="ph-eyebrow">Network Coordination</div>
+    <div class="ph-title">网络协调机制</div>
+    <div class="ph-sub">跨总线 NM 协调与多网关场景</div>
+  </div>
+
+  <div class="sh">为什么需要 NM 协调</div>
+  <p>整车通常有多条 CAN 总线（动力、底盘、舒适、ADAS 等），各总线通过网关（GW）连接。若各总线独立管理休眠，可能出现：</p>
+  <ul style="padding-left:1.5rem;margin-bottom:1rem;font-size:.9rem;color:var(--text2)">
+    <li style="margin:.3rem 0">CAN-A 已休眠，但 CAN-B 的节点还在唤醒 CAN-A 上的节点</li>
+    <li style="margin:.3rem 0">网关无法确定何时可以关闭两条总线之间的转发</li>
+    <li style="margin:.3rem 0">部分总线长时间无法进入 Bus-Sleep，导致暗电流超标</li>
+  </ul>
+
+  <div class="sh">NM Coordinator 工作原理</div>
+  <div class="flow">
+    <div class="flow-step"><div class="fsn">①</div><div class="fs-content"><div class="fs-title">各总线 NM 独立运行</div><div class="fs-desc">每条总线上的 CanNm 状态机独立工作，各节点进入 Ready Sleep 后 NM-Timeout 超时</div></div></div>
+    <div class="flow-step"><div class="fsn">②</div><div class="fs-content"><div class="fs-title">GW 检测各通道 Remote Sleep</div><div class="fs-desc">网关 NM Coordinator 监控所有通道的 Remote Sleep Indication。当某条总线所有节点都进入 Ready Sleep，GW 收到 <code>Nm_RemoteSleepIndication()</code></div></div></div>
+    <div class="flow-step"><div class="fsn">③</div><div class="fs-content"><div class="fs-title">协调休眠决策</div><div class="fs-desc">GW 等待所有通道都收到 Remote Sleep Indication 后，在 NM PDU 的 CBV 中置 <strong>NM Coord Sleep Ready (Bit 2)</strong>，通知各总线可以协调休眠</div><div class="fs-code">CBV.Bit2 = 1 → "协调休眠已准备好"</div></div></div>
+    <div class="flow-step"><div class="fsn">④</div><div class="fs-content"><div class="fs-title">各总线同步进入 Prepare Bus-Sleep</div><div class="fs-desc">各总线节点收到协调信号后同步进入 Prepare Bus-Sleep → 等待 WaitBusSleep 超时 → Bus-Sleep</div></div></div>
+  </div>
+
+  <div class="sh">协调簇配置</div>
+  <div class="box box-blue">
+    <strong>Coordination Cluster：</strong>AUTOSAR 通过 <code>CanNmCoordClusterIndex</code> 将多个 NM 通道分组为一个"协调簇（Cluster）"。同一 Cluster 内的所有通道必须全部准备好后才能协调休眠。不同 Cluster 可独立休眠（用于整车分区管理）。
+  </div>
+
+  <div class="svg-wrap">
+    <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" style="font-family:'JetBrains Mono',monospace;max-width:720px;width:100%;min-width:560px">
+      <defs>
+        <marker id="c1" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#1a5fb4"/></marker>
+        <marker id="c2" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#1d6b45"/></marker>
+      </defs>
+
+      <!-- CAN-Powertrain -->
+      <rect x="10" y="40" width="180" height="120" rx="8" fill="#e8f0fb" stroke="#c4d8f5" stroke-width="1.5"/>
+      <text x="100" y="60" text-anchor="middle" font-size="10" fill="#0c3d7a" font-weight="600">CAN-Powertrain</text>
+      <rect x="20" y="72" width="70" height="28" rx="4" fill="#fff" stroke="#c4d8f5" stroke-width="1"/>
+      <text x="55" y="90" text-anchor="middle" font-size="9" fill="#1a5fb4">ECM (0x01)</text>
+      <rect x="100" y="72" width="70" height="28" rx="4" fill="#fff" stroke="#c4d8f5" stroke-width="1"/>
+      <text x="135" y="90" text-anchor="middle" font-size="9" fill="#1a5fb4">TCU (0x02)</text>
+      <rect x="20" y="112" width="70" height="28" rx="4" fill="#fff" stroke="#c4d8f5" stroke-width="1"/>
+      <text x="55" y="130" text-anchor="middle" font-size="9" fill="#1a5fb4">ABS (0x03)</text>
+      <rect x="100" y="112" width="70" height="28" rx="4" fill="#e6edf7" stroke="#b8cce8" stroke-width="1.5"/>
+      <text x="135" y="130" text-anchor="middle" font-size="9" fill="#0f2a48" font-weight="600">GW-PT</text>
+
+      <!-- CAN-Comfort -->
+      <rect x="10" y="190" width="180" height="110" rx="8" fill="#e5f5ec" stroke="#a8dfc0" stroke-width="1.5"/>
+      <text x="100" y="210" text-anchor="middle" font-size="10" fill="#0f4027" font-weight="600">CAN-Comfort</text>
+      <rect x="20" y="222" width="70" height="28" rx="4" fill="#fff" stroke="#a8dfc0" stroke-width="1"/>
+      <text x="55" y="240" text-anchor="middle" font-size="9" fill="#1d6b45">BCM (0x01)</text>
+      <rect x="100" y="222" width="70" height="28" rx="4" fill="#fff" stroke="#a8dfc0" stroke-width="1"/>
+      <text x="135" y="240" text-anchor="middle" font-size="9" fill="#1d6b45">HMI (0x02)</text>
+      <rect x="20" y="262" width="70" height="28" rx="4" fill="#e6edf7" stroke="#b8cce8" stroke-width="1.5"/>
+      <text x="55" y="280" text-anchor="middle" font-size="9" fill="#0f2a48" font-weight="600">GW-CF</text>
+
+      <!-- Central GW -->
+      <rect x="290" y="120" width="160" height="80" rx="10" fill="#e6edf7" stroke="#1e3a5f" stroke-width="2"/>
+      <text x="370" y="148" text-anchor="middle" font-size="11" fill="#0f2a48" font-weight="700">Central Gateway</text>
+      <text x="370" y="166" text-anchor="middle" font-size="9" fill="#3d4f6a">NM Coordinator</text>
+      <text x="370" y="180" text-anchor="middle" font-size="8" fill="#7a8eaa">Cluster 0x00</text>
+
+      <!-- CAN-ADAS -->
+      <rect x="530" y="40" width="180" height="120" rx="8" fill="#fef3e0" stroke="#f0d090" stroke-width="1.5"/>
+      <text x="620" y="60" text-anchor="middle" font-size="10" fill="#5a3000" font-weight="600">CAN-ADAS</text>
+      <rect x="540" y="72" width="70" height="28" rx="4" fill="#fff" stroke="#f0d090" stroke-width="1"/>
+      <text x="575" y="90" text-anchor="middle" font-size="9" fill="#8a4800">Camera (0x01)</text>
+      <rect x="620" y="72" width="80" height="28" rx="4" fill="#fff" stroke="#f0d090" stroke-width="1"/>
+      <text x="660" y="90" text-anchor="middle" font-size="9" fill="#8a4800">Radar (0x02)</text>
+      <rect x="580" y="112" width="80" height="28" rx="4" fill="#e6edf7" stroke="#b8cce8" stroke-width="1.5"/>
+      <text x="620" y="130" text-anchor="middle" font-size="9" fill="#0f2a48" font-weight="600">GW-ADAS</text>
+
+      <!-- Arrows GW-PT → Central -->
+      <line x1="190" y1="120" x2="290" y2="155" stroke="#1a5fb4" stroke-width="1.5" marker-end="url(#c1)"/>
+      <text x="230" y="135" font-size="8" fill="#1a5fb4">NM Coord</text>
+
+      <!-- GW-CF → Central -->
+      <line x1="190" y1="275" x2="290" y2="185" stroke="#1d6b45" stroke-width="1.5" marker-end="url(#c2)"/>
+      <text x="215" y="235" font-size="8" fill="#1d6b45">NM Coord</text>
+
+      <!-- GW-ADAS → Central -->
+      <line x1="530" y1="125" x2="450" y2="155" stroke="#8a4800" stroke-width="1.5" marker-end="url(#c1)"/>
+      <text x="480" y="135" font-size="8" fill="#8a4800">NM Coord</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ── SEQ ── -->
+<div class="panel" id="pnl-seq">
+  <div class="ph">
+    <div class="ph-eyebrow">Timing & Sequence</div>
+    <div class="ph-title">唤醒与休眠时序</div>
+    <div class="ph-sub">节点 A、B、C 三节点场景完整报文时序</div>
+  </div>
+
+  <div class="sh">唤醒时序（Node A 主动唤醒）</div>
+  <div class="svg-wrap">
+    <svg viewBox="0 0 820 380" xmlns="http://www.w3.org/2000/svg" style="font-family:'JetBrains Mono',monospace;max-width:820px;width:100%;min-width:620px">
+      <defs>
+        <marker id="s1" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#1a5fb4"/></marker>
+        <marker id="s2" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#1d6b45"/></marker>
+        <marker id="s3" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#8a4800"/></marker>
+      </defs>
+
+      <!-- Header -->
+      <rect x="0" y="0" width="820" height="42" fill="#f0f3f8"/>
+      <rect x="60" y="6" width="110" height="28" rx="5" fill="#e8f0fb" stroke="#c4d8f5" stroke-width="1.2"/>
+      <text x="115" y="24" text-anchor="middle" font-size="11" fill="#0c3d7a" font-weight="600">Node A</text>
+      <rect x="350" y="6" width="110" height="28" rx="5" fill="#e5f5ec" stroke="#a8dfc0" stroke-width="1.2"/>
+      <text x="405" y="24" text-anchor="middle" font-size="11" fill="#0f4027" font-weight="600">Node B</text>
+      <rect x="640" y="6" width="110" height="28" rx="5" fill="#fef3e0" stroke="#f0d090" stroke-width="1.2"/>
+      <text x="695" y="24" text-anchor="middle" font-size="11" fill="#5a3000" font-weight="600">Node C</text>
+
+      <!-- Lifelines -->
+      <line x1="115" y1="42" x2="115" y2="360" stroke="#b8cce8" stroke-width="1" stroke-dasharray="5,4"/>
+      <line x1="405" y1="42" x2="405" y2="360" stroke="#a8dfc0" stroke-width="1" stroke-dasharray="5,4"/>
+      <line x1="695" y1="42" x2="695" y2="360" stroke="#f0d090" stroke-width="1" stroke-dasharray="5,4"/>
+
+      <!-- t=0: A WakeUp -->
+      <rect x="90" y="52" width="50" height="20" rx="3" fill="#b91c1c"/>
+      <text x="115" y="66" text-anchor="middle" font-size="8" fill="#fff">唤醒事件</text>
+
+      <!-- t=5: A sends first NM PDU (Repeat) -->
+      <line x1="115" y1="90" x2="395" y2="90" stroke="#1a5fb4" stroke-width="1.5" marker-end="url(#s1)"/>
+      <line x1="115" y1="90" x2="685" y2="90" stroke="#1a5fb4" stroke-width="1.5" marker-end="url(#s1)"/>
+      <rect x="180" y="76" width="200" height="16" rx="3" fill="#e8f0fb"/>
+      <text x="280" y="88" text-anchor="middle" font-size="9" fill="#0c3d7a">NM PDU [NID=0x01, CBV.Bit0=1, Repeat=1]</text>
+      <text x="50" y="88" text-anchor="middle" font-size="8" fill="#1a5fb4">t=5ms</text>
+
+      <!-- B & C enter Repeat (because of Bit0) -->
+      <rect x="380" y="110" width="50" height="16" rx="3" fill="#1a5fb4"/>
+      <text x="405" y="122" text-anchor="middle" font-size="7" fill="#fff">→Repeat</text>
+      <rect x="670" y="110" width="50" height="16" rx="3" fill="#1a5fb4"/>
+      <text x="695" y="122" text-anchor="middle" font-size="7" fill="#fff">→Repeat</text>
+
+      <!-- B sends NM PDU -->
+      <line x1="405" y1="140" x2="125" y2="140" stroke="#1d6b45" stroke-width="1.5" marker-end="url(#s2)"/>
+      <line x1="405" y1="140" x2="685" y2="140" stroke="#1d6b45" stroke-width="1.5" marker-end="url(#s2)"/>
+      <rect x="220" y="126" width="150" height="16" rx="3" fill="#e5f5ec"/>
+      <text x="295" y="138" text-anchor="middle" font-size="9" fill="#0f4027">NM PDU [NID=0x02, Repeat=1]</text>
+      <text x="50" y="138" text-anchor="middle" font-size="8" fill="#1d6b45">t=25ms</text>
+
+      <!-- C sends NM PDU -->
+      <line x1="695" y1="165" x2="125" y2="165" stroke="#8a4800" stroke-width="1.5" marker-end="url(#s3)"/>
+      <line x1="695" y1="165" x2="415" y2="165" stroke="#8a4800" stroke-width="1.5" marker-end="url(#s3)"/>
+      <rect x="350" y="151" width="160" height="16" rx="3" fill="#fef3e0"/>
+      <text x="430" y="163" text-anchor="middle" font-size="9" fill="#5a3000">NM PDU [NID=0x03, Repeat=1]</text>
+      <text x="50" y="163" text-anchor="middle" font-size="8" fill="#8a4800">t=40ms</text>
+
+      <!-- Repeat Message period -->
+      <line x1="8" y1="80" x2="8" y2="195" stroke="#1a5fb4" stroke-width="1"/>
+      <line x1="4" y1="80" x2="12" y2="80" stroke="#1a5fb4" stroke-width="1"/>
+      <line x1="4" y1="195" x2="12" y2="195" stroke="#1a5fb4" stroke-width="1"/>
+      <text x="6" y="143" font-size="7" fill="#1a5fb4" transform="rotate(-90,6,143)">Repeat Msg Time</text>
+
+      <!-- All enter Normal Operation -->
+      <line x1="0" y1="200" x2="820" y2="200" stroke="#dde3ef" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="410" y="212" text-anchor="middle" font-size="9" fill="#0d6e72" font-weight="600">→ 全部进入 Normal Operation</text>
+
+      <!-- Periodic NM PDUs in Normal mode -->
+      <line x1="115" y1="230" x2="395" y2="230" stroke="#1a5fb4" stroke-width="1.2" marker-end="url(#s1)"/>
+      <line x1="115" y1="250" x2="685" y2="250" stroke="#1a5fb4" stroke-width="1.2" marker-end="url(#s1)"/>
+      <text x="50" y="242" text-anchor="middle" font-size="8" fill="#7a8eaa">t+20ms</text>
+      <text x="180" y="244" font-size="8" fill="#7a8eaa">NM PDU 周期发送 (20ms)</text>
+
+      <!-- Application messages start -->
+      <rect x="60" y="268" width="680" height="18" rx="4" fill="#e5f5ec" stroke="#a8dfc0" stroke-width="1"/>
+      <text x="400" y="281" text-anchor="middle" font-size="9" fill="#0f4027" font-weight="600">应用层通信正常进行（PDU Router 转发应用报文）</text>
+
+      <!-- Callback indication -->
+      <line x1="115" y1="296" x2="115" y2="308" stroke="#1d6b45" stroke-width="1.5" stroke-dasharray="3,2"/>
+      <rect x="80" y="308" width="140" height="18" rx="3" fill="#e5f5ec"/>
+      <text x="150" y="321" text-anchor="middle" font-size="8" fill="#0f4027">Nm_NetworkMode() 回调</text>
+      <line x1="405" y1="296" x2="405" y2="308" stroke="#1d6b45" stroke-width="1.5" stroke-dasharray="3,2"/>
+      <rect x="370" y="308" width="140" height="18" rx="3" fill="#e5f5ec"/>
+      <text x="440" y="321" text-anchor="middle" font-size="8" fill="#0f4027">Nm_NetworkMode() 回调</text>
+    </svg>
+  </div>
+
+  <div class="sh">休眠时序（协调休眠）</div>
+  <div class="svg-wrap">
+    <svg viewBox="0 0 820 360" xmlns="http://www.w3.org/2000/svg" style="font-family:'JetBrains Mono',monospace;max-width:820px;width:100%;min-width:620px">
+      <defs>
+        <marker id="sl1" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#1d6b45"/></marker>
+        <marker id="sl2" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#8a4800"/></marker>
+        <marker id="sl3" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="#b91c1c"/></marker>
+      </defs>
+
+      <!-- Header -->
+      <rect x="0" y="0" width="820" height="42" fill="#f0f3f8"/>
+      <rect x="60" y="6" width="110" height="28" rx="5" fill="#e8f0fb" stroke="#c4d8f5" stroke-width="1.2"/>
+      <text x="115" y="24" text-anchor="middle" font-size="11" fill="#0c3d7a" font-weight="600">Node A</text>
+      <rect x="350" y="6" width="110" height="28" rx="5" fill="#e5f5ec" stroke="#a8dfc0" stroke-width="1.2"/>
+      <text x="405" y="24" text-anchor="middle" font-size="11" fill="#0f4027" font-weight="600">Node B</text>
+      <rect x="640" y="6" width="110" height="28" rx="5" fill="#fef3e0" stroke="#f0d090" stroke-width="1.2"/>
+      <text x="695" y="24" text-anchor="middle" font-size="11" fill="#5a3000" font-weight="600">Node C</text>
+
+      <!-- Lifelines -->
+      <line x1="115" y1="42" x2="115" y2="340" stroke="#b8cce8" stroke-width="1" stroke-dasharray="5,4"/>
+      <line x1="405" y1="42" x2="405" y2="340" stroke="#a8dfc0" stroke-width="1" stroke-dasharray="5,4"/>
+      <line x1="695" y1="42" x2="695" y2="340" stroke="#f0d090" stroke-width="1" stroke-dasharray="5,4"/>
+
+      <!-- A releases network -->
+      <rect x="70" y="52" width="90" height="18" rx="3" fill="#1d6b45"/>
+      <text x="115" y="65" text-anchor="middle" font-size="8" fill="#fff">NetworkRelease</text>
+
+      <!-- A enters Ready Sleep, stops sending NM -->
+      <rect x="80" y="80" width="70" height="16" rx="3" fill="#e5f5ec" stroke="#a8dfc0" stroke-width="1"/>
+      <text x="115" y="92" text-anchor="middle" font-size="8" fill="#0f4027">Ready Sleep</text>
+
+      <!-- B releases -->
+      <rect x="360" y="100" width="90" height="18" rx="3" fill="#1d6b45"/>
+      <text x="405" y="113" text-anchor="middle" font-size="8" fill="#fff">NetworkRelease</text>
+      <rect x="370" y="128" width="70" height="16" rx="3" fill="#e5f5ec" stroke="#a8dfc0" stroke-width="1"/>
+      <text x="405" y="140" text-anchor="middle" font-size="8" fill="#0f4027">Ready Sleep</text>
+
+      <!-- C still sending NM PDU -->
+      <line x1="695" y1="80" x2="125" y2="80" stroke="#8a4800" stroke-width="1.2" stroke-dasharray="4,3"/>
+      <text x="430" y="76" font-size="8" fill="#8a4800">C 仍发送 NM PDU (Normal Op)</text>
+
+      <!-- NM Timeout for A: still see C's NM PDU, reset timer -->
+      <text x="50" y="162" text-anchor="middle" font-size="7" fill="#7a8eaa">t=300ms</text>
+      <!-- C finally releases -->
+      <rect x="650" y="168" width="90" height="18" rx="3" fill="#1d6b45"/>
+      <text x="695" y="181" text-anchor="middle" font-size="8" fill="#fff">NetworkRelease</text>
+      <rect x="660" y="196" width="70" height="16" rx="3" fill="#e5f5ec" stroke="#a8dfc0" stroke-width="1"/>
+      <text x="695" y="208" text-anchor="middle" font-size="8" fill="#0f4027">Ready Sleep</text>
+
+      <!-- Separator line -->
+      <line x1="0" y1="220" x2="820" y2="220" stroke="#dde3ef" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="410" y="232" text-anchor="middle" font-size="9" fill="#8a4800" font-weight="600">← NM-Timeout 开始倒计时 (300ms) →</text>
+
+      <!-- All NM-Timeout expires -->
+      <text x="50" y="272" text-anchor="middle" font-size="7" fill="#8a4800">t+300ms</text>
+      <rect x="60" y="258" width="110" height="18" rx="3" fill="#fef3e0" stroke="#f0d090" stroke-width="1.5"/>
+      <text x="115" y="271" text-anchor="middle" font-size="8" fill="#5a3000" font-weight="600">Prepare Bus-Sleep</text>
+      <rect x="350" y="258" width="110" height="18" rx="3" fill="#fef3e0" stroke="#f0d090" stroke-width="1.5"/>
+      <text x="405" y="271" text-anchor="middle" font-size="8" fill="#5a3000" font-weight="600">Prepare Bus-Sleep</text>
+      <rect x="640" y="258" width="110" height="18" rx="3" fill="#fef3e0" stroke="#f0d090" stroke-width="1.5"/>
+      <text x="695" y="271" text-anchor="middle" font-size="8" fill="#5a3000" font-weight="600">Prepare Bus-Sleep</text>
+
+      <!-- WaitBusSleep → Bus-Sleep -->
+      <text x="50" y="310" text-anchor="middle" font-size="7" fill="#b91c1c">t+10ms</text>
+      <rect x="75" y="295" width="80" height="18" rx="3" fill="#fef2f2" stroke="#fcc" stroke-width="1.5"/>
+      <text x="115" y="308" text-anchor="middle" font-size="8" fill="#b91c1c" font-weight="600">Bus-Sleep</text>
+      <rect x="365" y="295" width="80" height="18" rx="3" fill="#fef2f2" stroke="#fcc" stroke-width="1.5"/>
+      <text x="405" y="308" text-anchor="middle" font-size="8" fill="#b91c1c" font-weight="600">Bus-Sleep</text>
+      <rect x="655" y="295" width="80" height="18" rx="3" fill="#fef2f2" stroke="#fcc" stroke-width="1.5"/>
+      <text x="695" y="308" text-anchor="middle" font-size="8" fill="#b91c1c" font-weight="600">Bus-Sleep</text>
+
+      <!-- Nm_BusSleepMode callbacks -->
+      <line x1="115" y1="313" x2="115" y2="328" stroke="#b91c1c" stroke-width="1.2"/>
+      <line x1="405" y1="313" x2="405" y2="328" stroke="#b91c1c" stroke-width="1.2"/>
+      <line x1="695" y1="313" x2="695" y2="328" stroke="#b91c1c" stroke-width="1.2"/>
+      <rect x="50" y="328" width="130" height="14" rx="2" fill="#fef2f2"/>
+      <text x="115" y="339" text-anchor="middle" font-size="7" fill="#b91c1c">Nm_BusSleepMode()</text>
+      <rect x="340" y="328" width="130" height="14" rx="2" fill="#fef2f2"/>
+      <text x="405" y="339" text-anchor="middle" font-size="7" fill="#b91c1c">Nm_BusSleepMode()</text>
+      <rect x="630" y="328" width="130" height="14" rx="2" fill="#fef2f2"/>
+      <text x="695" y="339" text-anchor="middle" font-size="7" fill="#b91c1c">Nm_BusSleepMode()</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ── PNC ── -->
+<div class="panel" id="pnl-pnc">
+  <div class="ph">
+    <div class="ph-eyebrow">Partial Network Cluster</div>
+    <div class="ph-title">部分网络 PNC</div>
+    <div class="ph-sub">精细化唤醒控制 — 只唤醒需要的 ECU</div>
+  </div>
+
+  <div class="sh">PNC 概念</div>
+  <p><strong>Partial Network Cluster（PNC）</strong>是 AUTOSAR R4.0 引入的部分网络管理机制，允许整车在不唤醒所有 ECU 的前提下，只激活特定功能域所需的节点子集，大幅降低待机功耗。</p>
+
+  <div class="sh">PNC 工作原理</div>
+  <div class="flow">
+    <div class="flow-step"><div class="fsn">1</div><div class="fs-content"><div class="fs-title">PNC 请求位图</div><div class="fs-desc">每个 PNC 对应 NM PDU User Data 中的一个 bit（最多 8×6=48 个 PNC）。当某功能需要激活时，对应 PNC bit 置 1 并广播至总线</div></div></div>
+    <div class="flow-step"><div class="fsn">2</div><div class="fs-content"><div class="fs-title">ECU 过滤 PNC 位</div><div class="fs-desc">每个 ECU 配置了它关心的 PNC 集合（PNC Mask）。收到 NM PDU 后，ECU 检查 User Data 中是否有自己关心的 PNC bit=1</div></div></div>
+    <div class="flow-step"><div class="fsn">3</div><div class="fs-content"><div class="fs-title">选择性激活</div><div class="fs-desc">若 PNC bit 匹配，ECU 请求 Full Communication；若所有关心的 PNC bit=0，ECU 可保持 Bus-Sleep 状态</div><div class="fs-code">PNC Mask: 0b00001010 → 关心 PNC1 和 PNC3</div></div></div>
+    <div class="flow-step"><div class="fsn">4</div><div class="fs-content"><div class="fs-title">CBV.PNI 位控制</div><div class="fs-desc">发送含有 PNC 请求的 NM PDU 时，CBV.Bit4（PNI）置 1，告知接收方解析 User Data 中的 PNC 位图。否则 User Data 被视为普通用户数据</div></div></div>
+  </div>
+
+  <div class="sh">典型 PNC 分配示例</div>
+  <div class="tw"><table>
+    <thead><tr><th>PNC ID</th><th>功能域</th><th>涉及 ECU</th><th>唤醒条件</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">PNC 0</td><td>动力控制</td><td>ECM, TCU, ABS, ESP</td><td>KL15 上电</td></tr>
+      <tr><td class="mono">PNC 1</td><td>娱乐/信息</td><td>HMI, Media, Amplifier</td><td>用户触发或定时</td></tr>
+      <tr><td class="mono">PNC 2</td><td>ADAS 功能</td><td>Camera, Radar, Lidar, ADCU</td><td>驾驶激活</td></tr>
+      <tr><td class="mono">PNC 3</td><td>车身舒适</td><td>BCM, Door, Seat, Climate</td><td>门把手/遥控</td></tr>
+      <tr><td class="mono">PNC 4</td><td>诊断&amp;维护</td><td>GW, BCM, ECM, TCU</td><td>诊断请求</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="box box-teal"><strong>PNC Gateway（PNC-GW）：</strong>网关 ECU 在 PNC 场景中扮演聚合者角色。它在 CAN-A 上收到 PNC1 请求后，需要在 CAN-B 上发出对应的 PNC 请求，使 CAN-B 上关心 PNC1 的节点也能被唤醒——这称为 PNC Gateway（跨总线 PNC 转发）。</div>
+</div>
+
+<!-- ── SCENARIO ── -->
+<div class="panel" id="pnl-scenario">
+  <div class="ph">
+    <div class="ph-eyebrow">Application Scenarios</div>
+    <div class="ph-title">典型应用场景</div>
+    <div class="ph-sub">AUTOSAR NM 在实际整车项目中的应用</div>
+  </div>
+
+  <div class="sh">场景一：KL15 上电唤醒</div>
+  <div class="box box-navy"><strong>触发：</strong>用户转动钥匙或按下启动按钮，KL15（点火线圈）上电，向所有 ECU 提供供电信号。<br>
+  <strong>流程：</strong>KL15 中断 → BCM/GW 检测到 KL15 → 发出 NM PDU（Repeat） → 总线上其他 ECU 收到 NM PDU → 各 ECU 进入 Network Mode → 应用层通信建立。</div>
+
+  <div class="sh">场景二：远程无钥匙进入（RKE）唤醒</div>
+  <div class="box box-green">
+  <strong>触发：</strong>用户按下遥控器解锁键，BCM 通过 RF 接收信号。<br>
+  <strong>NM 行为：</strong>BCM 从 Bus-Sleep 被 RF 中断唤醒 → BCM 发送 PNC 3（车身舒适）的 NM PDU → 车门、座椅等 ECU 被 PNC 3 唤醒 → 执行解锁动作 → 若无后续操作，超时后再次进入休眠。<br>
+  <strong>注意：</strong>仅 PNC 3 相关 ECU 唤醒，动力系统（PNC 0）不唤醒，节省电量。
+  </div>
+
+  <div class="sh">场景三：OTA 在线升级</div>
+  <div class="box box-teal">
+  <strong>触发：</strong>云端推送 OTA 包，TCU 收到升级指令。<br>
+  <strong>NM 行为：</strong>TCU 请求 Full Communication → ComM 保持网络激活（NM 不允许进入休眠）→ 目标 ECU 接收固件包 → 升级完成后 ECU 复位 → NM 重新协调上线 → 验证成功后释放网络。<br>
+  <strong>关键：</strong>OTA 期间 ComM 的 <code>ComM_InhibitModeLimit</code> 阻止任何 No-Communication 请求，确保升级过程不被中断。
+  </div>
+
+  <div class="sh">场景四：诊断会话保持</div>
+  <div class="box box-blue">
+  <strong>触发：</strong>诊断仪连接 OBD 接口，发起 UDS DiagnosticSession 请求。<br>
+  <strong>NM 行为：</strong>Dcm 调用 <code>ComM_DCM_ActiveDiagnostic()</code> 保持 Full Communication → NM 不允许进入休眠 → 诊断会话结束后 Dcm 调用 <code>ComM_DCM_InactiveDiagnostic()</code> → 网络可重新进入休眠流程。
+  </div>
+
+  <div class="sh">场景五：整车下线检验</div>
+  <div class="box box-amber">
+  <strong>触发：</strong>工厂下线检验模式，需要访问所有 ECU 进行参数写入和功能验证。<br>
+  <strong>NM 行为：</strong>EOL 工装启用所有 PNC → 强制所有 ECU 保持 Full Communication → 执行下线检验项目（刷写、标定、功能激活） → 检验完成后解除强制激活，网络进入正常管理模式。
+  </div>
+</div>
+
+<!-- ── PARAM ── -->
+<div class="panel" id="pnl-param">
+  <div class="ph">
+    <div class="ph-eyebrow">Parameter Reference</div>
+    <div class="ph-title">参数速查表</div>
+    <div class="ph-sub">CanNm / ComM 完整参数列表</div>
+  </div>
+
+  <div class="sh">CanNm 核心参数</div>
+  <div class="tw"><table>
+    <thead><tr><th>参数名</th><th>类型</th><th>默认值</th><th>范围</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">CanNmNodeId</td><td>uint8</td><td>—</td><td>0x01~0xFE</td><td>本节点源 ID，网内唯一</td></tr>
+      <tr><td class="mono">CanNmMsgCycleTime</td><td>float</td><td>0.020</td><td>0.001~1.0 s</td><td>NM PDU 周期发送时间（秒）</td></tr>
+      <tr><td class="mono">CanNmMsgCycleOffset</td><td>float</td><td>0</td><td>0~MsgCycleTime</td><td>首次发送偏移，错开节点发送</td></tr>
+      <tr><td class="mono">CanNmMsgTimeoutTime</td><td>float</td><td>0.100</td><td>≥ MsgCycleTime</td><td>等待发送确认超时</td></tr>
+      <tr><td class="mono">CanNmTimeoutTime</td><td>float</td><td>0.300</td><td>≥ 3×MsgCycleTime</td><td>Ready Sleep 状态 NM 超时时间</td></tr>
+      <tr><td class="mono">CanNmRepeatMessageTime</td><td>float</td><td>1.000</td><td>100ms~5s</td><td>Repeat Message 状态持续时间</td></tr>
+      <tr><td class="mono">CanNmWaitBusSleepTime</td><td>float</td><td>0.010</td><td>1ms~200ms</td><td>Prepare Bus-Sleep 持续时间</td></tr>
+      <tr><td class="mono">CanNmRemoteSleepIndTime</td><td>float</td><td>1.000</td><td>≥ TimeoutTime</td><td>Remote Sleep 检测确认延时</td></tr>
+      <tr><td class="mono">CanNmPassiveModeEnabled</td><td>bool</td><td>FALSE</td><td>—</td><td>True = 不发 NM PDU（被动节点）</td></tr>
+      <tr><td class="mono">CanNmNodeDetectionEnabled</td><td>bool</td><td>FALSE</td><td>—</td><td>True = 维护在线节点位图</td></tr>
+      <tr><td class="mono">CanNmPnEnabled</td><td>bool</td><td>FALSE</td><td>—</td><td>True = 启用 Partial Network</td></tr>
+      <tr><td class="mono">CanNmAllNmMessagesKeepAwake</td><td>bool</td><td>TRUE</td><td>—</td><td>True = 收到任意 NM 报文都重置超时</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="sh">ComM 核心参数</div>
+  <div class="tw"><table>
+    <thead><tr><th>参数名</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">ComMNmVariant</td><td>enum</td><td>FULL / LIGHT / PASSIVE / NONE — 决定 ComM 如何与 NM 交互</td></tr>
+      <tr><td class="mono">ComMTMinFullComModeDuration</td><td>float</td><td>Full Communication 最短保持时间，防止频繁切换</td></tr>
+      <tr><td class="mono">ComMUserModeNotifEnabled</td><td>bool</td><td>True = 模式变化时通知上层 SW-C</td></tr>
+      <tr><td class="mono">ComMWakeupInhibitionEnabled</td><td>bool</td><td>True = 禁止网络唤醒（运输模式）</td></tr>
+      <tr><td class="mono">ComMModeLimitationEnabled</td><td>bool</td><td>True = 限制模式切换（工厂测试）</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="sh">规范文档索引</div>
+  <div class="tw"><table>
+    <thead><tr><th>文档编号</th><th>标题</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">AUTOSAR_SWS_CANNetworkManagement</td><td>SWS CanNm</td><td>CanNm 模块软件规范，含状态机、API、配置</td></tr>
+      <tr><td class="mono">AUTOSAR_SWS_UDPNetworkManagement</td><td>SWS UdpNm</td><td>UdpNm 模块规范，以太网 NM</td></tr>
+      <tr><td class="mono">AUTOSAR_SWS_CommunicationManager</td><td>SWS ComM</td><td>ComM 软件规范，通信模式管理</td></tr>
+      <tr><td class="mono">AUTOSAR_SWS_NetworkManagementInterface</td><td>SWS Nm</td><td>NM 接口层规范，统一 API 定义</td></tr>
+      <tr><td class="mono">AUTOSAR_EXP_PartialNetworking</td><td>EXP PN</td><td>部分网络功能解释文档</td></tr>
+      <tr><td class="mono">ISO 17356-5</td><td>OSEK/VDX NM</td><td>传统 OSEK 网络管理规范（CanNm 前身参考）</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+</main>
+</div>
+
+<script>
+function go(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.sb-item').forEach(n=>n.classList.remove('on'));
+  const p=document.getElementById('pnl-'+id);
+  if(p){p.classList.add('on')}
+  const n=document.querySelector(`.sb-item[onclick="go('${id}')"]`);
+  if(n){n.classList.add('on')}
+  window.scrollTo(0,0);
+}
+</script>

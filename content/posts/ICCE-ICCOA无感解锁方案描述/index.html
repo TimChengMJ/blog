@@ -1,0 +1,1087 @@
+---
+title: "ICCE & ICCOA · 无感解锁完整实现方案"
+description: ""
+date: 2026-04-13T18:57:36+08:00
+categories: ["技术文档"]
+tags: []
+draft: false
+---
+
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;1,400&family=Source+Code+Pro:wght@400;600&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg:         #f5f4f0;
+  --surface:    #ffffff;
+  --surface2:   #f0ede5;
+  --surface3:   #e8e3d8;
+  --border:     #ddd7cb;
+  --border2:    #c5bdb0;
+  --text:       #27211a;
+  --text2:      #56493a;
+  --muted:      #998b7a;
+  --blue:       #1d57c9;
+  --blue-lt:    #eff4ff;
+  --blue-bd:    #bfcffd;
+  --teal:       #0a7c6e;
+  --teal-lt:    #edfcf8;
+  --teal-bd:    #86e8d6;
+  --amber:      #a65e00;
+  --amber-lt:   #fff8ed;
+  --amber-bd:   #fbd38d;
+  --red:        #c0292a;
+  --red-lt:     #fff1f1;
+  --red-bd:     #fbb4b4;
+  --purple:     #6b30d1;
+  --purple-lt:  #f5f0ff;
+  --purple-bd:  #c4aaf8;
+  --green:      #166534;
+  --green-lt:   #f0fdf4;
+  --green-bd:   #86efac;
+  --orange:     #b54300;
+  --orange-lt:  #fff7ed;
+  --orange-bd:  #fdba74;
+  --serif:      'Fraunces', serif;
+  --mono:       'Source Code Pro', monospace;
+  --sans:       'Noto Sans SC', sans-serif;
+  --r:          8px;
+  --sh:         0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04);
+  --sh-md:      0 4px 16px rgba(0,0,0,.08);
+}/* ─── HEADER ─── */
+header{background:var(--surface);border-bottom:2px solid var(--border);padding:44px 64px 36px;position:relative;overflow:hidden}
+header::after{content:'PEPS';position:absolute;right:-10px;top:-20px;font-family:var(--serif);font-size:160px;font-weight:700;color:var(--border);opacity:.25;pointer-events:none;line-height:1}
+.hdr-tag{font-family:var(--mono);font-size:10px;color:var(--blue);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px}
+header h1{font-family:var(--serif);font-size:clamp(24px,3.2vw,38px);font-weight:700;line-height:1.2;color:var(--text);margin-bottom:14px}
+header h1 em{font-style:italic;color:var(--blue)}
+.hdr-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.pill{font-family:var(--mono);font-size:10px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);color:var(--text2);background:var(--surface2)}
+.pill.icce{background:var(--blue-lt);border-color:var(--blue-bd);color:var(--blue)}
+.pill.iccoa{background:var(--orange-lt);border-color:var(--orange-bd);color:var(--orange)}
+.hdr-desc{font-size:13px;color:var(--text2);max-width:680px;line-height:1.75}
+
+/* ─── TABS ─── */
+.tab-nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 64px;display:flex;overflow-x:auto;position:sticky;top:0;z-index:100;box-shadow:var(--sh)}
+.tab-btn{padding:13px 18px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;white-space:nowrap;transition:all .18s;font-family:var(--sans)}
+.tab-btn:hover{color:var(--text2)}
+.tab-btn.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:700}
+
+/* ─── LAYOUT ─── */
+.wrap{max-width:1160px;margin:0 auto;padding:40px 40px 100px}
+.panel{display:none}.panel.active{display:block}
+.sec{margin-bottom:52px}
+.sec-lbl{font-family:var(--mono);font-size:10px;color:var(--blue);letter-spacing:3px;text-transform:uppercase;margin-bottom:4px}
+.sec-title{font-family:var(--serif);font-size:21px;font-weight:700;color:var(--text);margin-bottom:8px}
+.sec-desc{font-size:13px;color:var(--text2);max-width:720px;line-height:1.75;margin-bottom:22px}
+hr.div{border:none;border-top:1px solid var(--border);margin:28px 0}
+
+/* ─── GRID ─── */
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+
+/* ─── CARD ─── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--sh)}
+.card-t{font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.card-b{font-size:12.5px;color:var(--text2);line-height:1.75}
+.card.c-blue{border-left:3px solid var(--blue);background:var(--blue-lt)}
+.card.c-teal{border-left:3px solid var(--teal);background:var(--teal-lt)}
+.card.c-amber{border-left:3px solid var(--amber);background:var(--amber-lt)}
+.card.c-red{border-left:3px solid var(--red);background:var(--red-lt)}
+.card.c-purple{border-left:3px solid var(--purple);background:var(--purple-lt)}
+.card.c-green{border-left:3px solid var(--green);background:var(--green-lt)}
+.card.c-orange{border-left:3px solid var(--orange);background:var(--orange-lt)}
+
+/* ─── COMPARISON ─── */
+.cmp-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh)}
+table.cmp{width:100%;border-collapse:collapse;font-size:12.5px}
+table.cmp thead tr{background:var(--surface2);border-bottom:2px solid var(--border)}
+table.cmp th{padding:11px 16px;text-align:left;font-weight:700;font-size:11px;color:var(--text2)}
+table.cmp td{padding:10px 16px;border-bottom:1px solid var(--bg);vertical-align:top;color:var(--text2)}
+table.cmp tbody tr:hover td{background:var(--surface2)}
+table.cmp tbody tr:last-child td{border-bottom:none}
+.tag-i{display:inline-block;font-family:var(--mono);font-size:10px;padding:1px 7px;border-radius:4px;font-weight:700}
+.ti-icce{background:var(--blue-lt);border:1px solid var(--blue-bd);color:var(--blue)}
+.ti-iccoa{background:var(--orange-lt);border:1px solid var(--orange-bd);color:var(--orange)}
+.ti-both{background:var(--teal-lt);border:1px solid var(--teal-bd);color:var(--teal)}
+
+/* ─── ZONE DIAGRAM ─── */
+.zone-diagram{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:28px;box-shadow:var(--sh);position:relative;overflow:hidden}
+.zone-diagram svg{width:100%;height:auto;max-height:340px}
+
+/* ─── FLOW STEPS ─── */
+.steps-flow{display:flex;flex-direction:column;gap:0}
+.step-item{display:grid;grid-template-columns:52px 1fr;gap:0;position:relative}
+.step-item::before{content:'';position:absolute;left:25px;top:52px;bottom:0;width:2px;background:var(--border);z-index:0}
+.step-item:last-child::before{display:none}
+.step-num{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:13px;flex-shrink:0;z-index:1;border:2px solid;margin-top:8px}
+.step-.step-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px}
+.step-desc{font-size:12.5px;color:var(--text2);line-height:1.75}
+.step-note{margin-top:8px;padding:8px 12px;border-radius:6px;font-size:11.5px;font-family:var(--mono)}
+
+/* step colors */
+.sn-blue{background:var(--blue-lt);border-color:var(--blue);color:var(--blue)}
+.sn-teal{background:var(--teal-lt);border-color:var(--teal);color:var(--teal)}
+.sn-amber{background:var(--amber-lt);border-color:var(--amber);color:var(--amber)}
+.sn-purple{background:var(--purple-lt);border-color:var(--purple);color:var(--purple)}
+.sn-red{background:var(--red-lt);border-color:var(--red);color:var(--red)}
+.sn-green{background:var(--green-lt);border-color:var(--green);color:var(--green)}
+.sn-orange{background:var(--orange-lt);border-color:var(--orange);color:var(--orange)}
+.note-blue{background:var(--blue-lt);border-left:3px solid var(--blue);color:var(--blue)}
+.note-teal{background:var(--teal-lt);border-left:3px solid var(--teal);color:var(--teal)}
+.note-amber{background:var(--amber-lt);border-left:3px solid var(--amber);color:var(--amber)}
+.note-red{background:var(--red-lt);border-left:3px solid var(--red);color:var(--red)}
+.note-purple{background:var(--purple-lt);border-left:3px solid var(--purple);color:var(--purple)}
+
+/* ─── INFO BOX ─── */
+.info{border-radius:var(--r);padding:13px 16px;font-size:12.5px;display:flex;gap:10px;align-items:flex-start;line-height:1.7;margin:12px 0}
+.info.tip{background:var(--teal-lt);border:1px solid var(--teal-bd);color:#065f46}
+.info.warn{background:var(--amber-lt);border:1px solid var(--amber-bd);color:#78350f}
+.info.note{background:var(--blue-lt);border:1px solid var(--blue-bd);color:#1e3a8a}
+.info.danger{background:var(--red-lt);border:1px solid var(--red-bd);color:#7f1d1d}
+.info-ico{flex-shrink:0;margin-top:1px;font-size:14px}
+
+/* ─── SEQUENCE ─── */
+.seq-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh)}
+.seq-hdr{display:grid;grid-template-columns:180px 1fr 180px;background:var(--surface2);border-bottom:2px solid var(--border)}
+.seq-ent{padding:12px;text-align:center;font-size:12px;font-weight:700}
+.seq-ent.ph{color:var(--blue)}.seq-ent.car{color:var(--teal)}
+.phase-row{background:var(--surface2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:6px 16px;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:600}
+.seq-row{display:grid;grid-template-columns:180px 1fr 180px;min-height:50px;border-bottom:1px solid var(--bg);transition:background .12s}
+.seq-row:hover{background:var(--surface2)}
+.seq-note{padding:8px 12px;font-size:11px;color:var(--text2);display:flex;align-items:center}
+.seq-note.r{justify-content:flex-end;text-align:right;font-family:var(--mono);color:var(--muted);font-size:10px}
+.arr-cell{padding:4px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.arr{display:flex;align-items:center;width:100%;gap:4px}
+.arr.rtl{flex-direction:row-reverse}
+.arr-lbl{font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;font-family:var(--mono)}
+.arr-trk{flex:1;height:1.5px;background:currentColor;opacity:.35}
+.arr-tip{font-size:12px;line-height:1}
+.arr-sub{font-size:10px;color:var(--muted);text-align:center;max-width:420px}
+.c-bl{color:var(--blue);background:var(--blue-lt)}.trk-bl{color:var(--blue)}
+.c-tl{color:var(--teal);background:var(--teal-lt)}.trk-tl{color:var(--teal)}
+.c-am{color:var(--amber);background:var(--amber-lt)}.trk-am{color:var(--amber)}
+.c-rd{color:var(--red);background:var(--red-lt)}.trk-rd{color:var(--red)}
+.c-pu{color:var(--purple);background:var(--purple-lt)}.trk-pu{color:var(--purple)}
+.c-or{color:var(--orange);background:var(--orange-lt)}.trk-or{color:var(--orange)}
+
+/* ─── CODE ─── */
+.code{background:#fafaf7;border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;font-family:var(--mono);font-size:11.5px;line-height:1.85;overflow-x:auto;margin:10px 0;position:relative}
+.code .lang{position:absolute;top:8px;right:12px;font-size:10px;color:var(--muted);letter-spacing:1px}
+.kw{color:#7c3aed}.fn{color:#1d57c9}.str{color:#166534}.cm{color:#9ca3af;font-style:italic}.nm{color:#a65e00}
+
+/* ─── TABLE ─── */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh)}
+table.tbl{width:100%;border-collapse:collapse;font-size:12px}
+table.tbl thead tr{background:var(--surface2);border-bottom:2px solid var(--border)}
+table.tbl th{padding:10px 14px;text-align:left;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;font-weight:600}
+table.tbl td{padding:9px 14px;border-bottom:1px solid var(--bg);vertical-align:top;color:var(--text2)}
+table.tbl tbody tr:hover td{background:var(--surface2)}
+table.tbl tbody tr:last-child td{border-bottom:none}
+
+/* ─── PERF ─── */
+.perf-g{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.perf-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.perf-l{font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:1px;text-transform:uppercase}
+.perf-v{font-family:var(--serif);font-size:24px;font-weight:700;color:var(--text);margin:4px 0 2px}
+.perf-u{font-size:11px;color:var(--text2)}
+
+/* ─── BADGE ─── */
+.bdg{display:inline-block;font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700;white-space:nowrap}
+.bdg-blue{background:var(--blue-lt);border:1px solid var(--blue-bd);color:var(--blue)}
+.bdg-or{background:var(--orange-lt);border:1px solid var(--orange-bd);color:var(--orange)}
+.bdg-tl{background:var(--teal-lt);border:1px solid var(--teal-bd);color:var(--teal)}
+.bdg-am{background:var(--amber-lt);border:1px solid var(--amber-bd);color:var(--amber)}
+.bdg-rd{background:var(--red-lt);border:1px solid var(--red-bd);color:var(--red)}
+.bdg-pu{background:var(--purple-lt);border:1px solid var(--purple-bd);color:var(--purple)}
+
+/* ─── FOOTER ─── */
+footer{background:var(--surface);border-top:1px solid var(--border);padding:18px 64px;font-size:11px;color:var(--muted);font-family:var(--mono);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+
+@media(max-width:800px){
+  header,.tab-nav,footer{padding-left:20px;padding-right:20px}
+  .wrap{padding:24px 16px 60px}
+  .g2,.g3,.g4{grid-template-columns:1fr}
+  .perf-g{grid-template-columns:repeat(2,1fr)}
+  .seq-hdr,.seq-row{grid-template-columns:100px 1fr 100px}
+  .seq-note{font-size:10px;padding:4px 6px}
+}
+
+</style>
+
+<!-- ══ HEADER ══ -->
+<header>
+  <div class="hdr-tag">ICCE · ICCOA · PEPS 无感解锁</div>
+  <h1>无感解锁完整<em>实现方案</em><br>ICCE vs ICCOA 深度技术解析</h1>
+  <div class="hdr-pills">
+    <span class="pill icce">ICCE · 华为主导</span>
+    <span class="pill iccoa">ICCOA · 小米/OPPO/vivo</span>
+    <span class="pill">PEPS / 无感进入</span>
+    <span class="pill">BLE + UWB + RSSI</span>
+    <span class="pill">对称 vs 非对称密钥</span>
+    <span class="pill">防中继攻击</span>
+  </div>
+  <p class="hdr-desc">本文档系统梳理 ICCE（华为主导）与 ICCOA（小米/OPPO/vivo 主导）两大国内主流标准的无感解锁（PEPS）完整实现方案，涵盖定位原理、交互时序、安全防护、工程挑战与两者对比。</p>
+</header>
+
+<!-- ══ TABS ══ -->
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="go(0)">① 概念与对比</button>
+  <button class="tab-btn" onclick="go(1)">② ICCE 无感解锁方案</button>
+  <button class="tab-btn" onclick="go(2)">③ ICCOA 无感解锁方案</button>
+  <button class="tab-btn" onclick="go(3)">④ 定位技术详解</button>
+  <button class="tab-btn" onclick="go(4)">⑤ 安全：防中继攻击</button>
+  <button class="tab-btn" onclick="go(5)">⑥ 工程挑战与实现</button>
+</nav>
+
+<div class="wrap">
+
+<!-- ══════════ TAB 0：概念与对比 ══════════ -->
+<div class="panel active" id="p0">
+
+  <div class="sec">
+    <div class="sec-lbl">SECTION 01</div>
+    <div class="sec-title">什么是无感解锁（PEPS）</div>
+    <div class="sec-desc">PEPS（Passive Entry Passive Start）无感进入无感启动，指用户携带手机无需任何操作，仅凭接近动作即可触发车门解锁，进入车内后自动启动。核心是"距离感知 + 身份认证 + 防攻击"三位一体。</div>
+
+    <div class="g3">
+      <div class="card c-blue">
+        <div class="card-t">📡 距离感知层</div>
+        <div class="card-b">通过 BLE RSSI 多锚点、AoA/AoD 方向测量、UWB 飞行时间（ToF）等技术，持续判断手机与车辆的相对位置，精确到"区域级"（车内/车外/门口/附近）或"厘米级"（UWB）。</div>
+      </div>
+      <div class="card c-teal">
+        <div class="card-t">🔐 身份认证层</div>
+        <div class="card-b">在手机靠近过程中，通过 BLE 连接完成密钥握手认证（ICCE 对称密钥 / ICCOA 非对称密钥），确认手机持有合法数字钥匙，生成会话密钥用于后续加密通信。</div>
+      </div>
+      <div class="card c-red">
+        <div class="card-t">🛡 防攻击层</div>
+        <div class="card-b">防中继攻击（Relay Attack）是无感解锁最大的安全挑战。BLE 方案通过防中继算法、信号延迟检测；UWB 方案通过安全时间戳（STS）从物理层彻底阻断中继。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-lbl">SECTION 02</div>
+    <div class="sec-title">无感解锁触发的距离区域划分</div>
+
+    <div class="zone-diagram">
+      <svg viewBox="0 0 900 320" xmlns="http://www.w3.org/2000/svg" font-family="'Noto Sans SC', sans-serif">
+        <!-- zones -->
+        <ellipse cx="450" cy="200" rx="400" ry="110" fill="#eff4ff" stroke="#bfcffd" stroke-width="1.5"/>
+        <ellipse cx="450" cy="200" rx="290" ry="80" fill="#edfcf8" stroke="#86e8d6" stroke-width="1.5"/>
+        <ellipse cx="450" cy="200" rx="180" ry="52" fill="#fff8ed" stroke="#fbd38d" stroke-width="1.5"/>
+        <ellipse cx="450" cy="200" rx="85"  ry="28" fill="#fff1f1" stroke="#fbb4b4" stroke-width="1.5"/>
+
+        <!-- car body -->
+        <rect x="390" y="183" width="120" height="50" rx="8" fill="#334155" opacity=".85"/>
+        <rect x="410" y="170" width="80"  height="24" rx="5" fill="#475569" opacity=".75"/>
+        <circle cx="410" cy="236" r="11" fill="#1e293b"/>
+        <circle cx="490" cy="236" r="11" fill="#1e293b"/>
+        <circle cx="410" cy="236" r="5"  fill="#94a3b8"/>
+        <circle cx="490" cy="236" r="5"  fill="#94a3b8"/>
+        <text x="450" y="212" text-anchor="middle" fill="white" font-size="10" font-weight="600">车辆</text>
+
+        <!-- anchors -->
+        <circle cx="370" cy="193" r="6" fill="#1d57c9" opacity=".8"/>
+        <circle cx="530" cy="193" r="6" fill="#1d57c9" opacity=".8"/>
+        <circle cx="450" cy="175" r="6" fill="#1d57c9" opacity=".8"/>
+        <circle cx="380" cy="233" r="6" fill="#1d57c9" opacity=".8"/>
+        <circle cx="520" cy="233" r="6" fill="#1d57c9" opacity=".8"/>
+        <text x="450" y="140" text-anchor="middle" fill="#1d57c9" font-size="9">Anchor</text>
+
+        <!-- distance labels -->
+        <text x="850" y="115" text-anchor="end" fill="#1d57c9" font-size="12" font-weight="600">① 感知区 ~50m</text>
+        <text x="850" y="130" text-anchor="end" fill="#1d57c9" font-size="10">BLE 广播扫描发现</text>
+        <line x1="782" y1="138" x2="850" y2="122" stroke="#1d57c9" stroke-width="1" opacity=".4"/>
+
+        <text x="850" y="170" text-anchor="end" fill="#0a7c6e" font-size="12" font-weight="600">② 迎宾区 ~10m</text>
+        <text x="850" y="185" text-anchor="end" fill="#0a7c6e" font-size="10">BLE 连接建立 + 握手认证</text>
+        <line x1="740" y1="188" x2="850" y2="178" stroke="#0a7c6e" stroke-width="1" opacity=".4"/>
+
+        <text x="850" y="220" text-anchor="end" fill="#a65e00" font-size="12" font-weight="600">③ 解锁区 ~1.5m</text>
+        <text x="850" y="235" text-anchor="end" fill="#a65e00" font-size="10">防中继判断 + 触发解锁</text>
+        <line x1="630" y1="213" x2="850" y2="228" stroke="#a65e00" stroke-width="1" opacity=".4"/>
+
+        <text x="850" y="265" text-anchor="end" fill="#c0292a" font-size="12" font-weight="600">④ 车内区 &lt;0.5m</text>
+        <text x="850" y="280" text-anchor="end" fill="#c0292a" font-size="10">启动授权</text>
+        <line x1="535" y1="220" x2="850" y2="272" stroke="#c0292a" stroke-width="1" opacity=".4"/>
+
+        <!-- phone -->
+        <rect x="230" y="183" width="22" height="32" rx="3" fill="#4f46e5" opacity=".85"/>
+        <rect x="233" y="186" width="16" height="23" rx="2" fill="#a5b4fc" opacity=".6"/>
+        <text x="241" y="225" text-anchor="middle" fill="#4f46e5" font-size="10">📱</text>
+        <text x="241" y="240" text-anchor="middle" fill="#4f46e5" font-size="9">手机</text>
+
+        <!-- arrow -->
+        <path d="M265 199 L380 199" stroke="#4f46e5" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr)" opacity=".5"/>
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#4f46e5" opacity=".7"/>
+          </marker>
+        </defs>
+        <text x="320" y="190" text-anchor="middle" fill="#4f46e5" font-size="9" font-style="italic">靠近中...</text>
+
+        <!-- title -->
+        <text x="450" y="30" text-anchor="middle" fill="#27211a" font-size="14" font-weight="700">无感解锁距离区域划分示意图</text>
+        <text x="450" y="50" text-anchor="middle" fill="#998b7a" font-size="11">多 BLE Anchor 蓝点布置在车身各位置，UWB 方案精度进一步提升</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-lbl">SECTION 03</div>
+    <div class="sec-title">ICCE vs ICCOA · 无感解锁核心差异对比</div>
+    <div class="cmp-wrap">
+      <table class="cmp">
+        <thead>
+          <tr>
+            <th style="width:140px">对比维度</th>
+            <th><span class="tag-i ti-icce">ICCE</span>（华为主导）</th>
+            <th><span class="tag-i ti-iccoa">ICCOA</span>（小米/OPPO/vivo）</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>成立背景</b></td>
+            <td>华为主导，中汽协发起，目标确保主机厂数据主权，打破国际垄断</td>
+            <td>小米/OPPO/vivo 联合长安/吉利/上汽，2021.9 成立，试图把汽车纳入手机生态</td>
+          </tr>
+          <tr>
+            <td><b>认证架构</b></td>
+            <td>对称密钥（AES），挑战应答生成 SessionKey，需 JavaCard SE</td>
+            <td>参考 CCC 非对称加密（ECDSA），安全性更强，但开发复杂，换手机需重新授权</td>
+          </tr>
+          <tr>
+            <td><b>定位技术</b></td>
+            <td>BLE 主节点 + 多辅节点 RSSI/AoA/HADM；高阶方案叠加 UWB（问界M9首发）</td>
+            <td>BLE RSSI 多点定位；统一了蓝牙定位精准度要求；加入系统级拉活保活能力</td>
+          </tr>
+          <tr>
+            <td><b>防中继方案</b></td>
+            <td>BLE 防中继算法（Cmd=0x02）；UWB 安全时间戳（STS）物理层防护</td>
+            <td>BLE 防中继算法；UWB 安全测距（DK 2.0 新增）</td>
+          </tr>
+          <tr>
+            <td><b>手机侧实现</b></td>
+            <td>需手机厂商深度适配 Framework + SE Applet；华为/小米等各自实现</td>
+            <td>提供标准 SDK，车企一次对接落地，手机厂商提供系统级拉活保活 API，无需增加新硬件</td>
+          </tr>
+          <tr>
+            <td><b>后台保活</b></td>
+            <td>各手机厂商各自实现，体验差异较大</td>
+            <td><b>核心优势</b>：统一系统级保活标准，规范了息屏/锁屏 BLE 扫描行为，体验更一致</td>
+          </tr>
+          <tr>
+            <td><b>商用进展</b></td>
+            <td>✅ 国内 26+ 车企，200+ 车型，市占率 45%+；2021 名爵首发，2023 问界M9 UWB</td>
+            <td>2023.9 发布 DK 2.0；零跑计划 2025 B10 首发；尚无大规模量产，车企有控制权顾虑</td>
+          </tr>
+          <tr>
+            <td><b>换手机体验</b></td>
+            <td>✅ 云端同步，换机较便捷</td>
+            <td>换机需重新授权配对，体验相对繁琐</td>
+          </tr>
+          <tr>
+            <td><b>规范完整性</b></td>
+            <td>蓝牙部分较完整，部分细节需四方协商；UWB 规范持续完善中</td>
+            <td>DK 2.0 参考 CCC 设计较完整；但缺少大规模落地验证</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="info tip" style="margin-top:12px">
+      <span class="info-ico">💡</span>
+      <span><b>核心差异一句话总结：</b>ICCE 更易落地、生态最广，以对称密钥换取简单性，主机厂主导权强；ICCOA 安全性设计更好、统一了手机系统级能力，但大规模商用进度落后，车企因担忧控制权流失而观望。</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TAB 1：ICCE 方案 ══════════ -->
+<div class="panel" id="p1">
+
+  <div class="sec">
+    <div class="sec-lbl">SECTION 04</div>
+    <div class="sec-title">ICCE 无感解锁完整方案</div>
+    <div class="sec-desc">ICCE PEPS 方案的核心是：BLE 持续广播 + 多辅节点 RSSI 定位 + 对称密钥握手认证 + 防中继判断，四个条件同时满足后触发车控。</div>
+
+    <!-- 4个条件 -->
+    <div class="g4" style="margin-bottom:24px">
+      <div class="card c-blue"><div class="card-t">① BLE 连接正常</div><div class="card-b">车端持续广播，手机背景扫描连接后保持蓝牙链路，链路加密（LTK）</div></div>
+      <div class="card c-teal"><div class="card-t">② 握手认证通过</div><div class="card-b">对称密钥挑战应答，SE Applet 双向认证，SessionKey 已建立</div></div>
+      <div class="card c-amber"><div class="card-t">③ 手机在解锁区域</div><div class="card-b">多 Anchor RSSI 融合定位，判断手机在车门口 ≤1.5m 解锁区</div></div>
+      <div class="card c-red"><div class="card-t">④ 防中继通过</div><div class="card-b">防中继算法验证，排除信号被"搬运"的中继攻击风险</div></div>
+    </div>
+
+    <!-- 完整步骤流程 -->
+    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px">完整流程步骤（从手机离车 50m 到解锁全过程）</div>
+    <div class="steps-flow">
+
+      <div class="step-item">
+        <div class="step-num sn-blue">S1</div>
+        <div class="step-body">
+          <div class="step-title">车端持续广播 · 手机背景扫描发现</div>
+          <div class="step-desc">车辆 BLE 主节点以 <b>≤100ms</b> 间隔持续广播，广播包含车辆标识（基于 VIN 码的设备名/蓝牙地址）。手机 CarKey Framework 在后台以 <b>≥10% 占空比</b>扫描，过滤目标车辆广播。<br>手机熄屏/锁屏状态下扫描行为须与亮屏保持一致（ICCE §6.1 条g），这是保证无感体验的关键——多数 Android 手机在熄屏下 BLE 扫描会受系统限制，各厂商的 Framework 需特别处理保活。</div>
+          <div class="step-note note-blue">📍 距离：约 30~50m 时广播可被稳定发现</div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num sn-teal">S2</div>
+        <div class="step-body">
+          <div class="step-title">建立 BLE 连接 · 版本协商</div>
+          <div class="step-desc">手机发起 BLE 连接请求，车端建立 GATT 连接（Data In: 0xFFFD / Data Out: 0xFFFE）。连接建立后立即进行可选的版本协商（Cmd=0x08，获取 ICCE 协议版本）和时钟校准（Cmd=0x07），确保双端协议兼容。<br>若已配对绑定：直接用 LTK 加密，无需重新配对，实现秒级重连。</div>
+          <div class="step-note note-teal">📍 距离：约 20~30m；已配对设备重连时延 &lt;1s</div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num sn-purple">S3</div>
+        <div class="step-body">
+          <div class="step-title">握手认证 · 生成 SessionKey（关键步骤）</div>
+          <div class="step-desc">BLE 连接建立后立即触发握手认证（Msg=0x01, Cmd=0x01）。具体流程：<br><br>
+          <b>1. 车端发 GetProcessData APDU</b> → 通过 ICCE 透传帧传给手机 Framework<br>
+          <b>2. Framework 拆封 APDU</b> → 透传至 SE 内的 JavaCard Applet<br>
+          <b>3. SE Applet 生成随机数 RND_ICC</b>，返回挑战数据<br>
+          <b>4. 车端验证 + 生成 RND_IFD</b>，发送 ExternalAuth APDU<br>
+          <b>5. SE 验证车端 MAC</b>（车端认证通过），回传手机侧 MAC<br>
+          <b>6. 车端验证手机 MAC</b>（双向认证完成）<br>
+          <b>7. 双端各自派生 SessionKey</b> = KDF(SharedKey, RND_IFD, RND_ICC)<br><br>
+          SessionKey 永远不离开 SE，后续车控指令加密均在 SE 内完成。</div>
+          <div class="step-note note-purple">📍 握手完成后 Framework 回调通知 App；距离约 10~20m 时完成</div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num sn-amber">S4</div>
+        <div class="step-body">
+          <div class="step-title">启动测距定位 · RSSI 多锚点融合</div>
+          <div class="step-desc">握手认证成功后，车端通过 ICCE 指令（Msg=0x02, Cmd=0x01）指示手机以 <b>100ms 周期</b>发送 RPA 地址定位广播包。<br><br>
+          <b>各辅节点（Anchor）</b>分布在车身不同位置（主驾门、副驾门、后排门、后备箱、车内），独立接收手机广播并上报 RSSI 值给主节点。<br><br>
+          <b>主节点定位融合算法：</b><br>
+          · 收集各辅节点 RSSI 原始值<br>
+          · 对每个辅节点的 RSSI 序列做 <b>卡尔曼滤波</b> 或 <b>加权移动平均</b>，抑制多径衰落抖动<br>
+          · 基于 RSSI 与距离转换公式（Path Loss Model）估算各辅节点距离<br>
+          · 融合多辅节点距离，基于 <b>三边测量</b> 或 <b>加权质心算法</b> 计算手机位置<br>
+          · 与预设的区域边界比较，判断手机所在区域</div>
+          <div class="step-note note-amber">📍 辅节点布局建议：1+3（主+前后门+后备箱）至 1+5/1+6；定位精度 ±20~50cm</div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num sn-red">S5</div>
+        <div class="step-body">
+          <div class="step-title">防中继判断（PEPS 必须步骤）</div>
+          <div class="step-desc">当 RSSI 定位判断手机进入解锁区域时，车端发出防中继指令（Msg=0x02, Cmd=0x02）。<br><br>
+          <b>纯 BLE 防中继方案（常见实现）：</b><br>
+          · <b>RTT 信号延迟检测</b>：BLE 通信往返时延（Round Trip Time），若 RTT 异常大，说明信号被中继转发（正常 BLE 通信 RTT &lt;5ms，中继攻击 RTT 往往 &gt;20ms）<br>
+          · <b>多传感器融合</b>：融合手机加速度计/陀螺仪，若手机静止但 RSSI 突变异常（被中继），可辅助判断<br>
+          · <b>RSSI 一致性检验</b>：同一辅节点在极短时间内 RSSI 发生不合物理规律的跳变<br><br>
+          <b>BLE+UWB 方案（更安全）：</b><br>
+          UWB 基于飞行时间（ToF）测距，使用安全时间戳（STS）加密，中继攻击无法伪造物理传播延迟，是目前防中继最可靠的方案。<br><br>
+          防中继结果由手机端 Framework 计算后回传：<code>0x01</code>=有风险（中止）/ <code>0x02</code>=安全（继续）/ <code>0x03</code>=数据不足（继续采集）</div>
+          <div class="step-note note-red">⚠️ ICCE 规范要求 PEPS 场景必须执行防中继判断（§5.4 Step4④），具体算法由各厂商实现</div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num sn-green">S6</div>
+        <div class="step-body">
+          <div class="step-title">执行车控 · 触发解锁</div>
+          <div class="step-desc">四项条件（BLE 正常 + 握手通过 + 区域确认 + 防中继通过）全部满足后，车端 DK 认证系统向整车控制模块发送解锁指令，车门自动解锁。<br><br>
+          车辆可通过蓝牙通道向手机发送执行结果通知（Msg=0x03, Cmd=0x02，Event=0x04 已解锁），手机 App 可选择性展示解锁动画。<br><br>
+          <b>进入车内后启动授权：</b>手机进入车内区域（&lt;0.5m），RSSI 多个辅节点均强信号，判断手机在车内，授权发动机启动权限。用户按下启动按钮，DK 系统验证权限后允许启动。</div>
+          <div class="step-note note-teal">📍 从 BLE 已连接到车辆响应，时延要求 ≤1s（ICCE §6.2.2 条d）</div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num sn-orange">S7</div>
+        <div class="step-body">
+          <div class="step-title">离车自动闭锁（反向流程）</div>
+          <div class="step-desc">用户离车后，手机 RSSI 持续降低，当所有辅节点 RSSI 低于闭锁阈值，且满足一定时间稳定窗口，触发自动闭锁。<br><br>
+          手机通过 Notification（Msg=0x03, Cmd=0x01，Event=0x01 广播降频）告知车辆，Framework 降低广播频率以节约电量。车辆在未检测到任何已知手机连接后，进入低功耗广播模式（可调整间隔）。</div>
+          <div class="step-note note-amber">💡 闭锁需防"误锁"：用户放钥匙车内、坐进去再出来等场景需特殊处理</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ICCE 时序图 -->
+  <div class="sec">
+    <div class="sec-lbl">SECTION 05</div>
+    <div class="sec-title">ICCE 无感解锁 BLE 完整时序</div>
+    <div class="seq-wrap">
+      <div class="seq-hdr">
+        <div class="seq-ent ph">📱 手机<br><small style="font-weight:400;font-size:9px">Framework + SE</small></div>
+        <div></div>
+        <div class="seq-ent car">🚗 车辆<br><small style="font-weight:400;font-size:9px">主节点 + DK 系统</small></div>
+      </div>
+
+      <div class="phase-row">阶段1 · 发现与连接</div>
+      <div class="seq-row">
+        <div class="seq-note"></div>
+        <div class="arr-cell">
+          <div class="arr rtl"><span class="arr-tip trk-am">◀</span><span class="arr-trk trk-am"></span><span class="arr-lbl c-am">BLE ADV 广播 ≤100ms</span></div>
+          <div class="arr-sub">含 VIN 衍生设备名，手机后台扫描过滤</div>
+        </div>
+        <div class="seq-note r">§5.2.3 §7.2.1</div>
+      </div>
+      <div class="seq-row">
+        <div class="seq-note">已配对：直接 LTK 重连</div>
+        <div class="arr-cell">
+          <div class="arr"><span class="arr-lbl c-bl">Connect Request（BLE 连接）</span><span class="arr-trk trk-bl"></span><span class="arr-tip trk-bl">▶</span></div>
+          <div class="arr-sub">GATT 连接，开启 0xFFFE CCCD Notification</div>
+        </div>
+        <div class="seq-note r">§5.2.4</div>
+      </div>
+
+      <div class="phase-row">阶段2 · 握手认证（Msg=0x01）</div>
+      <div class="seq-row">
+        <div class="seq-note"></div>
+        <div class="arr-cell">
+          <div class="arr rtl"><span class="arr-tip trk-pu">◀</span><span class="arr-trk trk-pu"></span><span class="arr-lbl c-pu">Auth Req（GetProcessData APDU）Msg=0x01</span></div>
+          <div class="arr-sub">车端发起，原子操作；Control=0x10（Request+同步）</div>
+        </div>
+        <div class="seq-note r">§7.3.1</div>
+      </div>
+      <div class="seq-row">
+        <div class="seq-note">SE: 生成 RND_ICC<br>计算挑战应答 MAC</div>
+        <div class="arr-cell">
+          <div class="arr"><span class="arr-lbl c-pu">Auth Response（APDU 响应）</span><span class="arr-trk trk-pu"></span><span class="arr-tip trk-pu">▶</span></div>
+          <div class="arr-sub">多轮 APDU 往返，直至双向认证完成，SessionKey 生成</div>
+        </div>
+        <div class="seq-note r">§7.3.1</div>
+      </div>
+      <div class="seq-row">
+        <div class="seq-note"></div>
+        <div class="arr-cell">
+          <div class="arr rtl"><span class="arr-tip trk-tl">◀</span><span class="arr-trk trk-tl"></span><span class="arr-lbl c-tl">Notification 认证结果 Msg=0x03 Cmd=0x02</span></div>
+          <div class="arr-sub">会话建立，SessionKey 生效，Framework 回调通知 App</div>
+        </div>
+        <div class="seq-note r">§7.3.3.2</div>
+      </div>
+
+      <div class="phase-row">阶段3 · 测距定位（Msg=0x02 Cmd=0x01）</div>
+      <div class="seq-row">
+        <div class="seq-note"></div>
+        <div class="arr-cell">
+          <div class="arr rtl"><span class="arr-tip trk-am">◀</span><span class="arr-trk trk-am"></span><span class="arr-lbl c-am">启动定位广播 Msg=0x02 Cmd=0x01</span></div>
+          <div class="arr-sub">Type=RSSI(0x01)；Timeout=广播持续时间 ms</div>
+        </div>
+        <div class="seq-note r">§7.3.2.1</div>
+      </div>
+      <div class="seq-row">
+        <div class="seq-note">100ms 周期广播<br>RPA 地址</div>
+        <div class="arr-cell">
+          <div class="arr"><span class="arr-lbl c-bl">定位 Beacon 广播（持续）</span><span class="arr-trk trk-bl"></span><span class="arr-tip trk-bl">▶</span></div>
+          <div class="arr-sub">各 Anchor 采集 RSSI → 上报主节点 → 卡尔曼滤波 → 融合定位算法 → 区域判断</div>
+        </div>
+        <div class="seq-note r">§5.3</div>
+      </div>
+
+      <div class="phase-row">阶段4 · 防中继判断（Msg=0x02 Cmd=0x02）—— PEPS 必须</div>
+      <div class="seq-row">
+        <div class="seq-note"></div>
+        <div class="arr-cell">
+          <div class="arr rtl"><span class="arr-tip trk-rd">◀</span><span class="arr-trk trk-rd"></span><span class="arr-lbl c-rd">防中继指令 Msg=0x02 Cmd=0x02</span></div>
+          <div class="arr-sub">携带测距类别 + 车辆辅助信息</div>
+        </div>
+        <div class="seq-note r">§7.3.2.2</div>
+      </div>
+      <div class="seq-row">
+        <div class="seq-note">运行防中继算法<br>（RTT检测/传感器融合）</div>
+        <div class="arr-cell">
+          <div class="arr"><span class="arr-lbl c-tl">防中继响应（校验结果 0x02=安全）</span><span class="arr-trk trk-tl"></span><span class="arr-tip trk-tl">▶</span></div>
+          <div class="arr-sub">0x01=有风险中止 | 0x02=安全继续 | 0x03=数据不足继续采集</div>
+        </div>
+        <div class="seq-note r">§7.3.2.2</div>
+      </div>
+
+      <div class="phase-row">阶段5 · 执行车控 · 解锁</div>
+      <div class="seq-row">
+        <div class="seq-note"></div>
+        <div class="arr-cell">
+          <div class="arr rtl"><span class="arr-tip trk-tl">◀</span><span class="arr-trk trk-tl"></span><span class="arr-lbl c-tl">Notification 已解锁 Msg=0x03 Cmd=0x02（可选）</span></div>
+          <div class="arr-sub">DK 系统 → 整车控制 → 解锁；总响应时延 ≤1s（§6.2.2d）</div>
+        </div>
+        <div class="seq-note r">§5.4 Step6</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TAB 2：ICCOA 方案 ══════════ -->
+<div class="panel" id="p2">
+
+  <div class="sec">
+    <div class="sec-lbl">SECTION 06</div>
+    <div class="sec-title">ICCOA 无感解锁完整方案</div>
+    <div class="sec-desc">ICCOA（智慧车联开放联盟，小米/OPPO/vivo 主导）的核心优势在于：手机系统级保活能力标准化 + SDK 一次对接 + 统一 BLE 定位精度要求。认证采用非对称加密，安全性更高但实现更复杂。</div>
+
+    <div class="info note">
+      <span class="info-ico">ℹ</span>
+      <span><b>ICCOA DK 2.0（2023.9 发布）</b>是 ICCOA 的最新数字车钥匙标准，引入了更完善的安全体系，包括非对称密钥认证和 UWB 安全测距支持，向 CCC R3 靠拢。以下描述基于 DK 2.0 方案。</span>
+    </div>
+
+    <!-- ICCOA 三大特色 -->
+    <div class="g3" style="margin-bottom:24px">
+      <div class="card c-orange">
+        <div class="card-t">🔑 非对称密钥认证（更安全）</div>
+        <div class="card-b">
+          类似 CCC 的 ECDSA 非对称加密。车辆和手机各持公私钥对，认证时只需验证签名，<b>密钥无需共享</b>，换手机或分享钥匙时安全性更高。但实现复杂度远高于 ICCE 对称方案，对接成本更大。
+        </div>
+      </div>
+      <div class="card c-blue">
+        <div class="card-t">📱 系统级保活（体验更一致）</div>
+        <div class="card-b">
+          ICCOA 的核心差异化：手机厂商在操作系统层面为数字车钥匙 BLE 扫描开放特权 API，<b>保证息屏/锁屏下后台扫描稳定性</b>，统一各品牌手机的无感解锁响应速度。这是纯应用层方案无法做到的。
+        </div>
+      </div>
+      <div class="card c-teal">
+        <div class="card-t">📦 SDK 一次对接</div>
+        <div class="card-b">
+          联盟内提供标准化 SDK，车企<b>一次对接即可兼容多个品牌手机</b>（小米/OPPO/vivo 等），无需针对每个手机厂商单独开发和维护，大幅降低车端集成工作量。
+        </div>
+      </div>
+    </div>
+
+    <!-- ICCOA 流程 -->
+    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px">ICCOA 无感解锁完整流程</div>
+    <div class="steps-flow">
+      <div class="step-item">
+        <div class="step-num sn-orange">S1</div>
+        <div class="step-body">
+          <div class="step-title">系统级 BLE 保活扫描（ICCOA 核心优势）</div>
+          <div class="step-desc">ICCOA 要求手机厂商在操作系统层面为数字车钥匙 BLE 服务提供保活白名单，即使在息屏、锁屏、低电量模式下，BLE 后台扫描不被系统杀死，广播频率保持稳定。<br><br>
+          小米通过 MIUI 系统级接口开放了后台 BLE 扫描权限，OPPO 通过 ColorOS 的智能保活机制，vivo 通过 OriginOS 的后台任务策略，各品牌手机均在系统层统一了 BLE 保活行为。<br><br>
+          这解决了 Android 生态碎片化导致的"不同手机无感体验差异大"的行业痛点。</div>
+          <div class="step-note note-blue">💡 ICCOA 强调：统一蓝牙定位精准度要求 + 系统级拉活保活 = 更好更一致的无感体验</div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num sn-blue">S2</div>
+        <div class="step-body">
+          <div class="step-title">BLE 连接建立 · 非对称密钥认证</div>
+          <div class="step-desc">手机发现车辆广播后建立 BLE 连接，进入认证流程：<br><br>
+          <b>ICCOA DK 2.0 认证流程（类 CCC）：</b><br>
+          1. <b>车辆发起 SELECT 请求</b>，手机返回支持的协议版本<br>
+          2. <b>密钥协商（ECDH）</b>：双端交换公钥，建立临时会话密钥（TK）<br>
+          3. <b>车辆用私钥签名</b>，手机用车辆公钥验签（车端认证）<br>
+          4. <b>手机用私钥签名</b>，车辆用手机公钥验签（手机端认证）<br>
+          5. <b>建立安全通道</b>：基于 TK 加密后续所有通信<br><br>
+          相比 ICCE 对称方案，非对称认证每次认证都可验证对方真实身份，不依赖预共享密钥，更适合多车多钥匙场景。</div>
+          <div class="step-note note-orange">⚠️ 换手机时需重新完成配对授权流程，这是 ICCOA 体验相对 ICCE 的主要劣势</div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num sn-amber">S3</div>
+        <div class="step-body">
+          <div class="step-title">统一 BLE 定位精度要求</div>
+          <div class="step-desc">ICCOA 明确要求了 BLE 定位精准度指标，并规定了定位算法需达到的最低精度（解锁区域判断误差 &lt;0.5m）。这要求：<br><br>
+          · <b>多 Anchor 布局标准化</b>：车端至少配置标准位置的多个 BLE 辅节点<br>
+          · <b>手机标定数据</b>：手机需提交自身 BLE 天线特性（方向性、增益差异），供车端算法做补偿<br>
+          · <b>算法标准化</b>：联盟提供参考定位算法（多传感器融合、RSSI 滤波）<br>
+          · <b>测试认证要求</b>：入网前需通过联盟组织的 BLE 定位精度测试</div>
+          <div class="step-note note-amber">📍 不同品牌手机的 BLE 天线方向图差异较大，统一校准标准是提升精度的关键</div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num sn-red">S4</div>
+        <div class="step-body">
+          <div class="step-title">防中继判断 + UWB 安全测距（DK 2.0）</div>
+          <div class="step-desc">ICCOA DK 2.0 新增 UWB 安全测距支持：<br><br>
+          <b>纯 BLE 模式（基础）：</b>信号延迟检测 + 多传感器辅助，防中继能力有限<br><br>
+          <b>BLE+UWB 模式（DK 2.0）：</b><br>
+          · BLE 负责连接维持和身份认证<br>
+          · 当手机进入 UWB 测距范围（约 10~15m），切换启动 UWB 安全测距<br>
+          · UWB 使用<b>安全时间戳（STS）</b>加密飞行时间（ToF）数据<br>
+          · 中继攻击无法伪造物理信号传播时延，UWB 能直接从物理层识别中继<br>
+          · 精度达到 ±10~20cm，直接判定手机精确位置</div>
+          <div class="step-note note-red">⚠️ UWB 功耗较高，不能持续开启；通常由 BLE 触发，仅在靠近时激活 UWB</div>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-num sn-green">S5</div>
+        <div class="step-body">
+          <div class="step-title">触发解锁 + 反馈</div>
+          <div class="step-desc">条件满足（连接正常 + 认证通过 + 区域确认 + 防中继通过）后，DK 认证系统指令整车控制执行解锁。<br><br>
+          ICCOA 方案中，手机端 App 可通过系统级回调获得解锁结果，并在手机上展示精美的解锁动画和迎宾欢迎页面，提升体验感知。<br><br>
+          小米数字钥匙团队指出，通过 ICCOA 系统级接口解决了原有的蓝牙无感连接问题和账号关联问题，简化了开通和分享流程。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TAB 3：定位技术 ══════════ -->
+<div class="panel" id="p3">
+
+  <div class="sec">
+    <div class="sec-lbl">SECTION 07</div>
+    <div class="sec-title">定位技术原理详解</div>
+
+    <div class="g2" style="margin-bottom:24px">
+      <div class="card c-blue">
+        <div class="card-t">📶 RSSI 定位原理</div>
+        <div class="card-b">
+          RSSI（Received Signal Strength Indicator）接收信号强度指示，是目前 BLE 数字钥匙最主流的定位方式。<br><br>
+          <b>基本公式（自由空间路径损耗模型）：</b><br>
+          <code>RSSI = TxPower - 10n·log₁₀(d) - X_σ</code><br>
+          其中 n 为路径损耗指数（自由空间=2，室内=2.5~4），d 为距离，X_σ 为正态分布噪声。<br><br>
+          <b>挑战：</b>蓝牙信号 2.4GHz，多径效应、人体遮挡（约 3~5dBm 衰减）、金属反射均会导致 RSSI 抖动，近距离（&lt;1m）线性度差。因此需要滤波算法平滑。
+        </div>
+      </div>
+      <div class="card c-teal">
+        <div class="card-t">📡 UWB ToF 测距原理</div>
+        <div class="card-b">
+          UWB（Ultra-Wideband）使用 3.1~10.6GHz 超宽带信号，通过飞行时间（ToF）计算距离：<br><br>
+          <b>SDS-TWR（对称双边双程测距）：</b><br>
+          <code>ToF = (T₁-T₀-T_reply) / 2</code><br>
+          <code>distance = ToF × c（光速 3×10⁸ m/s）</code><br><br>
+          UWB 时间分辨率达纳秒级（1ns = 30cm），理论精度可达厘米级。关键是使用<b>安全时间戳（STS）</b>加密 ToF 数据包，中继设备无法伪造物理传播延迟，从根本上防御中继攻击。<br><br>
+          <b>挑战：</b>功耗高（比 BLE 高 10~100x），需要专用 UWB 芯片（成本 >200 元/套），多径问题需算法优化。
+        </div>
+      </div>
+    </div>
+
+    <div class="g2">
+      <div class="card c-purple">
+        <div class="card-t">🧭 AoA/AoD 到达角定位</div>
+        <div class="card-b">
+          BLE 5.1 引入的方向测量特性（Direction Finding）。<br><br>
+          <b>AoA（Angle of Arrival）：</b>接收端配备天线阵列，通过测量不同天线间的信号相位差（Δφ），计算信号到达角度，结合 RSSI 距离估算，实现 2D/3D 定位。<br><br>
+          <b>AoD（Angle of Departure）：</b>发送端配备天线阵列，按时序切换天线发射，接收端单天线通过相位差算方位角。<br><br>
+          AoA/AoD 可将定位精度提升至 ±5~20cm，但需要车端 BLE 模块支持天线阵列（成本 +50~100 元/Anchor），适合中高端车型。
+        </div>
+      </div>
+      <div class="card c-amber">
+        <div class="card-t">🔄 多传感器融合算法</div>
+        <div class="card-b">
+          业界实践（如为辰信安 deCORE Link）将多源数据融合：<br><br>
+          <b>输入：</b>各 Anchor RSSI 序列 + 手机加速度计（IMU）+ 陀螺仪 + 气压计（楼层判断）<br><br>
+          <b>算法栈：</b><br>
+          ① 卡尔曼滤波 / 粒子滤波 → RSSI 平滑<br>
+          ② 行人航迹推算（PDR）→ IMU 辅助位移估算<br>
+          ③ 加权最小二乘 / 贝叶斯融合 → 多 Anchor 联合定位<br>
+          ④ HMM 状态机 → 区域状态平滑（防止区域频繁抖动）<br><br>
+          目标：即使 RSSI 波动 ±6dBm，区域判断依然稳定，误判率 &lt;1%。
+        </div>
+      </div>
+    </div>
+
+    <hr class="div">
+
+    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px">定位技术横向对比</div>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>技术</th><th>原理</th><th>精度</th><th>成本</th><th>防中继</th><th>适用场景</th></tr></thead>
+        <tbody>
+          <tr><td><b>RSSI 多锚点</b></td><td>信号强度 + 路径损耗模型</td><td>±50cm~1m</td><td>低</td><td>算法层，有限</td><td>主流量产车型基础方案</td></tr>
+          <tr><td><b>RSSI + IMU 融合</b></td><td>RSSI + 加速度/陀螺仪</td><td>±20~50cm</td><td>低（纯软件）</td><td>略有提升</td><td>软件升级增强，无需硬件改动</td></tr>
+          <tr><td><b>AoA/AoD（BLE 5.1）</b></td><td>天线阵列相位差测角</td><td>±5~20cm</td><td>中（天线阵列）</td><td>算法层</td><td>中高端 BLE 方案</td></tr>
+          <tr><td><b>HADM（高精度）</b></td><td>BLE 相位差距离测量</td><td>±20cm</td><td>中</td><td>算法层</td><td>ICCE 规范支持，新兴方案</td></tr>
+          <tr><td><b>UWB ToF（TWR）</b></td><td>飞行时间 × 光速</td><td>±10~20cm</td><td>高（专用芯片）</td><td>✅ 物理层 STS</td><td>旗舰车型，问界M9/蔚来ET7</td></tr>
+          <tr><td><b>UWB AoA</b></td><td>ToF + 天线阵列到达角</td><td>±5~10cm</td><td>高</td><td>✅ 最强</td><td>宝马、奔驰高端车型</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="info warn" style="margin-top:12px">
+      <span class="info-ico">⚠</span>
+      <span><b>行业痛点：</b>BLE RSSI 方案的精度受手机天线方向性影响极大——手机拿在手上（解锁距离约 3m）与放在口袋（解锁距离约 1m）相差悬殊。ICCOA 通过统一手机标定数据规范，ICCE 通过厂商各自适配，都在努力解决这个问题。目前业界最好的 BLE 方案精度在 ±20cm（使用 RSSI+IMU 融合），而 UWB 可稳定达到 ±10cm。</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TAB 4：安全防中继 ══════════ -->
+<div class="panel" id="p4">
+  <div class="sec">
+    <div class="sec-lbl">SECTION 08</div>
+    <div class="sec-title">防中继攻击完整方案</div>
+    <div class="sec-desc">中继攻击（Relay Attack）是无感解锁面临的最核心安全威胁。攻击者在车主和车辆之间插入两台信号转发设备，放大信号欺骗车辆以为车主就在附近，10秒内即可无声解锁并驶走车辆。</div>
+
+    <div class="info danger">
+      <span class="info-ico">🚨</span>
+      <span><b>真实案例：</b>2022 年安全研究员公开展示对特斯拉 Model 3/Y 发起 BLE 中继攻击，10 秒内解锁并启动。2020 年极客大赛选手发现某款数字钥匙通过绕开 APP 与车辆 BLE 通讯中的验证机制，无需钥匙即可解锁汽车。国内对超过 10 款热门车型调研，部分存在定位精度不足、防中继缺失等问题。</span>
+    </div>
+
+    <hr class="div">
+
+    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px">中继攻击原理</div>
+    <div class="card" style="margin-bottom:20px">
+      <svg viewBox="0 0 800 130" xmlns="http://www.w3.org/2000/svg" font-family="'Noto Sans SC', sans-serif" style="width:100%;height:auto">
+        <!-- 手机（远处） -->
+        <rect x="30" y="40" width="60" height="80" rx="6" fill="#eff4ff" stroke="#bfcffd" stroke-width="1.5"/>
+        <text x="60" y="75" text-anchor="middle" font-size="18">📱</text>
+        <text x="60" y="100" text-anchor="middle" fill="#1d57c9" font-size="9" font-weight="600">车主手机</text>
+        <text x="60" y="112" text-anchor="middle" fill="#998b7a" font-size="8">（100m 外）</text>
+        <!-- 攻击设备1 -->
+        <rect x="180" y="50" width="70" height="60" rx="5" fill="#fff1f1" stroke="#fbb4b4" stroke-width="1.5"/>
+        <text x="215" y="82" text-anchor="middle" font-size="14">📡</text>
+        <text x="215" y="100" text-anchor="middle" fill="#c0292a" font-size="8" font-weight="600">攻击设备A</text>
+        <text x="215" y="110" text-anchor="middle" fill="#998b7a" font-size="7">（贴近手机）</text>
+        <!-- 攻击设备2 -->
+        <rect x="540" y="50" width="70" height="60" rx="5" fill="#fff1f1" stroke="#fbb4b4" stroke-width="1.5"/>
+        <text x="575" y="82" text-anchor="middle" font-size="14">📡</text>
+        <text x="575" y="100" text-anchor="middle" fill="#c0292a" font-size="8" font-weight="600">攻击设备B</text>
+        <text x="575" y="110" text-anchor="middle" fill="#998b7a" font-size="7">（贴近车辆）</text>
+        <!-- 车辆 -->
+        <rect x="690" y="40" width="80" height="80" rx="6" fill="#edfcf8" stroke="#86e8d6" stroke-width="1.5"/>
+        <text x="730" y="80" text-anchor="middle" font-size="20">🚗</text>
+        <text x="730" y="100" text-anchor="middle" fill="#0a7c6e" font-size="9" font-weight="600">车辆</text>
+        <!-- 箭头 -->
+        <path d="M95 80 L175 80" stroke="#c0292a" stroke-width="2" marker-end="url(#a1)"/>
+        <path d="M255 80 L535 80" stroke="#c0292a" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#a1)"/>
+        <path d="M615 80 L685 80" stroke="#c0292a" stroke-width="2" marker-end="url(#a1)"/>
+        <defs><marker id="a1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#c0292a"/></marker></defs>
+        <text x="135" y="70" text-anchor="middle" fill="#c0292a" font-size="8">BLE 截获</text>
+        <text x="395" y="70" text-anchor="middle" fill="#c0292a" font-size="8">有线/无线转发（延迟极小）</text>
+        <text x="650" y="70" text-anchor="middle" fill="#c0292a" font-size="8">伪造距离</text>
+        <text x="400" y="20" text-anchor="middle" fill="#27211a" font-size="11" font-weight="600">中继攻击原理：攻击者A贴近车主手机截获BLE信号，通过有线转发给B，B在车辆旁边重放，欺骗车辆以为车主就在附近</text>
+      </svg>
+    </div>
+
+    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px">防中继技术方案对比</div>
+    <div class="g2" style="margin-bottom:20px">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">
+          <span class="bdg bdg-blue">BLE 防中继方案</span>（ICCE/ICCOA 基础方案）
+        </div>
+        <div class="steps-flow" style="gap:0">
+          <div class="step-item">
+            <div class="step-num sn-blue" style="width:36px;height:36px;font-size:11px;margin-top:4px">①</div>
+            <div class="step-body" style="padding-bottom:16px">
+              <div class="step-title" style="font-size:12px">RTT 信号延迟检测</div>
+              <div class="step-desc" style="font-size:11.5px">正常 BLE 往返延时 &lt;5ms；中继攻击引入的硬件延迟通常 &gt;15~30ms。通过测量多次 BLE 指令的 RTT，若连续多次超过阈值则判定为中继。<br><b>局限</b>：高性能中继设备可将延迟压缩到 3~5ms，规避检测。</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num sn-teal" style="width:36px;height:36px;font-size:11px;margin-top:4px">②</div>
+            <div class="step-body" style="padding-bottom:16px">
+              <div class="step-title" style="font-size:12px">多 Anchor RSSI 一致性验证</div>
+              <div class="step-desc" style="font-size:11.5px">真实手机靠近时，各 Anchor 的 RSSI 变化应符合物理规律（近的 Anchor 信号更强、梯度一致）。中继攻击时，各 Anchor 收到的信号强度分布异常（被单点转发，各方向强度相近甚至均匀）。</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num sn-purple" style="width:36px;height:36px;font-size:11px;margin-top:4px">③</div>
+            <div class="step-body" style="padding-bottom:0">
+              <div class="step-title" style="font-size:12px">手机 IMU 传感器融合</div>
+              <div class="step-desc" style="font-size:11.5px">ICCOA 统一接入加速度计/陀螺仪数据：若手机加速度传感器显示手机静止（例如放在家里），而 RSSI 却显示手机在车辆附近，则判定为中继。<br><b>局限</b>：若攻击者同步移动，传感器无法区分。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">
+          <span class="bdg bdg-tl">UWB 防中继方案</span>（ICCE UWB / ICCOA DK 2.0 / CCC R3）
+        </div>
+        <div class="steps-flow" style="gap:0">
+          <div class="step-item">
+            <div class="step-num sn-teal" style="width:36px;height:36px;font-size:11px;margin-top:4px">①</div>
+            <div class="step-body" style="padding-bottom:16px">
+              <div class="step-title" style="font-size:12px">安全时间戳 STS 加密</div>
+              <div class="step-desc" style="font-size:11.5px">UWB 使用安全时间戳（Scrambled Timestamp Sequence, STS）对飞行时间数据包进行加密。攻击者在中继过程中无法在不引入延迟的前提下解密并重新构造 STS，物理上无法伪造飞行时间。</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num sn-teal" style="width:36px;height:36px;font-size:11px;margin-top:4px">②</div>
+            <div class="step-body" style="padding-bottom:16px">
+              <div class="step-title" style="font-size:12px">ToF 物理距离绑定</div>
+              <div class="step-desc" style="font-size:11.5px">UWB 测距基于电磁波传播速度（3×10⁸ m/s）。中继设备转发信号必然引入额外的处理延迟，哪怕只有 1ns 的额外延迟也等于 30cm 的测距误差，车辆据此判断距离不符拒绝授权。</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num sn-green" style="width:36px;height:36px;font-size:11px;margin-top:4px">③</div>
+            <div class="step-body" style="padding-bottom:0">
+              <div class="step-title" style="font-size:12px">BLE+UWB 联合验证</div>
+              <div class="step-desc" style="font-size:11.5px">BLE 负责身份认证和会话建立，UWB 负责精确距离验证。两种技术在不同频段工作，攻击者需要同时欺骗两种信号，难度极大。BLE 认证通过后，再用 UWB 验证距离，双重保障。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>方案</th><th>防护效果</th><th>成本影响</th><th>ICCE 支持</th><th>ICCOA 支持</th><th>备注</th></tr></thead>
+        <tbody>
+          <tr><td>RTT 延迟检测</td><td><span class="bdg bdg-am">一般</span></td><td>无额外成本</td><td>✅ 规范要求</td><td>✅</td><td>高性能中继可规避</td></tr>
+          <tr><td>多 Anchor RSSI 一致性</td><td><span class="bdg bdg-am">中等</span></td><td>需多 Anchor 布局</td><td>✅</td><td>✅</td><td>需 3+ Anchor 才有效</td></tr>
+          <tr><td>IMU 传感器融合</td><td><span class="bdg bdg-am">中等</span></td><td>无额外成本</td><td>各厂商实现</td><td>✅ 规范统一</td><td>ICCOA 强制要求</td></tr>
+          <tr><td>UWB STS 安全时间戳</td><td><span class="bdg bdg-tl">极强</span></td><td>UWB 芯片 >200元/套</td><td>✅ BLE+UWB 方案</td><td>✅ DK 2.0 新增</td><td>物理层防护，最彻底</td></tr>
+          <tr><td>BLE+UWB 联合</td><td><span class="bdg bdg-tl">最强</span></td><td>UWB 硬件成本</td><td>✅ 问界M9等</td><td>✅ DK 2.0</td><td>双重独立验证</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TAB 5：工程挑战 ══════════ -->
+<div class="panel" id="p5">
+  <div class="sec">
+    <div class="sec-lbl">SECTION 09</div>
+    <div class="sec-title">工程挑战与实现要点</div>
+
+    <div class="g2" style="margin-bottom:24px">
+      <div class="card c-red">
+        <div class="card-t">📱 最大挑战：Android 后台保活</div>
+        <div class="card-b">
+          BLE 后台扫描是无感解锁的生命线。Android 系统的电量优化会随机终止后台任务，不同 OEM 对 BLE 后台行为限制差异极大：<br><br>
+          · 某些品牌熄屏 10s 后停止 BLE 扫描<br>
+          · 息屏后广播发送功率降低<br>
+          · 低电量模式下 BLE 服务被杀死<br><br>
+          <b>ICCE 解决方案：</b>各手机厂商自行处理，依赖 ForegroundService + WakeLock + 华为/小米等各自系统级白名单<br><br>
+          <b>ICCOA 解决方案：</b>联盟层面统一规范，手机厂商在系统层为联盟认证的数字钥匙 App 开放保活白名单 API，这是 ICCOA 的核心竞争力
+        </div>
+      </div>
+      <div class="card c-amber">
+        <div class="card-t">📡 定位精度挑战：手机差异</div>
+        <div class="card-b">
+          不同品牌/型号手机的 BLE 天线设计差异极大：<br><br>
+          · 天线位置（手机顶部/底部/背面）<br>
+          · 天线增益方向图（前向/侧向差异 &gt;6dBm）<br>
+          · 发射功率一致性（同款设备波动要求 ≤±2dB）<br>
+          · 手机握持方式（手持/口袋/包内）导致遮挡<br><br>
+          <b>实测数据：</b>手机拿在手上解锁距离约 3m，放口袋约 1m，差异 3 倍！<br><br>
+          <b>解决方案：</b>建立手机型号标定数据库，车端算法根据连接手机型号自动加载对应的补偿参数（ICCOA 标准化要求）
+        </div>
+      </div>
+      <div class="card c-blue">
+        <div class="card-t">⚡ 功耗优化挑战</div>
+        <div class="card-b">
+          持续 BLE 扫描和广播是高功耗行为：<br><br>
+          · 手机侧：持续 BLE 扫描约消耗 20~50mA<br>
+          · 车端侧：24h 持续广播对车辆静止待机功耗影响显著<br><br>
+          <b>优化策略：</b><br>
+          · <b>动态广播间隔</b>：无手机连接 24h 后，车辆降低广播频率<br>
+          · <b>分级扫描</b>：手机先低频扫描（500ms），发现特征后切换高频（100ms）<br>
+          · <b>定位广播降频</b>：手机停止运动后通过 Notification(0x03, 0x01, Event=0x04) 通知车辆降频<br>
+          · <b>UWB 按需激活</b>：仅当手机进入 10~15m 范围时才激活 UWB 测距
+        </div>
+      </div>
+      <div class="card c-purple">
+        <div class="card-t">🔄 多手机/多车竞争问题</div>
+        <div class="card-b">
+          实际场景复杂：<br><br>
+          · 停车场多辆车同时广播，手机需快速过滤目标车辆<br>
+          · 同一辆车可能有多把数字钥匙（车主+家人）同时在附近<br>
+          · 车主同时持有多辆车的数字钥匙<br><br>
+          <b>解决方案：</b><br>
+          · 广播过滤：基于 VIN 码衍生的设备名过滤，不同车辆的广播包唯一<br>
+          · 优先级策略：车主钥匙 &gt; 借车人钥匙；距离最近的手机优先<br>
+          · ICCE 要求车辆具备区分不同车控指令优先级的能力（§6.2.1 条k）<br>
+          · 手机侧具备同时接收多辆车广播时的连接控制能力（§6.1 条j）
+        </div>
+      </div>
+    </div>
+
+    <hr class="div">
+
+    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px">车端 BLE Anchor 布局方案</div>
+    <div class="g3" style="margin-bottom:20px">
+      <div class="card">
+        <div class="card-t" style="color:var(--teal)">1+3 基础方案</div>
+        <div class="card-b" style="font-size:11.5px">
+          主节点（车内中控）+ 3 辅节点（主驾门柱/副驾门柱/后备箱）<br><br>
+          适合经济型车型，可基本实现车外/车内区分和前后门判断。成本最低，定位精度 ±50cm~1m。
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-t" style="color:var(--blue)">1+5 标准方案</div>
+        <div class="card-b" style="font-size:11.5px">
+          主节点（车内）+ 5 辅节点（主驾门/副驾门/左后门/右后门/后备箱）<br><br>
+          可区分车身四个区域，实现分区域授权（主驾解锁前门/后备箱感应开启）。定位精度 ±20~30cm。握奇方案实测精度 ±20cm。
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-t" style="color:var(--purple)">1+6 豪华方案</div>
+        <div class="card-b" style="font-size:11.5px">
+          主节点 + 6 辅节点（四门 + 后备箱 + 车内顶部）<br><br>
+          车内 Anchor 可精确判断手机在驾驶位/副驾/后排，用于启动权限区分和车内活体检测联动（叠加 UWB）。定位精度 ±10~20cm。
+        </div>
+      </div>
+    </div>
+
+    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px">关键算法伪代码：RSSI 区域判断状态机</div>
+    <div class="code">
+      <span class="lang">Python 伪码</span>
+<span class="kw">class</span> <span class="fn">PEPSZoneDetector</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        self.state = <span class="str">"FAR"</span>           <span class="cm"># 状态：FAR/APPROACH/UNLOCK_ZONE/INSIDE</span>
+        self.anchor_filters = {}    <span class="cm"># 每个 Anchor 的卡尔曼滤波器</span>
+        self.history = []           <span class="cm"># 状态历史（防抖动）</span>
+        self.HYSTERESIS = <span class="nm">3</span>         <span class="cm"># 滞后样本数（防区域反复横跳）</span>
+
+    <span class="kw">def</span> <span class="fn">update</span>(self, anchor_rssi_map: dict) -> str:
+        <span class="cm"># Step1: 对每个 Anchor RSSI 做卡尔曼滤波</span>
+        filtered = {}
+        <span class="kw">for</span> anchor_id, rssi <span class="kw">in</span> anchor_rssi_map.items():
+            filtered[anchor_id] = self.anchor_filters[anchor_id].<span class="fn">update</span>(rssi)
+
+        <span class="cm"># Step2: 路径损耗模型转距离（针对每个 Anchor）</span>
+        distances = {
+            aid: <span class="fn">rssi_to_distance</span>(rssi, phone_model=self.phone_model)
+            <span class="kw">for</span> aid, rssi <span class="kw">in</span> filtered.items()
+        }
+
+        <span class="cm"># Step3: 加权质心算法得到手机位置</span>
+        position = <span class="fn">weighted_centroid</span>(distances, anchor_positions=ANCHOR_MAP)
+
+        <span class="cm"># Step4: 判断所在区域</span>
+        raw_zone = <span class="fn">classify_zone</span>(position)
+        <span class="cm"># INSIDE: 所有 Anchor RSSI > -65dBm</span>
+        <span class="cm"># UNLOCK_ZONE: 最近 Anchor RSSI > -75dBm，距离 < 1.5m</span>
+        <span class="cm"># APPROACH: 任意 Anchor RSSI > -85dBm，距离 < 10m</span>
+        <span class="cm"># FAR: 其他</span>
+
+        <span class="cm"># Step5: 滞后滤波，防止区域频繁抖动</span>
+        self.history.<span class="fn">append</span>(raw_zone)
+        <span class="kw">if</span> len(self.history) > self.HYSTERESIS:
+            self.history.<span class="fn">pop</span>(<span class="nm">0</span>)
+
+        <span class="cm"># 只有连续 N 次相同区域才切换状态</span>
+        <span class="kw">if</span> all(z == self.history[<span class="nm">0</span>] <span class="kw">for</span> z <span class="kw">in</span> self.history):
+            self.state = self.history[<span class="nm">0</span>]
+
+        <span class="kw">return</span> self.state
+
+    <span class="kw">def</span> <span class="fn">should_unlock</span>(self) -> bool:
+        <span class="kw">return</span> (self.state == <span class="str">"UNLOCK_ZONE"</span> <span class="kw">and</span>
+                self.<span class="fn">relay_check_passed</span>() <span class="kw">and</span>
+                self.<span class="fn">auth_valid</span>())
+    </div>
+
+    <hr class="div">
+
+    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px">性能指标要求与工程指标</div>
+    <div class="perf-g">
+      <div class="perf-card"><div class="perf-l">PEPS 响应时延</div><div class="perf-v">≤1s</div><div class="perf-u">BLE已连，ICCE §6.2.2d</div></div>
+      <div class="perf-card"><div class="perf-l">RKE 响应时延</div><div class="perf-v">≤1.5s</div><div class="perf-u">ICCE §6.2.2e</div></div>
+      <div class="perf-card"><div class="perf-l">BLE 定位精度</div><div class="perf-v">±20cm</div><div class="perf-u">1+5 方案，握奇实测</div></div>
+      <div class="perf-card"><div class="perf-l">UWB 定位精度</div><div class="perf-v">±10cm</div><div class="perf-u">多节点 UWB 方案</div></div>
+      <div class="perf-card"><div class="perf-l">自动解锁区域</div><div class="perf-v">0.5m</div><div class="perf-u">主驾/后备箱参考点</div></div>
+      <div class="perf-card"><div class="perf-l">遥控有效距离</div><div class="perf-v">≥15m</div><div class="perf-u">空旷无盲点</div></div>
+      <div class="perf-card"><div class="perf-l">广播功率稳定性</div><div class="perf-v">±2dB</div><div class="perf-u">同款设备波动</div></div>
+      <div class="perf-card"><div class="perf-l">BLE 连接成功率</div><div class="perf-v">&gt;99%</div><div class="perf-u">工程质量目标</div></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<footer>
+  <span>ICCE/T 001-2021 · ICCOA 蓝牙车钥匙技术标准 DK 2.0 · 综合业界技术资料整理</span>
+  <span>涵盖：华为 ICCE · 小米/OPPO/vivo ICCOA · CCC R3 技术对比</span>
+</footer>
+
+<script>
+function go(n){
+  document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',i===n));
+  document.querySelectorAll('.tab-btn').forEach((t,i)=>t.classList.toggle('active',i===n));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>

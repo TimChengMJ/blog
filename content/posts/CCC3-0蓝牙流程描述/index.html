@@ -1,0 +1,977 @@
+---
+title: "CCC Digital Key R3 — BLE 协议交互设计流程"
+description: ""
+date: 2026-04-09T13:09:59+08:00
+categories: ["技术文档"]
+tags: []
+draft: false
+---
+
+<style>
+
+  :root {
+    --blue-dark:  #0f2a4a;
+    --blue-mid:   #1a4a7a;
+    --blue-main:  #2563a8;
+    --blue-light: #4a90d9;
+    --blue-pale:  #dbeafe;
+    --blue-faint: #eff6ff;
+    --green:      #16a34a;
+    --green-pale: #dcfce7;
+    --amber:      #d97706;
+    --amber-pale: #fef3c7;
+    --red:        #dc2626;
+    --red-pale:   #fee2e2;
+    --purple:     #7c3aed;
+    --purple-pale:#ede9fe;
+    --gray-100:   #f1f5f9;
+    --gray-200:   #e2e8f0;
+    --gray-500:   #64748b;
+    --gray-700:   #334155;
+    --gray-900:   #0f172a;
+    --text:       #1e293b;
+    --mono:       'Courier New', monospace;
+  }/* ── Header ── */
+  .page-header {
+    background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-mid) 60%, var(--blue-main) 100%);
+    color: #fff;
+    padding: 40px 48px 32px;
+  }
+  .page-header .badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+  }
+  .page-header h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .page-header p  { font-size: 14px; opacity: 0.75; }
+  .page-header .meta { display: flex; gap: 24px; margin-top: 20px; }
+  .page-header .meta span {
+    font-size: 12px; opacity: 0.7;
+    border-left: 2px solid rgba(255,255,255,0.3);
+    padding-left: 12px;
+  }
+  .page-header .meta span:first-child { border: none; padding: 0; }
+
+  /* ── Layout ── */
+  .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  /* ── Overview cards ── */
+  .overview { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 40px; }
+  .ov-card {
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 20px 24px;
+    border-left: 4px solid var(--blue-main);
+  }
+  .ov-card h3 { font-size: 13px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .ov-card p  { font-size: 14px; color: var(--text); }
+  .ov-card .ref { font-size: 12px; color: var(--blue-main); margin-top: 6px; font-family: var(--mono); }
+
+  /* ── Phase block ── */
+  .phase {
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 28px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .phase-header {
+    display: flex; align-items: center; gap: 16px;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--gray-200);
+  }
+  .phase-num {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 16px; color: #fff;
+    flex-shrink: 0;
+  }
+  .phase-header .title { flex: 1; }
+  .phase-header .title h2 { font-size: 17px; font-weight: 600; }
+  .phase-header .title p  { font-size: 13px; color: var(--gray-500); margin-top: 2px; }
+  .phase-header .secref {
+    font-size: 11px; font-family: var(--mono);
+    background: var(--gray-100); color: var(--gray-700);
+    padding: 3px 9px; border-radius: 6px;
+  }
+  .phase-/* Phase colors */
+  .c-prep   { background: var(--blue-dark); }
+  .c-gatt   { background: var(--blue-main); }
+  .c-pair   { background: var(--purple); }
+  .c-fa     { background: var(--amber); }
+  .c-apdu   { background: var(--green); }
+  .c-uwb    { background: #0891b2; }
+  .c-ts     { background: #9333ea; }
+  .c-pe     { background: #0f766e; }
+  .c-tx     { background: #be185d; }
+  .c-mgmt   { background: var(--gray-700); }
+
+  /* ── Sequence diagram ── */
+  .seq { width: 100%; margin-bottom: 16px; }
+  .seq-actors {
+    display: grid; gap: 0;
+    border-bottom: 2px solid var(--gray-200);
+    margin-bottom: 0;
+  }
+  .actor {
+    text-align: center; padding: 10px 8px;
+    font-size: 12px; font-weight: 600;
+    background: var(--gray-100);
+    border-right: 1px solid var(--gray-200);
+    letter-spacing: 0.3px;
+  }
+  .actor:last-child { border-right: none; }
+  .actor.device  { background: var(--blue-pale); color: var(--blue-dark); }
+  .actor.vehicle { background: #fef9c3; color: #713f12; }
+  .actor.user    { background: #f0fdf4; color: #14532d; }
+  .actor.ll      { background: var(--gray-100); color: var(--gray-700); }
+
+  /* ── Step table ── */
+  .step-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .step-table thead tr { background: var(--gray-100); }
+  .step-table th {
+    text-align: left; padding: 9px 12px;
+    font-size: 11px; font-weight: 600; color: var(--gray-500);
+    text-transform: uppercase; letter-spacing: 0.4px;
+    border-bottom: 2px solid var(--gray-200);
+  }
+  .step-table td { padding: 9px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: top; }
+  .step-table tr:last-child td { border-bottom: none; }
+  .step-table tr:hover td { background: var(--blue-faint); }
+
+  .step-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--blue-pale); color: var(--blue-main);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+  }
+  .dir-arrow { font-size: 15px; color: var(--gray-500); white-space: nowrap; }
+  .dir-arrow.rq { color: var(--blue-main); }
+  .dir-arrow.rs { color: var(--green); }
+  .dir-arrow.both { color: var(--amber); }
+
+  .cmd {
+    display: inline-block;
+    font-family: var(--mono); font-size: 12px;
+    background: var(--gray-100); color: var(--gray-900);
+    padding: 2px 8px; border-radius: 5px;
+    font-weight: 600;
+  }
+  .msgid {
+    display: inline-block;
+    font-family: var(--mono); font-size: 11px;
+    background: var(--blue-pale); color: var(--blue-dark);
+    padding: 1px 6px; border-radius: 4px;
+  }
+  .ref-tag {
+    display: inline-block;
+    font-size: 11px; font-family: var(--mono);
+    background: #f0f9ff; color: var(--blue-main);
+    border: 1px solid var(--blue-pale);
+    padding: 1px 7px; border-radius: 4px;
+  }
+  .params { font-size: 12px; color: var(--gray-700); line-height: 1.7; }
+  .params code {
+    font-family: var(--mono); font-size: 11px;
+    background: var(--gray-100); color: var(--gray-900);
+    padding: 1px 5px; border-radius: 3px;
+  }
+
+  /* ── Code block ── */
+  .code-block {
+    background: #1e1e2e; color: #cdd6f4;
+    border-radius: 10px; padding: 16px 20px;
+    font-family: var(--mono); font-size: 12px;
+    line-height: 1.8; overflow-x: auto;
+    margin: 12px 0;
+  }
+  .code-block .cm  { color: #6c7086; }
+  .code-block .kw  { color: #cba6f7; }
+  .code-block .val { color: #a6e3a1; }
+  .code-block .str { color: #f9e2af; }
+
+  /* ── Callout ── */
+  .callout {
+    border-radius: 10px; padding: 14px 18px;
+    font-size: 13px; margin: 12px 0;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .callout .icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .callout.info    { background: var(--blue-faint);   border-left: 3px solid var(--blue-main); }
+  .callout.warning { background: var(--amber-pale);   border-left: 3px solid var(--amber); }
+  .callout.danger  { background: var(--red-pale);     border-left: 3px solid var(--red); }
+  .callout.success { background: var(--green-pale);   border-left: 3px solid var(--green); }
+
+  /* ── Full command table ── */
+  .full-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .full-table thead tr { background: var(--blue-dark); color: #fff; }
+  .full-table th {
+    padding: 10px 12px; text-align: left;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+  }
+  .full-table td { padding: 9px 12px; border-bottom: 1px solid var(--gray-200); vertical-align: middle; }
+  .full-table tr:nth-child(even) td { background: var(--gray-100); }
+  .full-table tr:hover td { background: var(--blue-faint); }
+
+  .badge-type {
+    display: inline-block; border-radius: 4px;
+    padding: 2px 8px; font-size: 11px; font-weight: 600;
+  }
+  .bt-framework { background: #dbeafe; color: #1e40af; }
+  .bt-se        { background: #ede9fe; color: #5b21b6; }
+  .bt-uwb       { background: #d1fae5; color: #064e3b; }
+  .bt-supp      { background: #fef3c7; color: #78350f; }
+  .bt-event     { background: #fee2e2; color: #7f1d1d; }
+  .bt-oem       { background: #f1f5f9; color: #334155; }
+  .bt-hu        { background: #fce7f3; color: #831843; }
+
+  /* ── Constraint grid ── */
+  .constraint-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px; margin-top: 12px;
+  }
+  .constraint-card {
+    background: #fff; border: 1px solid var(--gray-200);
+    border-radius: 10px; padding: 14px 16px;
+  }
+  .constraint-card .label { font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.4px; }
+  .constraint-card .value { font-size: 18px; font-weight: 700; color: var(--blue-main); margin: 4px 0 2px; font-family: var(--mono); }
+  .constraint-card .src   { font-size: 11px; color: var(--gray-500); font-family: var(--mono); }
+
+  /* ── Section heading ── */
+  .sec-heading {
+    font-size: 20px; font-weight: 700;
+    color: var(--blue-dark);
+    border-bottom: 2px solid var(--blue-pale);
+    padding-bottom: 8px; margin: 36px 0 20px;
+  }
+  .sec-subheading {
+    font-size: 15px; font-weight: 600;
+    color: var(--blue-mid); margin: 24px 0 12px;
+  }
+
+  /* ── Flow connector ── */
+  .flow-connector {
+    text-align: center; color: var(--gray-500);
+    font-size: 20px; margin: -4px 0;
+    line-height: 1;
+  }
+
+  @media (max-width: 768px) {
+    .overview { grid-template-columns: 1fr; }
+    .constraint-grid { grid-template-columns: 1fr 1fr; }
+    .page-header { padding: 24px 20px; }
+    .container { padding: 20px 16px 48px; }
+  }
+
+</style>
+
+<!-- ═══════════════ HEADER ═══════════════ -->
+<div class="page-header">
+  <div class="badge">CCC-TS-101 v1.0.0</div>
+  <h1>BLE 协议交互设计流程</h1>
+  <p>CCC Digital Key Release 3 — Bluetooth LE Interface 完整实现指南</p>
+  <div class="meta">
+    <span>Chapter 19 — BLE Interface</span>
+    <span>Page 293–376</span>
+    <span>IEEE 802.15.4z | BT Core Spec 5.0+</span>
+    <span>两大场景：Owner Pairing · Passive Entry</span>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ═══════════════ OVERVIEW ═══════════════ -->
+<div class="overview">
+  <div class="ov-card">
+    <h3>场景一：Owner Pairing（首次配对）</h3>
+    <p>车主将手机首次与车辆绑定，建立长期信任关系，完成密钥交换与 UWB 会话初始化。</p>
+    <div class="ref">§19.2.1 · §19.5.1–19.5.4 · §6</div>
+  </div>
+  <div class="ov-card">
+    <h3>场景二：Passive Entry（被动进入）</h3>
+    <p>配对完成后每次接近车辆时执行，利用 RPA 隐私地址重连，经 AUTH0/AUTH1 完成认证后解锁。</p>
+    <div class="ref">§19.2.3 · §19.5.5–19.5.6 · Figure 19-27</div>
+  </div>
+</div>
+
+<!-- ═══════════════ SCENARIO 1: OWNER PAIRING ═══════════════ -->
+<div class="sec-heading">场景一：Owner Pairing 首次配对</div>
+
+<!-- Phase 0 -->
+<div class="phase">
+  <div class="phase-header">
+    <div class="phase-num c-prep">0</div>
+    <div class="title">
+      <h2>广播建立 &amp; 连接</h2>
+      <p>车辆开始广播，手机扫描并建立 LL 连接</p>
+    </div>
+    <span class="secref">§19.2.1.1 · §19.2.1.3 · Figure 19-1</span>
+  </div>
+  <div class="phase-body">
+    <div class="callout info">
+      <span class="icon">ℹ️</span>
+      <div>Owner Pairing 广播仅使用 <strong>Legacy LE 1M PHY</strong>，连接后推荐间隔 <strong>30 ms</strong>。</div>
+    </div>
+    <table class="step-table">
+      <thead><tr>
+        <th>#</th><th>方向</th><th>指令 / 消息</th><th>关键参数</th><th>文档位置</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="step-num">1</span></td>
+          <td><span class="dir-arrow">车辆 LL</span></td>
+          <td><span class="cmd">LE Set Advertising Parameters</span></td>
+          <td class="params">PHY: Legacy LE 1M only<br>Event Type: ADV_IND (Connectable &amp; Scannable)</td>
+          <td><span class="ref-tag">§19.2.1.3 p.297</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">2</span></td>
+          <td><span class="dir-arrow">车辆 LL</span></td>
+          <td><span class="cmd">LE Set Advertising Enable</span></td>
+          <td class="params">—</td>
+          <td><span class="ref-tag">§19.2.1.3</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">3</span></td>
+          <td><span class="dir-arrow rq">车辆 LL → 广播</span></td>
+          <td><span class="cmd">ADV_IND</span></td>
+          <td class="params">
+            <code>UUID=0xFFF5</code> (CCC_DK_UUID)<br>
+            <code>AD Type=0x21</code>, ServiceData UUID=<code>5810bbc0-b499-...</code><br>
+            <code>IntentConfig=0x01</code> (Bit[0]=1: 无车辆主动触发)<br>
+            <code>VehicleMfr=0x0000</code>
+          </td>
+          <td><span class="ref-tag">Table 19-2 p.298</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">4</span></td>
+          <td><span class="dir-arrow">手机 LL</span></td>
+          <td><span class="cmd">LE Set Scan Parameters</span> + <span class="cmd">LE Set Scan Enable</span></td>
+          <td class="params">Passive scan，filter: accept all</td>
+          <td><span class="ref-tag">§19.2.1.1</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">5</span></td>
+          <td><span class="dir-arrow">手机 Host</span></td>
+          <td>检查 CCC_DK_UUID，通知用户，用户输入配对密码</td>
+          <td class="params">Bit[0] of IntentConfig 决定 UI 流程</td>
+          <td><span class="ref-tag">Table 19-3 p.298</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">6</span></td>
+          <td><span class="dir-arrow rq">手机 LL → 车辆</span></td>
+          <td><span class="cmd">CONNECT_IND</span></td>
+          <td class="params">推荐连接间隔: <code>30 ms</code></td>
+          <td><span class="ref-tag">§19.1 · Figure 19-1</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">7</span></td>
+          <td><span class="dir-arrow">双方</span></td>
+          <td><span class="cmd">LE Enhancement Connection Complete</span></td>
+          <td class="params">—</td>
+          <td><span class="ref-tag">§19.2.1.1</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="code-block">
+      <span class="cm">// ADV_IND AdvData 结构示例</span><br>
+      03 03 F5 FF                          <span class="cm">// Length=3, AD Type=0x03 (16-bit UUID), CCC_DK_UUID=0xFFF5</span><br>
+      14 21                                <span class="cm">// Length=0x14, AD Type=0x21 (Service Data 128-bit UUID)</span><br>
+      C0 BB 10 58 99 B4 E9 11 A3 A2 E4 2A DB E2 CE 4    <span class="cm">// CCCServiceDataIntent UUID</span><br>
+      01                                   <span class="cm">// IntentConfiguration = 0x01</span><br>
+      00 00                                <span class="cm">// Vehicle Manufacturer</span>
+    </div>
+  </div>
+</div>
+
+<div class="flow-connector">↓</div>
+
+<!-- Phase 1 -->
+<div class="phase">
+  <div class="phase-header">
+    <div class="phase-num c-gatt">1</div>
+    <div class="title">
+      <h2>GATT 服务发现 + L2CAP 信道建立</h2>
+      <p>发现 DK Service，读取 SPSM，建立 L2CAP CoC 数据信道</p>
+    </div>
+    <span class="secref">§19.2.1.1 · §19.2.1.6–19.2.1.7 · Figure 19-2</span>
+  </div>
+  <div class="phase-body">
+    <table class="step-table">
+      <thead><tr><th>#</th><th>方向</th><th>指令 / 消息</th><th>关键参数</th><th>文档位置</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="step-num">1</span></td>
+          <td><span class="dir-arrow rq">手机 → 车辆</span></td>
+          <td><span class="cmd">ATT_READ_BY_GROUP_TYPE_REQ</span></td>
+          <td class="params">范围 <code>0x0001–0xFFFF</code>，UUID=<code>0x2800</code>（Primary Service）</td>
+          <td><span class="ref-tag">Figure 19-2</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">2</span></td>
+          <td><span class="dir-arrow rs">车辆 → 手机</span></td>
+          <td><span class="cmd">ATT_READ_BY_GROUP_TYPE_RSP</span></td>
+          <td class="params">返回 <code>CCC_DK_UUID</code> 句柄 (e.g. <code>0x000F</code>)</td>
+          <td><span class="ref-tag">Table 19-6 p.300</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">3</span></td>
+          <td><span class="dir-arrow rq">手机 → 车辆</span></td>
+          <td><span class="cmd">ATT_READ_BY_TYPE_REQ</span></td>
+          <td class="params">UUID=<code>D3B5A130-9E23-4B3A-8BE4-6B1EE5F980A3</code> (UUID_SPSM)</td>
+          <td><span class="ref-tag">Table 19-7 p.300</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">4</span></td>
+          <td><span class="dir-arrow rs">车辆 → 手机</span></td>
+          <td><span class="cmd">ATT_READ_BY_TYPE_RSP</span></td>
+          <td class="params">SPSM 值 <code>uint16</code>，范围 <code>0x0080–0x00FF</code></td>
+          <td><span class="ref-tag">Table 19-8 p.300</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">5</span></td>
+          <td><span class="dir-arrow rq">手机 → 车辆</span></td>
+          <td><span class="cmd">L2CAP Credit-based Connection (CoC)</span></td>
+          <td class="params">使用获取的 SPSM 值建立连接导向信道</td>
+          <td><span class="ref-tag">BT Core Vol3 Part A</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="flow-connector">↓</div>
+
+<!-- Phase 2 -->
+<div class="phase">
+  <div class="phase-header">
+    <div class="phase-num c-pair">2</div>
+    <div class="title">
+      <h2>BLE OOB 配对 + 加密建立</h2>
+      <p>SPAKE2+ 密钥已由 NFC 预先交换，此阶段完成 BLE 层安全配对</p>
+    </div>
+    <span class="secref">§19.2.1.2 · §19.5.1 · Figure 19-3, 19-16</span>
+  </div>
+  <div class="phase-body">
+    <div class="callout warning">
+      <span class="icon">⚠️</span>
+      <div><strong>前提：</strong>通过 NFC 完成 SPAKE2+ 交换，已获得 OOB 数据（PKa/PKb, Ca/Cb, ra/rb，Kble_oob_master, IRK, BTAddr）。参见 §19.5.1 / §6。</div>
+    </div>
+    <table class="step-table">
+      <thead><tr><th>#</th><th>方向</th><th>指令 / 消息</th><th>关键参数</th><th>文档位置</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="step-num">1</span></td>
+          <td><span class="dir-arrow rq">手机 → 车辆</span></td>
+          <td><span class="cmd">Pairing Request</span></td>
+          <td class="params"><code>OOB data flag=1</code>, <code>AuthReq=1</code> (Bonding), <code>IO Capability=0x00–0xFF</code></td>
+          <td><span class="ref-tag">Table 19-4 p.298</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">2</span></td>
+          <td><span class="dir-arrow rs">车辆 → 手机</span></td>
+          <td><span class="cmd">Pairing Response</span></td>
+          <td class="params"><code>OOB flag=1</code>, <code>AuthReq=1</code>, <code>MaxKeySize=0x10</code>, <code>InitKeyDist=0xF0</code>, <code>RespKeyDist=0xF0</code></td>
+          <td><span class="ref-tag">Table 19-5 p.299</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">3</span></td>
+          <td><span class="dir-arrow rq">手机 → 车辆</span></td>
+          <td><span class="cmd">Pairing Public Key (PKa)</span></td>
+          <td class="params">256-bit ECDH 公钥</td>
+          <td><span class="ref-tag">Figure 19-3 p.296</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">4</span></td>
+          <td><span class="dir-arrow rs">车辆 → 手机</span></td>
+          <td><span class="cmd">Pairing Public Key (PKb)</span></td>
+          <td class="params">256-bit ECDH 公钥，双方开始 DHKey 计算</td>
+          <td><span class="ref-tag">Figure 19-3</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">5</span></td>
+          <td><span class="dir-arrow">双方</span></td>
+          <td>验证 OOB Confirm 值（Ca / Cb）</td>
+          <td class="params">来自 NFC OOB 信道的确认值，必须匹配</td>
+          <td><span class="ref-tag">§19.2.1.2</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">6</span></td>
+          <td><span class="dir-arrow rq">手机 → 车辆</span></td>
+          <td><span class="cmd">Pairing Random (Na)</span></td>
+          <td class="params">128-bit 随机 nonce</td>
+          <td><span class="ref-tag">Figure 19-3</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">7</span></td>
+          <td><span class="dir-arrow rs">车辆 → 手机</span></td>
+          <td><span class="cmd">Pairing Random (Nb)</span></td>
+          <td class="params">128-bit 随机 nonce</td>
+          <td><span class="ref-tag">Figure 19-3</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">8</span></td>
+          <td><span class="dir-arrow">双方</span></td>
+          <td>计算 <strong>LTK</strong>（长期密钥）</td>
+          <td class="params">DHKey + Na + Nb → LTK，见 BT Core Vol3 Part H §2.3.5.6.5</td>
+          <td><span class="ref-tag">§19.2.1.2</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">9</span></td>
+          <td><span class="dir-arrow rq">手机 → 车辆</span></td>
+          <td><span class="cmd">Pairing DHKey Check (Ea)</span></td>
+          <td class="params">—</td>
+          <td><span class="ref-tag">Figure 19-3</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">10</span></td>
+          <td><span class="dir-arrow rs">车辆 → 手机</span></td>
+          <td><span class="cmd">Pairing DHKey Check (Eb)</span></td>
+          <td class="params">双方验证通过后，配对完成</td>
+          <td><span class="ref-tag">Figure 19-3</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">11</span></td>
+          <td><span class="dir-arrow">手机</span></td>
+          <td><strong>Encryption Enable</strong>（LTK 生效）</td>
+          <td class="params">见 BT Core Vol6 Part D</td>
+          <td><span class="ref-tag">§19.2.1.2</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">12</span></td>
+          <td><span class="dir-arrow">双方</span></td>
+          <td>加入对方到 <strong>Resolving List</strong>（RPA 解析）</td>
+          <td class="params">交换 IRK（Identity Resolving Key），Vol6 Part B §4.7</td>
+          <td><span class="ref-tag">§19.2.1.2</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout danger">
+      <span class="icon">🔒</span>
+      <div><strong>加密规则：</strong>手机必须在 L2CAP 连接之前完成加密（Owner Pairing &amp; First Approach 例外）。若 5 秒内未收到 <code>First_Approach_RQ</code> 或 <code>Request_owner_pairing</code>，车辆强制断开。来源：§19.2.1.2</div>
+    </div>
+  </div>
+</div>
+
+<div class="flow-connector">↓</div>
+
+<!-- Phase 3: First Approach -->
+<div class="phase">
+  <div class="phase-header">
+    <div class="phase-num c-fa">3</div>
+    <div class="title">
+      <h2>First Approach — OOB 数据交换</h2>
+      <p>通过 BLE 加密信道交换 BLE Secure OOB 配对数据，完成身份绑定</p>
+    </div>
+    <span class="secref">§19.3.4 · Table 19-44~47 · p.317</span>
+  </div>
+  <div class="phase-body">
+    <table class="step-table">
+      <thead><tr><th>#</th><th>方向</th><th>消息名称</th><th>Message ID</th><th>关键参数</th><th>文档位置</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="step-num">1</span></td>
+          <td><span class="dir-arrow rq">手机 → 车辆</span></td>
+          <td><span class="cmd">First_Approach_RQ</span></td>
+          <td><span class="msgid">0x0E</span></td>
+          <td class="params">
+            <code>E1_Payload</code> (8B): AES-128-CCM(Kble_intro, DK_Identifier)<br>
+            <code>IV1</code> (8B), <code>Tag1</code> (4B)<br>
+            <code>E2_Payload</code> (38B): AES-128-CCM(Kble_oob, BTAddrA‖Ca‖ra)<br>
+            <code>IV2</code> (8B), <code>Tag2</code> (4B)
+          </td>
+          <td><span class="ref-tag">Table 19-44/45 p.317</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">2</span></td>
+          <td><span class="dir-arrow rs">车辆 → 手机</span></td>
+          <td><span class="cmd">First_Approach_RS</span></td>
+          <td><span class="msgid">0x0F</span></td>
+          <td class="params">
+            <code>E_Payload</code> (38B): AES-128-CCM(Kble_oob, BTAddrB‖Cb‖rb)<br>
+            <code>IV</code> (8B), <code>Tag</code> (4B)
+          </td>
+          <td><span class="ref-tag">Table 19-46/47 p.318</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="flow-connector">↓</div>
+
+<!-- Phase 4: APDU -->
+<div class="phase">
+  <div class="phase-header">
+    <div class="phase-num c-apdu">4</div>
+    <div class="title">
+      <h2>SPAKE2+ Owner Pairing APDU 交换</h2>
+      <p>Framework 消息封装 SE APDU，完成 Owner Pairing Phase 2/3/4</p>
+    </div>
+    <span class="secref">§19.3.2 · §5.1 · Table 19-13 · p.305</span>
+  </div>
+  <div class="phase-body">
+    <div class="callout info">
+      <span class="icon">📦</span>
+      <div><strong>DK 消息格式：</strong> <code>[Byte0: MsgHeader(Type|MsgType)] [Byte1: PayloadHeader(MsgID)] [Byte2-3: Length BE] [Data]</code></div>
+    </div>
+    <table class="step-table">
+      <thead><tr><th>#</th><th>APDU 指令</th><th>Message Type</th><th>Message ID</th><th>方向</th><th>文档位置</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="step-num">1</span></td>
+          <td><span class="cmd">SELECT</span> (AID: A000000809434343444B417631)</td>
+          <td><span class="badge-type bt-se">SE(1) / Framework(0)</span></td>
+          <td><span class="msgid">0x0B DK_APDU_RQ</span></td>
+          <td><span class="dir-arrow rq">手机→车辆</span></td>
+          <td><span class="ref-tag">§19.3.2.1 · §5.1 p.63</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">2</span></td>
+          <td><span class="cmd">SPAKE2+ REQUEST</span></td>
+          <td><span class="badge-type bt-framework">Framework(0)</span></td>
+          <td><span class="msgid">0x0B DK_APDU_RQ</span></td>
+          <td><span class="dir-arrow rq">手机→车辆</span></td>
+          <td><span class="ref-tag">§5.1 · Table 5-1</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">3</span></td>
+          <td><span class="cmd">SPAKE2+ VERIFY</span></td>
+          <td><span class="badge-type bt-framework">Framework(0)</span></td>
+          <td><span class="msgid">0x0B DK_APDU_RQ</span></td>
+          <td><span class="dir-arrow rq">手机→车辆</span></td>
+          <td><span class="ref-tag">§5.1</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">4</span></td>
+          <td><span class="cmd">WRITE DATA</span></td>
+          <td><span class="badge-type bt-framework">Framework(0)</span></td>
+          <td><span class="msgid">0x0B DK_APDU_RQ</span></td>
+          <td><span class="dir-arrow rq">手机→车辆</span></td>
+          <td><span class="ref-tag">§5.1</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">5</span></td>
+          <td><span class="cmd">GET DATA</span> / <span class="cmd">GET RESPONSE</span></td>
+          <td><span class="badge-type bt-framework">Framework(0)</span></td>
+          <td><span class="msgid">0x0B DK_APDU_RQ</span></td>
+          <td><span class="dir-arrow rq">手机→车辆</span></td>
+          <td><span class="ref-tag">§5.1</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">*</span></td>
+          <td><em>所有 APDU 响应</em></td>
+          <td>—</td>
+          <td><span class="msgid">0x0C DK_APDU_RS</span></td>
+          <td><span class="dir-arrow rs">车辆→手机</span></td>
+          <td><span class="ref-tag">Table 19-40/41 p.315</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="code-block">
+      <span class="cm">// 编码示例: SELECT APDU over BLE</span><br>
+      <span class="cm">// AID: A000000809434343444B417631</span><br>
+      Message Type: <span class="val">0x01</span>  <span class="cm">// SE message</span><br>
+      Message ID:   <span class="val">0x0B</span>  <span class="cm">// DK_APDU_RQ</span><br>
+      Length:       <span class="val">0x0013</span> <span class="cm">// 19 bytes (Big Endian)</span><br>
+      Data:         <span class="str">00 A4 04 00 0D A0000008 09 43434344 4B417631 00</span><br>
+      <span class="cm">// 完整 BLE 负载:</span><br>
+      <span class="val">01 0B 00 13 00A404000DA000000809434343444B41763100</span>
+    </div>
+  </div>
+</div>
+
+<div class="flow-connector">↓</div>
+
+<!-- Phase 5: UWB Capability + Ranging Setup -->
+<div class="phase">
+  <div class="phase-header">
+    <div class="phase-num c-uwb">5</div>
+    <div class="title">
+      <h2>能力交换 + URSK 派生 + 测距会话建立</h2>
+      <p>协商 UWB 配置参数，建立安全测距会话</p>
+    </div>
+    <span class="secref">§19.3.1 · §19.5.1 · §19.5.3 · p.306–312</span>
+  </div>
+  <div class="phase-body">
+    <table class="step-table">
+      <thead><tr><th>#</th><th>方向</th><th>消息名称</th><th>Message ID</th><th>关键参数</th><th>文档位置</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="step-num">1</span></td>
+          <td><span class="dir-arrow rs">车辆→手机</span></td>
+          <td><span class="cmd">Ranging_Capability_RQ</span></td>
+          <td><span class="msgid">0x01</span></td>
+          <td class="params"><code>DK_Protocol_Versions</code> (2B/版本，从高到低), <code>UWB_Config_Ids</code> (2B/个), <code>PulseShape_Combos</code> (1B/个)</td>
+          <td><span class="ref-tag">Table 19-14 p.306</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">2</span></td>
+          <td><span class="dir-arrow rq">手机→车辆</span></td>
+          <td><span class="cmd">Ranging_Capability_RS</span></td>
+          <td><span class="msgid">0x02</span></td>
+          <td class="params"><code>Selected_DK_Protocol_Version</code> (2B, e.g. <code>0x0100</code>=v1.0), <code>Selected_UWB_Config_Id</code> (2B), <code>Selected_PulseShape_Combo</code> (1B)</td>
+          <td><span class="ref-tag">Table 19-16 p.307</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">3</span></td>
+          <td><span class="dir-arrow rs">车辆→手机</span></td>
+          <td><span class="cmd">Ranging_Session_RQ</span></td>
+          <td><span class="msgid">0x03</span></td>
+          <td class="params"><code>UWB_Session_Id</code> (4B), <code>Channel_Bitmask</code> (1B: <code>0x01</code>=ch5, <code>0x02</code>=ch9)</td>
+          <td><span class="ref-tag">Table 19-18 p.308</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">4</span></td>
+          <td><span class="dir-arrow rq">手机→车辆</span></td>
+          <td><span class="cmd">Ranging_Session_RS</span></td>
+          <td><span class="msgid">0x04</span></td>
+          <td class="params"><code>RAN_Multiplier</code> (1B), <code>Slot_BitMask</code> (1B), <code>SYNC_Code_BitMask</code> (4B), <code>Selected_UWB_Channel</code> (1B), <code>Hopping_Config_Bitmask</code> (1B: b7-b5=模式, b4-b0=序列)</td>
+          <td><span class="ref-tag">Table 19-20 p.309</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">5</span></td>
+          <td><span class="dir-arrow rs">车辆→手机</span></td>
+          <td><span class="cmd">Ranging_Session_Setup_RQ</span></td>
+          <td><span class="msgid">0x05</span></td>
+          <td class="params"><code>Session_RAN_Multiplier</code> (1B, ≥RQ的值), <code>Number_Chaps_per_Slot</code> (1B: 3/4/6/8/9/12), <code>Number_Responder_Nodes</code> (1B), <code>Number_Slots_per_Round</code> (1B), <code>SYNC_Code_Index</code> (4B), <code>Hopping_Config_Bitmask</code> (1B)</td>
+          <td><span class="ref-tag">Table 19-22 p.310</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">6</span></td>
+          <td><span class="dir-arrow rq">手机→车辆</span></td>
+          <td><span class="cmd">Ranging_Session_Setup_RS</span></td>
+          <td><span class="msgid">0x06</span></td>
+          <td class="params"><code>STS_Index0</code> (4B, 0–0x3FFFFFFF), <code>UWB_Time0</code> (8B, μs精度), <code>HOP_Mode_Key</code> (4B), <code>SYNC_Code_Index</code> (1B, 1–32)</td>
+          <td><span class="ref-tag">Table 19-24 p.311</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="flow-connector">↓</div>
+
+<!-- Phase 6: Time Sync -->
+<div class="phase">
+  <div class="phase-header">
+    <div class="phase-num c-ts">6</div>
+    <div class="title">
+      <h2>BLE 时间同步（Timesync）</h2>
+      <p>设备发送 UWB 时钟信息，使车辆锚点能预测 UWBtime0</p>
+    </div>
+    <span class="secref">§19.3.3 · §19.4 · Table 19-42/43 · p.315</span>
+  </div>
+  <div class="phase-body">
+    <table class="step-table">
+      <thead><tr><th>Procedure</th><th>触发条件</th><th>消息</th><th>Message ID</th><th>Success 字段</th><th>文档位置</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Procedure 0</strong></td>
+          <td>BLE 连接建立后自动触发</td>
+          <td><span class="cmd">Time_Sync</span></td>
+          <td><span class="msgid">0x0D</span></td>
+          <td class="params"><code>DeviceEventCount=0</code>, <code>UWB_Device_Time</code>(μs), <code>Success=1</code></td>
+          <td><span class="ref-tag">§19.4.4.1 p.337</span></td>
+        </tr>
+        <tr>
+          <td><strong>Procedure 1</strong></td>
+          <td>车辆发送 <code>LE Set PHY</code> 触发 <code>LL_PHY_REQ</code></td>
+          <td><span class="cmd">Time_Sync</span></td>
+          <td><span class="msgid">0x0D</span></td>
+          <td class="params"><code>DeviceEventCount=连接事件计数</code>, <code>UWB_Device_Time1</code>, <code>Success=1</code>, <code>RetryDelay</code></td>
+          <td><span class="ref-tag">§19.4.4.2 p.338</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout info">
+      <span class="icon">⏱️</span>
+      <div><strong>同步偏移计算（相同连接事件）：</strong><br><code>SyncOffset = UWBDeviceTime1 – UWBVehicleTime1</code><br><strong>不同连接事件：</strong><br><code>SyncOffset = UWBDeviceTime1 + (VehicleEventCount – DeviceEventCount) × ConnectionInterval – UWBVehicleTime1</code></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SCENARIO 2: PASSIVE ENTRY ═══════════════ -->
+<div class="sec-heading">场景二：Passive Entry 被动进入</div>
+
+<!-- PE Phase 1 -->
+<div class="phase">
+  <div class="phase-header">
+    <div class="phase-num c-pe">A</div>
+    <div class="title">
+      <h2>RPA 广播 + 重连 + L2CAP</h2>
+      <p>使用可解析私有地址（RPA）保护隐私，自动重连车辆</p>
+    </div>
+    <span class="secref">§19.2.3 · Figure 19-4 · p.301</span>
+  </div>
+  <div class="phase-body">
+    <table class="step-table">
+      <thead><tr><th>#</th><th>方向</th><th>指令 / 消息</th><th>关键参数</th><th>文档位置</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="step-num">1</span></td>
+          <td><span class="dir-arrow">车辆 LL</span></td>
+          <td><span class="cmd">ADV_IND</span>（RPA 地址）</td>
+          <td class="params">LE 1M PHY 间隔 <code>42.5ms</code>；LE Coded PHY(S=2) 间隔 <code>84ms</code>；<strong>AdvData 为空</strong></td>
+          <td><span class="ref-tag">§19.2.3.1 p.302</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">2</span></td>
+          <td><span class="dir-arrow">手机 LL</span></td>
+          <td>解析 RPA → <span class="cmd">CONNECT_IND</span>（InitA 使用 RPA）</td>
+          <td class="params">车辆验证 InitA RPA</td>
+          <td><span class="ref-tag">Figure 19-4</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">3</span></td>
+          <td><span class="dir-arrow">手机</span></td>
+          <td><strong>加密</strong>（必须在 L2CAP 前完成）</td>
+          <td class="params">使用已存 LTK</td>
+          <td><span class="ref-tag">§19.2.1.2</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">4</span></td>
+          <td><span class="dir-arrow rq">手机 → 车辆</span></td>
+          <td><span class="cmd">ATT_READ_BY_TYPE_REQ</span>（读 SPSM）</td>
+          <td class="params">UUID=<code>UUID_SPSM</code></td>
+          <td><span class="ref-tag">§19.2.3.2</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">5</span></td>
+          <td><span class="dir-arrow rq">手机</span></td>
+          <td>建立 <span class="cmd">L2CAP CoC</span></td>
+          <td class="params">—</td>
+          <td><span class="ref-tag">§19.2.3.2</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">6</span></td>
+          <td><span class="dir-arrow">条件触发</span></td>
+          <td><strong>Capability Exchange</strong>（可选）</td>
+          <td class="params">若 DK Protocol 版本/UWB Config/PulseShape 有更新才执行</td>
+          <td><span class="ref-tag">§19.5.1 p.344</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="flow-connector">↓</div>
+
+<!-- PE Phase 2: AUTH -->
+<div class="phase">
+  <div class="phase-header">
+    <div class="phase-num c-tx">B</div>
+    <div class="title">
+      <h2>标准测距事务 — AUTH0 / AUTH1</h2>
+      <p>SE 消息认证流程，车辆验证手机签名后决定解锁</p>
+    </div>
+    <span class="secref">§19.5.5 · §19.5.6 · Figure 19-27 · §15.3.2</span>
+  </div>
+  <div class="phase-body">
+    <table class="step-table">
+      <thead><tr><th>#</th><th>方向</th><th>APDU</th><th>Message ID</th><th>说明</th><th>文档位置</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="step-num">1</span></td>
+          <td><span class="dir-arrow rq">手机→车辆</span></td>
+          <td><span class="cmd">SELECT</span></td>
+          <td><span class="msgid">0x0B DK_APDU_RQ</span></td>
+          <td>选择数字钥匙 Applet，Message Type=SE(1)</td>
+          <td><span class="ref-tag">§19.3.2.1 · §15.3.2</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">2</span></td>
+          <td><span class="dir-arrow rq">手机→车辆</span></td>
+          <td><span class="cmd">AUTH0</span></td>
+          <td><span class="msgid">0x0B DK_APDU_RQ</span></td>
+          <td>发起认证，Message Type=SE(1)</td>
+          <td><span class="ref-tag">§15.3.2</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">3</span></td>
+          <td><span class="dir-arrow rs">车辆→手机</span></td>
+          <td><span class="cmd">AUTH0 Response</span></td>
+          <td><span class="msgid">0x0C DK_APDU_RS</span></td>
+          <td>返回 Challenge（随机数）</td>
+          <td><span class="ref-tag">§19.3.2.2</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">4</span></td>
+          <td><span class="dir-arrow rq">手机→车辆</span></td>
+          <td><span class="cmd">AUTH1</span></td>
+          <td><span class="msgid">0x0B DK_APDU_RQ</span></td>
+          <td>SE 用私钥签名 Challenge，含证书链</td>
+          <td><span class="ref-tag">§15.3.2</span></td>
+        </tr>
+        <tr>
+          <td><span class="step-num">5</span></td>
+          <td><span class="dir-arrow rs">车辆→手机</span></td>
+          <td><span class="cmd">AUTH1 Response</span></td>
+          <td><span class="msgid">0x0C DK_APDU_RS</span></td>
+          <td>车辆验证签名，<strong>解锁/启动</strong></td>
+          <td><span class="ref-tag">§19.3.2.2</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════ FULL COMMAND TABLE ═══════════════ -->
+<div class="sec-heading">全部 DK 消息汇总</div>
+
+<table class="full-table">
+  <thead><tr>
+    <th>Message ID</th><th>消息名称</th><th>Message Type</th><th>方向</th><th>用途</th><th>文档位置</th>
+  </tr></thead>
+  <tbody>
+    <tr><td><span class="msgid">0x01</span></td><td><code>Ranging_Capability_RQ</code></td><td><span class="badge-type bt-uwb">UWB Ranging(2)</span></td><td>车辆→手机</td><td>询问设备支持的 UWB 配置、DK 协议版本</td><td><span class="ref-tag">§19.3.1.1 p.306</span></td></tr>
+    <tr><td><span class="msgid">0x02</span></td><td><code>Ranging_Capability_RS</code></td><td><span class="badge-type bt-uwb">UWB Ranging(2)</span></td><td>手机→车辆</td><td>返回设备选定的 UWB 配置</td><td><span class="ref-tag">§19.3.1.2 p.307</span></td></tr>
+    <tr><td><span class="msgid">0x03</span></td><td><code>Ranging_Session_RQ</code></td><td><span class="badge-type bt-uwb">UWB Ranging(2)</span></td><td>车辆→手机</td><td>发起测距会话建立握手，分配 UWB_Session_Id</td><td><span class="ref-tag">§19.3.1.3 p.308</span></td></tr>
+    <tr><td><span class="msgid">0x04</span></td><td><code>Ranging_Session_RS</code></td><td><span class="badge-type bt-uwb">UWB Ranging(2)</span></td><td>手机→车辆</td><td>返回 RAN_Multiplier、Slot/SYNC 配置、跳频参数</td><td><span class="ref-tag">§19.3.1.4 p.309</span></td></tr>
+    <tr><td><span class="msgid">0x05</span></td><td><code>Ranging_Session_Setup_RQ</code></td><td><span class="badge-type bt-uwb">UWB Ranging(2)</span></td><td>车辆→手机</td><td>确定会话 MAC 参数（Slots/Round/SYNC/跳频）</td><td><span class="ref-tag">§19.3.1.5 p.310</span></td></tr>
+    <tr><td><span class="msgid">0x06</span></td><td><code>Ranging_Session_Setup_RS</code></td><td><span class="badge-type bt-uwb">UWB Ranging(2)</span></td><td>手机→车辆</td><td>返回 STS_Index0、UWB_Time0，测距会话正式启动</td><td><span class="ref-tag">§19.3.1.6 p.311</span></td></tr>
+    <tr><td><span class="msgid">0x07</span></td><td><code>Ranging_Suspend_RQ</code></td><td><span class="badge-type bt-uwb">UWB Ranging(2)</span></td><td>车辆→手机</td><td>暂停当前活跃测距会话</td><td><span class="ref-tag">§19.3.1.7 p.312</span></td></tr>
+    <tr><td><span class="msgid">0x08</span></td><td><code>Ranging_Suspend_RS</code></td><td><span class="badge-type bt-uwb">UWB Ranging(2)</span></td><td>手机→车辆</td><td>接受(0x00)或延迟(0x01)暂停请求</td><td><span class="ref-tag">§19.3.1.8</span></td></tr>
+    <tr><td><span class="msgid">0x09</span></td><td><code>Ranging_Recovery_RQ</code></td><td><span class="badge-type bt-uwb">UWB Ranging(2)</span></td><td>车辆→手机</td><td>恢复已暂停的测距会话</td><td><span class="ref-tag">§19.3.1.9 p.313</span></td></tr>
+    <tr><td><span class="msgid">0x0A</span></td><td><code>Ranging_Recovery_RS</code></td><td><span class="badge-type bt-uwb">UWB Ranging(2)</span></td><td>手机→车辆</td><td>返回新的 STS_Index0 + UWB_Time0</td><td><span class="ref-tag">§19.3.1.10</span></td></tr>
+    <tr><td><span class="msgid">0x0B</span></td><td><code>DK_APDU_RQ</code></td><td><span class="badge-type bt-framework">Framework(0)</span> / <span class="badge-type bt-se">SE(1)</span></td><td>手机→车辆</td><td>封装并传输 APDU 命令（SELECT/AUTH0/AUTH1 等）</td><td><span class="ref-tag">§19.3.2.1 p.314</span></td></tr>
+    <tr><td><span class="msgid">0x0C</span></td><td><code>DK_APDU_RS</code></td><td><span class="badge-type bt-framework">Framework(0)</span> / <span class="badge-type bt-se">SE(1)</span></td><td>车辆→手机</td><td>封装并传输 APDU 响应</td><td><span class="ref-tag">§19.3.2.2 p.315</span></td></tr>
+    <tr><td><span class="msgid">0x0D</span></td><td><code>Time_Sync</code></td><td><span class="badge-type bt-supp">Supplementary(5)</span></td><td>手机→车辆</td><td>UWB 时钟同步（Procedure 0/1），含精度和 PPM 信息</td><td><span class="ref-tag">§19.3.3 p.315</span></td></tr>
+    <tr><td><span class="msgid">0x0E</span></td><td><code>First_Approach_RQ</code></td><td><span class="badge-type bt-supp">Supplementary(5)</span></td><td>手机→车辆</td><td>共享设备 OOB 数据（AES-CCM 加密 BTAddrA/Ca/ra）</td><td><span class="ref-tag">§19.3.4.1 p.317</span></td></tr>
+    <tr><td><span class="msgid">0x0F</span></td><td><code>First_Approach_RS</code></td><td><span class="badge-type bt-supp">Supplementary(5)</span></td><td>车辆→手机</td><td>共享车辆 OOB 数据（AES-CCM 加密 BTAddrB/Cb/rb）</td><td><span class="ref-tag">§19.3.4.2 p.318</span></td></tr>
+    <tr><td><span class="msgid">0x10</span></td><td><code>Pass_Through</code></td><td><span class="badge-type bt-oem">Vehicle OEM App(4)</span></td><td>双向</td><td>OEM 私有消息透传，DK 框架不解析</td><td><span class="ref-tag">§19.3.6 p.319</span></td></tr>
+    <tr><td><span class="msgid">0x11</span></td><td><code>DK Event Notification</code></td><td><span class="badge-type bt-event">DK Event(3)</span></td><td>双向</td><td>SubEvent 通知（Command Complete/Session Status/RKE等）</td><td><span class="ref-tag">§19.3.8 p.321</span></td></tr>
+    <tr><td><span class="msgid">0x12</span></td><td><code>Configurable_Ranging_Recovery_RQ</code></td><td><span class="badge-type bt-uwb">UWB Ranging(2)</span></td><td>车辆→手机</td><td>以指定 RAN_Multiplier 恢复（门把手触碰高频场景）</td><td><span class="ref-tag">§19.3.1.11 p.313</span></td></tr>
+    <tr><td><span class="msgid">0x13</span></td><td><code>Configurable_Ranging_Recovery_RS</code></td><td><span class="badge-type bt-uwb">UWB Ranging(2)</span></td><td>手机→车辆</td><td>返回 Selected_RAN_Multiplier + STS_Index0 + UWB_Time0</td><td><span class="ref-tag">§19.3.1.12</span></td></tr>
+    <tr><td><span class="msgid">0x14</span></td><td><code>RKE_Auth_RQ</code></td><td><span class="badge-type bt-supp">Supplementary(5)</span></td><td>车辆→手机</td><td>RKE 认证挑战（16B 随机数，防重放）</td><td><span class="ref-tag">§19.3.5.1 p.318</span></td></tr>
+    <tr><td><span class="msgid">0x15</span></td><td><code>RKE_Auth_RS</code></td><td><span class="badge-type bt-supp">Supplementary(5)</span></td><td>手机→车辆</td><td>签名认证响应（SE 签名 Challenge）</td><td><span class="ref-tag">§19.3.5.2</span></td></tr>
+    <tr><td><span class="msgid">0x16</span></td><td><code>Head_Unit_Pairing_Preparation</code></td><td><span class="badge-type bt-hu">Head Unit(6)</span></td><td>车辆→手机</td><td>车机配对准备（蓝牙经典 A2DP/CarPlay/AndroidAuto）</td><td><span class="ref-tag">§19.3.7.1 p.319</span></td></tr>
+    <tr><td><span class="msgid">0x17</span></td><td><code>Head_Unit_Pairing_RQ</code></td><td><span class="badge-type bt-hu">Head Unit(6)</span></td><td>手机→车辆</td><td>设备端车机配对请求（含 BD_ADDR + OOB 数据）</td><td><span class="ref-tag">§19.3.7.2 p.320</span></td></tr>
+    <tr><td><span class="msgid">0x18</span></td><td><code>Head_Unit_Pairing_RS</code></td><td><span class="badge-type bt-hu">Head Unit(6)</span></td><td>车辆→手机</td><td>车机端配对响应（含 BD_ADDR + OOB 数据）</td><td><span class="ref-tag">§19.3.7.3 p.321</span></td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════ CONSTRAINTS ═══════════════ -->
+<div class="sec-heading">设计约束速查</div>
+<div class="constraint-grid">
+  <div class="constraint-card"><div class="label">Owner Pairing 广播 PHY</div><div class="value">Legacy 1M</div><div class="src">§19.2.1.3</div></div>
+  <div class="constraint-card"><div class="label">Passive Entry 广播间隔（1M）</div><div class="value">42.5 ms</div><div class="src">§19.2.3.1</div></div>
+  <div class="constraint-card"><div class="label">Passive Entry 广播间隔（Coded）</div><div class="value">84 ms</div><div class="src">§19.2.3.1</div></div>
+  <div class="constraint-card"><div class="label">推荐 BLE 连接间隔</div><div class="value">30 ms</div><div class="src">§19.1</div></div>
+  <div class="constraint-card"><div class="label">未加密 L2CAP 超时断开</div><div class="value">5 秒</div><div class="src">§19.2.1.2</div></div>
+  <div class="constraint-card"><div class="label">安全模式要求</div><div class="value">Mode 1/L4</div><div class="src">§19.1</div></div>
+  <div class="constraint-card"><div class="label">SPSM 动态分配范围</div><div class="value">0x0080–FF</div><div class="src">§19.2.1.7</div></div>
+  <div class="constraint-card"><div class="label">Timesync Procedure 1 最小间隔</div><div class="value">60 秒</div><div class="src">§19.4.6</div></div>
+  <div class="constraint-card"><div class="label">UWB 时钟精度要求</div><div class="value">≤ 1 μs</div><div class="src">§19.4.1.1</div></div>
+</div>
+
+</div><!-- /container -->

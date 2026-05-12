@@ -1,0 +1,992 @@
+---
+title: "ICCOA 数字车钥匙 4.0 — 蓝牙协议解读与实现方案"
+description: ""
+date: 2026-04-13T19:13:18+08:00
+categories: ["技术文档"]
+tags: []
+draft: false
+---
+
+<style>
+.hero {
+    background: #fff;
+    border-bottom: 0.5px solid #e0dfd8;
+    padding: 40px 0 32px;
+    text-align: center;
+  }
+  .hero h1 { font-size: 26px; font-weight: 500; color: #1a1a18; margin-bottom: 6px; }
+  .hero p { color: #73726c; font-size: 14px; }
+  .badge {
+    display: inline-block;
+    background: #e6f1fb;
+    color: #185fa5;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin: 0 4px 8px;
+    font-weight: 500;
+  }
+  .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+
+  /* nav */
+  .nav-bar {
+    background: #fff;
+    border-bottom: 0.5px solid #e0dfd8;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .nav-inner {
+    max-width: 900px; margin: 0 auto; padding: 0 24px;
+    display: flex; gap: 0; overflow-x: auto;
+  }
+  .nav-inner a {
+    display: block; padding: 12px 14px;
+    font-size: 13px; color: #73726c; text-decoration: none;
+    border-bottom: 2px solid transparent; white-space: nowrap;
+    transition: color .15s, border-color .15s;
+  }
+  .nav-inner a:hover { color: #2c2c2a; border-color: #888780; }
+  .nav-inner a.active { color: #185fa5; border-color: #185fa5; }
+
+  /* sections */
+  .section { padding: 40px 0; border-bottom: 0.5px solid #e0dfd8; }
+  .section:last-child { border-bottom: none; }
+  .section-title {
+    font-size: 20px; font-weight: 500; color: #1a1a18;
+    margin-bottom: 6px;
+  }
+  .section-sub {
+    font-size: 13px; color: #888780; margin-bottom: 24px;
+  }
+
+  /* cards grid */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; margin: 20px 0; }
+  .card {
+    background: #fff;
+    border: 0.5px solid #e0dfd8;
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .card-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; margin-bottom: 12px;
+  }
+  .card h3 { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+  .card p { font-size: 13px; color: #73726c; line-height: 1.6; }
+
+  /* info boxes */
+  .info-box {
+    background: #f0f8ff;
+    border-left: 3px solid #378add;
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 14px;
+    color: #0c447c;
+  }
+  .warn-box {
+    background: #faeeda;
+    border-left: 3px solid #ef9f27;
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 14px;
+    color: #633806;
+  }
+
+  /* flow steps */
+  .steps { margin: 20px 0; }
+  .step {
+    display: flex; gap: 16px; margin-bottom: 20px; align-items: flex-start;
+  }
+  .step-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #185fa5; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 500; flex-shrink: 0; margin-top: 2px;
+  }
+  .step-content h4 { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .step-content p { font-size: 13px; color: #73726c; line-height: 1.6; }
+
+  /* code blocks */
+  pre {
+    background: #f1f0ea;
+    border-radius: 8px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-size: 12.5px;
+    line-height: 1.6;
+    margin: 16px 0;
+    color: #2c2c2a;
+  }
+  code { font-family: "SF Mono", "Fira Code", monospace; }
+  pre code { font-family: "SF Mono", "Fira Code", monospace; }
+  .kw { color: #185fa5; font-weight: 500; }
+  .cm { color: #888780; }
+  .st { color: #3b6d11; }
+  .nm { color: #854f0b; }
+
+  /* tables */
+  .table-wrap { overflow-x: auto; margin: 16px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    background: #f1f0ea;
+    font-weight: 500;
+    text-align: left;
+    padding: 9px 14px;
+    border-bottom: 0.5px solid #d3d1c7;
+    color: #444441;
+  }
+  td {
+    padding: 9px 14px;
+    border-bottom: 0.5px solid #e8e7e0;
+    color: #2c2c2a;
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  .tag { font-family: "SF Mono", monospace; color: #185fa5; font-size: 12px; }
+  .tag-r { font-family: "SF Mono", monospace; color: #9b2335; font-size: 12px; }
+
+  /* flow diagram */
+  .flow-diagram {
+    background: #fff;
+    border: 0.5px solid #e0dfd8;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 20px 0;
+    overflow-x: auto;
+  }
+  .flow-row { display: flex; align-items: center; gap: 0; margin-bottom: 0; flex-wrap: nowrap; }
+  .flow-box {
+    background: #e6f1fb;
+    border: 0.5px solid #85b7eb;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: #0c447c;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .flow-box.green { background: #eaf3de; border-color: #97c459; color: #27500a; }
+  .flow-box.amber { background: #faeeda; border-color: #ef9f27; color: #633806; }
+  .flow-box.gray { background: #f1f0ea; border-color: #b4b2a9; color: #444441; }
+  .flow-arrow {
+    font-size: 18px; color: #888780; padding: 0 8px; flex-shrink: 0;
+  }
+  .flow-label {
+    font-size: 11px; color: #888780; text-align: center; margin-top: 4px;
+  }
+  .flow-col { display: flex; flex-direction: column; align-items: center; }
+  .flow-vrow { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+
+  /* collapsible */
+  details { margin: 12px 0; }
+  summary {
+    cursor: pointer;
+    font-size: 14px; font-weight: 500; color: #185fa5;
+    padding: 10px 0;
+    list-style: none;
+    display: flex; align-items: center; gap: 6px;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::before {
+    content: "▶";
+    font-size: 10px;
+    transition: transform .15s;
+    display: inline-block;
+  }
+  details[open] summary::before { transform: rotate(90deg); }
+
+  /* arch diagram (SVG replacement) */
+  .arch {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .arch-node {
+    background: #fff;
+    border: 0.5px solid #e0dfd8;
+    border-radius: 10px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .arch-node .icon { font-size: 24px; margin-bottom: 6px; }
+  .arch-node h4 { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+  .arch-node p { font-size: 12px; color: #888780; }
+  .arch-arrow {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: #888780;
+  }
+
+  /* BLE packet visualizer */
+  .packet {
+    display: flex; gap: 1px; margin: 12px 0; flex-wrap: wrap;
+  }
+  .pkt-field {
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .pkt-val {
+    background: #fff; border: 0.5px solid #d3d1c7;
+    border-radius: 4px 4px 0 0;
+    padding: 6px 10px;
+    font-family: "SF Mono", monospace;
+    font-size: 12px; color: #2c2c2a;
+    white-space: nowrap;
+  }
+  .pkt-label {
+    font-size: 10px; color: #888780; padding: 2px 4px;
+    border: 0.5px solid #e8e7e0; border-top: none;
+    border-radius: 0 0 4px 4px;
+    background: #f7f6f3;
+    white-space: nowrap;
+  }
+  .pkt-val.blue { background: #e6f1fb; border-color: #85b7eb; color: #0c447c; }
+  .pkt-val.amber { background: #faeeda; border-color: #ef9f27; color: #633806; }
+  .pkt-val.green { background: #eaf3de; border-color: #97c459; color: #27500a; }
+  .pkt-val.gray { background: #f1f0ea; border-color: #b4b2a9; color: #444441; }
+
+  /* status pills */
+  .pill {
+    display: inline-block;
+    font-size: 11px; font-weight: 500;
+    padding: 2px 9px; border-radius: 20px;
+    margin-right: 4px;
+  }
+  .pill.blue { background: #e6f1fb; color: #185fa5; }
+  .pill.green { background: #eaf3de; color: #3b6d11; }
+  .pill.amber { background: #faeeda; color: #854f0b; }
+  .pill.gray { background: #f1f0ea; color: #5f5e5a; }
+  .pill.red { background: #fcebeb; color: #a32d2d; }
+
+  h2 { font-size: 18px; font-weight: 500; margin: 28px 0 10px; color: #1a1a18; }
+  h3 { font-size: 15px; font-weight: 500; margin: 20px 0 8px; color: #2c2c2a; }
+  p { margin-bottom: 12px; font-size: 14px; color: #3d3d3a; }
+  ul, ol { margin-left: 20px; margin-bottom: 12px; font-size: 14px; color: #3d3d3a; }
+  li { margin-bottom: 4px; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+  @media(max-width: 600px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .arch { grid-template-columns: 1fr; }
+  }
+
+  .highlight { background: #fef9ed; border-radius: 4px; padding: 0 4px; color: #854f0b; }
+
+</style>
+
+<div class="hero">
+  <div class="container">
+    <h1>ICCOA 数字车钥匙 4.0 — 协议解读与蓝牙实现方案</h1>
+    <p style="margin-top:8px">基于 ICCOA/T 002（2025版）规范，重点解析 BLE 交互流程与工程实现</p>
+    <div style="margin-top:14px">
+      <span class="badge">BLE 4.2/5.0</span>
+      <span class="badge">ECDSA-P256</span>
+      <span class="badge">AES-128-CTR</span>
+      <span class="badge">GATT Profile</span>
+      <span class="badge">UWB 测距</span>
+      <span class="badge">NFC</span>
+    </div>
+  </div>
+</div>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <a href="#overview" class="active">协议概览</a>
+    <a href="#arch">系统架构</a>
+    <a href="#ble-profile">BLE Profile</a>
+    <a href="#pairing">配对流程</a>
+    <a href="#auth">认证流程</a>
+    <a href="#rke">控车指令</a>
+    <a href="#cert">证书体系</a>
+    <a href="#impl">实现方案</a>
+    <a href="#code">代码示例</a>
+  </div>
+</nav>
+
+<!-- ===== SECTION 1: 协议概览 ===== -->
+<section class="section" id="overview">
+<div class="container">
+  <div class="section-title">协议概览</div>
+  <div class="section-sub">ICCOA 数字车钥匙 4.0 规范核心内容</div>
+
+  <p>本规范定义了数字车钥匙系统的完整技术方案，支持 <strong>BLE</strong>、<strong>NFC</strong>、<strong>UWB</strong> 三种短距通信协议，覆盖从证书体系、认证流程到控车指令的全链路。</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon" style="background:#e6f1fb">📶</div>
+      <h3>BLE 接口</h3>
+      <p>基于 GATT Profile，Service UUID FCD1，支持标准认证与快速认证，MTU &gt; 200 Bytes，广播周期 ≤ 100ms</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#eaf3de">🔐</div>
+      <h3>证书体系</h3>
+      <p>X.509 v3 格式，ECDSA-P256 算法，支持 CA 模式与非 CA 模式钥匙分享，证书大小控制在 700 字节内</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#faeeda">📡</div>
+      <h3>UWB 测距</h3>
+      <p>符合 IEEE 802.15.4/z + FiRa 标准，厘米级精度，防中继攻击，支持无感解闭锁</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#f0e6fb">🗝️</div>
+      <h3>钥匙生命周期</h3>
+      <p>包含开通、分享（车主/好友钥匙）、冻结、恢复、撤销、注销全流程，支持在线与离线场景</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#fcebeb">🚗</div>
+      <h3>远程控车 RKE</h3>
+      <p>支持门锁、车窗、后备箱、引擎、寻车等功能，带签名认证和持续控车两种模式</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#f1f0ea">⌚</div>
+      <h3>多设备支持</h3>
+      <p>手机（Phone）与可穿戴（Wearable）均可作为钥匙载体，SE/TEE 作为安全存储</p>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <strong>规范版本：</strong>本文件替代 ICCOA/T 002-2023（数字车钥匙 2.0），新增非 CA 模式分享钥匙、UWB 测距支持、远程控车功能。
+  </div>
+</div>
+</section>
+
+<!-- ===== SECTION 2: 系统架构 ===== -->
+<section class="section" id="arch">
+<div class="container">
+  <div class="section-title">系统架构</div>
+  <div class="section-sub">四层架构：设备 ↔ 车辆 ↔ 设备服务器 ↔ 车服务器</div>
+
+  <div class="flow-diagram">
+    <div style="display:flex;align-items:stretch;gap:0;justify-content:center;flex-wrap:wrap;gap:8px">
+      <div class="flow-col" style="min-width:140px">
+        <div class="flow-box" style="width:100%;text-align:center">手机 / 可穿戴</div>
+        <div style="font-size:11px;color:#888780;margin-top:6px;text-align:center">DKF + TEE/SE<br>BLE/NFC/UWB</div>
+      </div>
+      <div class="flow-arrow">⟷</div>
+      <div class="flow-col" style="min-width:120px">
+        <div class="flow-box green" style="width:100%;text-align:center">车辆 (Car)</div>
+        <div style="font-size:11px;color:#888780;margin-top:6px;text-align:center">BLE主节点<br>TEE/SE</div>
+      </div>
+      <div class="flow-arrow" style="color:#d3d1c7">|</div>
+      <div class="flow-col" style="min-width:140px">
+        <div class="flow-box amber" style="width:100%;text-align:center">设备服务器</div>
+        <div style="font-size:11px;color:#888780;margin-top:6px;text-align:center">钥匙生命周期<br>S2S 同步</div>
+      </div>
+      <div class="flow-arrow">⟷</div>
+      <div class="flow-col" style="min-width:140px">
+        <div class="flow-box amber" style="width:100%;text-align:center">车服务器</div>
+        <div style="font-size:11px;color:#888780;margin-top:6px;text-align:center">CA 证书签发<br>IRK/BroadcastKey</div>
+      </div>
+    </div>
+    <div style="margin-top:16px;padding-top:14px;border-top:0.5px solid #e8e7e0;font-size:12px;color:#888780;text-align:center">
+      蓝牙辅节点（多节点测距）仅作信号质量监控，不参与认证
+    </div>
+  </div>
+
+  <h2>关键角色职责</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>组件</th><th>核心职责</th><th>关键参数</th></tr></thead>
+    <tbody>
+      <tr><td><strong>车服务器</strong></td><td>管理车服务器 CA 证书，签发车主/好友钥匙证书，保存下发 bleBroadcastKey 和 IRK，钥匙生命周期管理</td><td>ECDSA-P256 CA</td></tr>
+      <tr><td><strong>设备服务器</strong></td><td>钥匙生命周期管理，与车服务器 S2S 同步</td><td>REST API</td></tr>
+      <tr><td><strong>DKF（数字钥匙框架）</strong></td><td>为车 App、Native App 提供 API，与 TEE TA 或 SE Applet 直接通信，支持蓝牙业务</td><td>Android/iOS SDK</td></tr>
+      <tr><td><strong>车辆 BLE 模块</strong></td><td>外围设备角色（Peripheral），广播周期 ≤ 100ms，MTU &gt; 200B，支持 BLE 4.2+</td><td>BLE 5.0 推荐</td></tr>
+      <tr><td><strong>手机 BLE</strong></td><td>中央设备角色（Central），背景扫描占空比 ≥ 10%，发射功率 2~4 dBm</td><td>灵敏度 ≥ −85 dBm</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+</section>
+
+<!-- ===== SECTION 3: BLE PROFILE ===== -->
+<section class="section" id="ble-profile">
+<div class="container">
+  <div class="section-title">BLE Profile 定义</div>
+  <div class="section-sub">GATT 服务与特征值，数据帧格式</div>
+
+  <h2>GATT 服务与特征值</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>名称</th><th>UUID</th><th>属性</th><th>用途</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>DK Service</strong></td>
+        <td><span class="tag">0xFCD1</span></td>
+        <td><span class="pill green">Primary Service</span></td>
+        <td>数字车钥匙主服务，广播中包含此 UUID</td>
+      </tr>
+      <tr>
+        <td><strong>DK Data In</strong></td>
+        <td><span class="tag">0xFFF1</span></td>
+        <td><span class="pill blue">Write / Write No Resp</span></td>
+        <td>设备 → 车：发送 APDU、控车、测距等指令</td>
+      </tr>
+      <tr>
+        <td><strong>DK Data Out</strong></td>
+        <td><span class="tag">0xFFF2</span></td>
+        <td><span class="pill amber">Notify / Indicate</span></td>
+        <td>车 → 设备：响应认证、状态通知、事件回调</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="info-box">
+    默认使用 <strong>Write with Response</strong>，以下场景例外：持续 RKE 指令（7F76）使用 <strong>Write Without Response</strong>；车辆私有通知数据使用 <strong>Notification</strong>。
+  </div>
+
+  <h2>蓝牙广播帧格式（Advertising PDU）</h2>
+  <p>车辆广播使用 <strong>RPA（可解析的私有地址）</strong>，设备需持有 IRK 才能解析并发起连接。广播数据结构如下：</p>
+
+  <div class="packet">
+    <div class="pkt-field">
+      <div class="pkt-val gray">0x02</div><div class="pkt-label">Length</div>
+    </div>
+    <div class="pkt-field">
+      <div class="pkt-val gray">0x01</div><div class="pkt-label">AD Type: Flags</div>
+    </div>
+    <div class="pkt-field">
+      <div class="pkt-val gray">Flags</div><div class="pkt-label">广播标志</div>
+    </div>
+    <div class="pkt-field" style="margin-left:8px">
+      <div class="pkt-val amber">0x09</div><div class="pkt-label">Length</div>
+    </div>
+    <div class="pkt-field">
+      <div class="pkt-val amber">0x7F</div><div class="pkt-label">AD Type(待定)</div>
+    </div>
+    <div class="pkt-field">
+      <div class="pkt-val amber" style="min-width:120px">pairingCode 密文 8B</div><div class="pkt-label">IV(4B) || cipherCode(4B)</div>
+    </div>
+    <div class="pkt-field" style="margin-left:8px">
+      <div class="pkt-val blue">0x03</div><div class="pkt-label">Length</div>
+    </div>
+    <div class="pkt-field">
+      <div class="pkt-val blue">0x02</div><div class="pkt-label">AD Type: UUID16</div>
+    </div>
+    <div class="pkt-field">
+      <div class="pkt-val blue">0xFCD1</div><div class="pkt-label">DK Service UUID</div>
+    </div>
+  </div>
+
+  <h2>数据帧格式</h2>
+  <p>所有 BLE 数据传输（DataIn / DataOut）均采用统一的 6 字节头部 + 可变数据域格式，单帧不超过协商的 MTU。</p>
+
+  <div class="packet">
+    <div class="pkt-field">
+      <div class="pkt-val blue" style="min-width:60px">0x01</div><div class="pkt-label">Version (1B)</div>
+    </div>
+    <div class="pkt-field">
+      <div class="pkt-val amber" style="min-width:60px">Type</div><div class="pkt-label">报文类型 (1B)</div>
+    </div>
+    <div class="pkt-field">
+      <div class="pkt-val gray" style="min-width:80px">Status</div><div class="pkt-label">业务状态码 (2B)</div>
+    </div>
+    <div class="pkt-field">
+      <div class="pkt-val gray" style="min-width:80px">Length</div><div class="pkt-label">Data域长度大端 (2B)</div>
+    </div>
+    <div class="pkt-field">
+      <div class="pkt-val green" style="min-width:120px">Data</div><div class="pkt-label">业务数据域 (可变)</div>
+    </div>
+  </div>
+
+  <h2>报文类型（Type 字段）</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>值</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag">0x00</span></td><td>APDU 交互</td><td>标准/快速认证，证书交换</td></tr>
+      <tr><td><span class="tag">0x01</span></td><td>测距控制</td><td>RSSI 测距 / UWB 测距 / CS 测距请求</td></tr>
+      <tr><td><span class="tag">0x02</span></td><td>车辆控制</td><td>RKE 控车、随机数请求、认证回复、车状态</td></tr>
+      <tr><td><span class="tag">0x03</span></td><td>车 App 自定义消息</td><td>车 App 私有数据透传</td></tr>
+      <tr><td><span class="tag">0x04</span></td><td>读取车服务器自定义消息</td><td>DKF 缓存的服务端下发数据</td></tr>
+      <tr><td><span class="tag">0x05</span></td><td>车端事件通知</td><td>解锁/闭锁成功失败等事件</td></tr>
+      <tr><td><span class="tag">0x06</span></td><td>交易控制指令</td><td>deselect Applet</td></tr>
+      <tr><td><span class="tag">0x07</span></td><td>无感解闭锁状态</td><td>查询/设置无感解锁开关</td></tr>
+      <tr><td><span class="tag">0x08</span></td><td>设备能力查询</td><td>协商双端能力</td></tr>
+      <tr><td><span class="tag">0x09</span></td><td>UWB 参数协商</td><td>UWB 测距参数交换</td></tr>
+      <tr><td><span class="tag">0x0A</span></td><td>读写钥匙信箱</td><td>车 App 与车辆共享存储区域</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+</section>
+
+<!-- ===== SECTION 4: 配对流程 ===== -->
+<section class="section" id="pairing">
+<div class="container">
+  <div class="section-title">BLE 配对流程</div>
+  <div class="section-sub">加密配对码广播 + CCCD 订阅触发首次认证</div>
+
+  <div class="info-box">
+    <strong>核心安全机制：</strong>车辆通过 <span class="highlight">AES-128-CTR</span> 加密配对码后广播，只有持有 <span class="highlight">bleBroadcastKey</span> 的合法设备才能解密并发起配对，防止未授权设备扫描连接。
+  </div>
+
+  <h2>完整配对流程</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>车辆生成明文配对码</h4>
+        <p>每 <strong>30 秒</strong>随机生成十进制配对码（0 ~ 999999），转为 4 字节 Big-Endian 十六进制：<code>plainPairingCode</code>（0x00000000 ~ 0x000F423F）</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>生成 Nonce</h4>
+        <p>随机生成 4 字节 <code>IV</code>，对 IV 求 SHA-256 后截取前 12 字节得到 <code>Nonce</code>（96位）</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>AES-128-CTR 加密</h4>
+        <p><code>cipherPairingCode = AES_128_CTR(bleBroadcastKey, plainPairingCode, Nonce)</code><br>生成 4 字节密文配对码</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h4>构建广播数据</h4>
+        <p>密文广播 = <code>IV（4B）|| cipherPairingCode（4B）</code>，总 8 字节，放入 AD Data 字段广播</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <h4>设备扫描与解密</h4>
+        <p>设备扫描到符合规范的 RPA 广播，提取 pairingCode，使用本地 bleBroadcastKey + IV 解密验证，成功后主动发起配对请求</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-content">
+        <h4>CCCD 订阅 → 触发首次标准交易</h4>
+        <p>BLE 配对完成后，设备主动执行 <strong>CCCD 服务订阅</strong>（启用 DataOut Notification），车端收到后触发首次标准认证流程</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="warn-box">
+    <strong>注意：</strong>开通车主钥匙时，bleBroadcastKey 由服务器随钥匙证书一同下发给设备；其他场景（好友分享等）也通过服务器通道安全传输，不在 BLE 信道中明文传输。
+  </div>
+</div>
+</section>
+
+<!-- ===== SECTION 5: 认证流程 ===== -->
+<section class="section" id="auth">
+<div class="container">
+  <div class="section-title">钥匙认证流程</div>
+  <div class="section-sub">标准认证（首次必须）与快速认证（后续可用）</div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>标准认证（Standard Auth）</h3>
+      <p>基于完整 ECDH 密钥协商 + 证书链验证，车辆验证设备持有有效数字钥匙证书。首次必须执行，是快速认证的前提。</p>
+      <div style="margin-top:10px">
+        <span class="pill blue">安全级别高</span>
+        <span class="pill amber">耗时较长</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>快速认证（Fast Auth）</h3>
+      <p>利用上次标准认证建立的共享会话状态进行轻量认证，省去证书传输步骤。若快速认证失败，自动回退标准认证。</p>
+      <div style="margin-top:10px">
+        <span class="pill green">低延迟</span>
+        <span class="pill gray">依赖标准认证</span>
+      </div>
+    </div>
+  </div>
+
+  <h2>标准认证关键步骤</h2>
+  <p>认证基于 <strong>APDU 命令接口</strong>（Type = 0x00），通过 DataIn（FFF1 Write）发送命令，DataOut（FFF2 Notification）接收响应。</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num" style="background:#3b6d11">①</div>
+      <div class="step-content">
+        <h4>设备发起：SELECT + 证书 CSR</h4>
+        <p>设备 DKF 发送 SELECT APDU 选中数字车钥匙 Applet，附带设备临时公钥（ECC P-256）</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:#3b6d11">②</div>
+      <div class="step-content">
+        <h4>车辆回应：车证书 + 挑战随机数</h4>
+        <p>车辆发送自身证书（vehicleCert）和 16 字节车端随机数（8A tag），供设备验证车辆身份并计算签名</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:#3b6d11">③</div>
+      <div class="step-content">
+        <h4>设备回应：数字钥匙证书 + ECDH + 签名</h4>
+        <p>设备发送 ownerDkCert（或 sharedDkCert），附带设备临时公钥和认证数据。车辆验证证书链和签名有效性</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="background:#3b6d11">④</div>
+      <div class="step-content">
+        <h4>车辆认证通过 → 建立会话密钥</h4>
+        <p>双方通过 ECDH 派生共享会话密钥，后续控车指令使用此密钥进行 MAC 保护</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <strong>快速认证触发条件：</strong>
+    <ul style="margin-top:6px;margin-left:16px">
+      <li>必须完成过至少一次成功的标准认证</li>
+      <li>快速认证失败后，应重新执行标准认证</li>
+      <li>车企可自定义策略（如超过 7 天未使用则强制标准认证）</li>
+      <li>自定义策略不得与上述两条规则冲突</li>
+    </ul>
+  </div>
+</div>
+</section>
+
+<!-- ===== SECTION 6: 控车指令 ===== -->
+<section class="section" id="rke">
+<div class="container">
+  <div class="section-title">车辆控制（RKE）</div>
+  <div class="section-sub">签名认证模式 + 持续控车模式，Type = 0x02</div>
+
+  <h2>控车指令交互时序</h2>
+  <div class="flow-diagram">
+    <div style="display:flex;justify-content:space-between;gap:4px;flex-wrap:wrap">
+      <div class="flow-col" style="flex:1;min-width:80px;align-items:center">
+        <div class="flow-box" style="text-align:center;width:100%">手机 DKF</div>
+        <div style="width:1px;background:#e0dfd8;height:260px;margin-top:6px"></div>
+      </div>
+      <div style="flex:3;display:flex;flex-direction:column;gap:16px;padding-top:32px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;text-align:right;font-size:12px;color:#888780">若无随机数</div>
+          <div style="font-size:18px;color:#185fa5">→</div>
+          <div style="flex:1;font-size:12px;color:#444">请求随机数 (8Bh)</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;text-align:right;font-size:12px;color:#444">认证请求 (7F2B) + 车端随机数</div>
+          <div style="font-size:18px;color:#3b6d11">←</div>
+          <div style="flex:1;font-size:12px;color:#888780"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;text-align:right;font-size:12px;color:#888780">认证回复 (7F2D)：keyID + 车控指令 + ECDSA签名</div>
+          <div style="font-size:18px;color:#185fa5">→</div>
+          <div style="flex:1;font-size:12px;color:#444"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;text-align:right;font-size:12px;color:#444">指令验证响应 (7F2C)：下次随机数</div>
+          <div style="font-size:18px;color:#3b6d11">←</div>
+          <div style="flex:1;font-size:12px;color:#888780"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;text-align:right;font-size:12px;color:#444">执行结果响应 (7F72)：状态码</div>
+          <div style="font-size:18px;color:#3b6d11">←</div>
+          <div style="flex:1;font-size:12px;color:#888780"></div>
+        </div>
+      </div>
+      <div class="flow-col" style="flex:1;min-width:80px;align-items:center">
+        <div class="flow-box green" style="text-align:center;width:100%">车辆</div>
+        <div style="width:1px;background:#e0dfd8;height:260px;margin-top:6px"></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>签名计算输入</h2>
+  <p>车辆控制签名（9E tag，64 字节）的计算输入数据：</p>
+  <div class="packet">
+    <div class="pkt-field"><div class="pkt-val blue">89h</div><div class="pkt-label">keyID (16B)</div></div>
+    <div style="align-self:center;padding:0 4px;color:#888780">+</div>
+    <div class="pkt-field"><div class="pkt-val amber">57h</div><div class="pkt-label">车控指令</div></div>
+    <div style="align-self:center;padding:0 4px;color:#888780">+</div>
+    <div class="pkt-field"><div class="pkt-val green">8Ah</div><div class="pkt-label">车端随机数 (16B)</div></div>
+    <div style="align-self:center;padding:0 4px;color:#888780">+</div>
+    <div class="pkt-field"><div class="pkt-val gray">9Ch</div><div class="pkt-label">安全应用随机数 (16B)</div></div>
+    <div style="align-self:center;padding:0 8px;color:#888780">→</div>
+    <div class="pkt-field"><div class="pkt-val blue" style="min-width:80px">ECDSA-P256</div><div class="pkt-label">签名 (64B)</div></div>
+  </div>
+
+  <h2>功能与动作列表</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>功能/实体</th><th>ID</th><th>动作</th><th>动作ID</th></tr></thead>
+    <tbody>
+      <tr><td>门锁</td><td><span class="tag">0x0001</span></td><td>解锁 / 闭锁</td><td><span class="tag">0x01</span> / <span class="tag">0x02</span></td></tr>
+      <tr><td>车窗</td><td><span class="tag">0x0002</span></td><td>全开 / 全关 / 透气</td><td><span class="tag">0x01~0x03</span></td></tr>
+      <tr><td>后备箱</td><td><span class="tag">0x0003</span></td><td>开 / 关</td><td><span class="tag">0x01</span> / <span class="tag">0x02</span></td></tr>
+      <tr><td>引擎</td><td><span class="tag">0x0004</span></td><td>开 / 关</td><td><span class="tag">0x01</span> / <span class="tag">0x02</span></td></tr>
+      <tr><td>寻车</td><td><span class="tag">0x0005</span></td><td>闪灯 / 鸣笛 / 闪灯+鸣笛</td><td><span class="tag">0x01~0x03</span></td></tr>
+      <tr><td>车灯（状态实体）</td><td><span class="tag">0x0006</span></td><td>仅状态查询</td><td>—</td></tr>
+      <tr><td>车企自定义</td><td><span class="tag">0x1001~0xFFFF</span></td><td>车企自定义</td><td>—</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="warn-box">
+    <strong>超时处理：</strong>设备在 3 秒内未收到指令验证响应时，应提示用户错误，并在下次控车时重新向车端申请随机数。
+  </div>
+</div>
+</section>
+
+<!-- ===== SECTION 7: 证书体系 ===== -->
+<section class="section" id="cert">
+<div class="container">
+  <div class="section-title">证书体系</div>
+  <div class="section-sub">X.509 v3 + ECDSA-P256，CA 模式 vs 非 CA 模式</div>
+
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>证书</th><th>名称</th><th>签发者</th><th>大小</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag">A</span></td><td>vehicleOemCaCert</td><td>车企自建 CA</td><td>不限</td><td>信任链根证书，签发所有车端证书</td></tr>
+      <tr><td><span class="tag">B</span></td><td>vehicleCert</td><td>A 签发</td><td>不限</td><td>预置在车辆中，用于车辆身份验证</td></tr>
+      <tr><td><span class="tag">C</span></td><td>ownerDkCert</td><td>A 签发</td><td>≤700B</td><td>车主数字钥匙证书，含 keyID、权限、vehicleID</td></tr>
+      <tr><td><span class="tag">D</span></td><td>midShareCert</td><td>C（车主钥匙）签发</td><td>≤700B</td><td>CA模式中间分享证书，含分享有效期、可签发数量</td></tr>
+      <tr><td><span class="tag">E</span></td><td>sharedDkCert</td><td>D 签发</td><td>≤700B</td><td>CA模式好友钥匙证书</td></tr>
+      <tr><td><span class="tag">K</span></td><td>SharedDkCertV2</td><td>A（CA直签）</td><td>≤800B</td><td>非CA模式好友钥匙证书，含 SharingAttestation</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>关键 OID 扩展项</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>OID</th><th>含义</th><th>示例值</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag">1.3.6.1.4.1.59129.2.1</span></td><td>Vehicle ID（车辆唯一标识）</td><td>0410 + 16字节车ID</td></tr>
+      <tr><td><span class="tag">1.3.6.1.4.1.59129.2.2</span></td><td>数字车钥匙 keyID</td><td>0410 + 16字节keyID</td></tr>
+      <tr><td><span class="tag">1.3.6.1.4.1.59129.2.4</span></td><td>钥匙权限集合</td><td>0404 + 4字节权限（全FF=全权限）</td></tr>
+      <tr><td><span class="tag">1.3.6.1.4.1.59129.2.10</span></td><td>证书体系模式</td><td>00=CA模式，01=非CA模式</td></tr>
+      <tr><td><span class="tag">1.3.6.1.4.1.59129.2.11</span></td><td>SharingAttestation</td><td>非CA模式好友钥匙专用，约138字节</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+</section>
+
+<!-- ===== SECTION 8: 实现方案 ===== -->
+<section class="section" id="impl">
+<div class="container">
+  <div class="section-title">实现方案与设计</div>
+  <div class="section-sub">工程落地的分层架构与关键模块设计</div>
+
+  <h2>分层架构</h2>
+  <div class="cards">
+    <div class="card">
+      <div style="font-size:11px;font-weight:500;color:#888780;letter-spacing:.5px;margin-bottom:8px">应用层</div>
+      <h3>车 App / Native App</h3>
+      <p>调用 DKF API 实现 UI 交互：开通、分享、控车、状态展示。不直接操作 BLE。</p>
+    </div>
+    <div class="card">
+      <div style="font-size:11px;font-weight:500;color:#888780;letter-spacing:.5px;margin-bottom:8px">框架层</div>
+      <h3>DKF（数字钥匙框架）</h3>
+      <p>封装 BLE 连接管理、APDU 处理、测距控制、状态机管理。对上提供 API，对下与 TEE/SE 通信。</p>
+    </div>
+    <div class="card">
+      <div style="font-size:11px;font-weight:500;color:#888780;letter-spacing:.5px;margin-bottom:8px">安全层</div>
+      <h3>TEE TA / SE Applet</h3>
+      <p>持有数字钥匙私钥，在安全环境中完成 ECDSA 签名、ECDH 密钥协商、AES 加解密。私钥不出 TEE/SE。</p>
+    </div>
+    <div class="card">
+      <div style="font-size:11px;font-weight:500;color:#888780;letter-spacing:.5px;margin-bottom:8px">通信层</div>
+      <h3>BLE Stack</h3>
+      <p>管理扫描（Central 角色）、GATT 连接、MTU 协商（&gt;200B）、数据收发分包、重传机制。</p>
+    </div>
+  </div>
+
+  <h2>手机端关键模块设计</h2>
+
+  <details open>
+    <summary>BLE 扫描与连接管理</summary>
+    <div style="padding-left:16px;padding-bottom:8px">
+      <ul>
+        <li>背景扫描占空比 ≥ 10%，过滤 Service UUID = 0xFCD1 的广播</li>
+        <li>扫描到广播后，解析 AD Data 中的 pairingCode 密文，使用 bleBroadcastKey 解密</li>
+        <li>解密成功则将该设备加入候选列表，按 RSSI 排序</li>
+        <li>RPA 地址解析：使用预存 IRK 对 RPA 进行解析，确认为已配对车辆</li>
+        <li>MTU 协商：连接后立即发起 MTU 请求，目标 512B（最大 BLE 5.0 支持）</li>
+        <li>CCCD 订阅：发现 FFF2 特征后立即写入 CCCD 启用 Notification</li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>认证状态机</summary>
+    <div style="padding-left:16px;padding-bottom:8px">
+      <ul>
+        <li><strong>IDLE</strong> → BLE 连接建立 + CCCD 订阅 → <strong>CONNECTING</strong></li>
+        <li><strong>CONNECTING</strong> → 车端触发认证请求 → <strong>STANDARD_AUTH</strong></li>
+        <li><strong>STANDARD_AUTH</strong> → 认证通过 → <strong>AUTHENTICATED</strong></li>
+        <li><strong>AUTHENTICATED</strong> → 断连 → <strong>IDLE</strong>（保留 fast auth 上下文）</li>
+        <li>快速认证失败 → 回退 <strong>STANDARD_AUTH</strong></li>
+        <li>任意状态 → BLE 断连 → <strong>IDLE</strong></li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>数据帧收发与分包</summary>
+    <div style="padding-left:16px;padding-bottom:8px">
+      <ul>
+        <li>发送：构建完整帧（Version + Type + Status + Length + Data），按 MTU 大小分包，逐包发送</li>
+        <li>接收：按帧头 Length 字段拼包，组装完整帧后回调上层</li>
+        <li>超时机制：发送后 3 秒内未收到响应，触发重试或错误回调</li>
+        <li>Write with Response：等待 ATT ACK 后再发送下一包，防止丢包</li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>钥匙存储设计</summary>
+    <div style="padding-left:16px;padding-bottom:8px">
+      <ul>
+        <li>私钥：存储在 SE（安全单元）或 TEE KeyStore，不可导出</li>
+        <li>证书链（ownerDkCert / vehicleCert / midShareCert）：加密存储在 TEE 或 SE Applet</li>
+        <li>bleBroadcastKey、IRK：加密存储，TEE 保护，仅 DKF 内部访问</li>
+        <li>快速认证上下文（会话密钥、计数器）：TEE 内存，断电后需重新标准认证</li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>车端实现要点</summary>
+    <div style="padding-left:16px;padding-bottom:8px">
+      <ul>
+        <li>作为 <strong>Peripheral</strong> 角色，持续广播（周期 ≤ 100ms，建议 80ms）</li>
+        <li>每 30 秒刷新加密配对码，更新广播数据包</li>
+        <li>注销钥匙时更新 bleBroadcastKey，防止老设备接入</li>
+        <li>支持多从节点（辅节点）信号采集，主节点负责认证和控车</li>
+        <li>UWB 测距：在标准/快速认证完成后，才可触发 UWB 测距请求（Type=0x01）</li>
+        <li>离线场景：首次标准认证时，从设备获取证书链并本地验证</li>
+      </ul>
+    </div>
+  </details>
+</div>
+</section>
+
+<!-- ===== SECTION 9: 代码示例 ===== -->
+<section class="section" id="code">
+<div class="container">
+  <div class="section-title">代码参考示例</div>
+  <div class="section-sub">Android / iOS（Swift）关键模块伪代码</div>
+
+  <h2>Android — BLE 扫描与配对码解密</h2>
+<pre><code><span class="cm">// 扫描过滤：Service UUID = 0xFCD1</span>
+<span class="kw">val</span> filter = ScanFilter.Builder()
+    .setServiceUuid(ParcelUuid.fromString(<span class="st">"0000FCD1-0000-1000-8000-00805F9B34FB"</span>))
+    .build()
+
+<span class="kw">val</span> callback = <span class="kw">object</span> : ScanCallback() {
+    <span class="kw">override fun</span> onScanResult(callbackType: Int, result: ScanResult) {
+        <span class="kw">val</span> adData = result.scanRecord?.getServiceData(
+            ParcelUuid.fromString(<span class="st">"0000FCD1-..."</span>))
+        <span class="kw">if</span> (adData != <span class="kw">null</span> &amp;&amp; adData.size == <span class="nm">8</span>) {
+            <span class="kw">val</span> iv = adData.copyOfRange(<span class="nm">0</span>, <span class="nm">4</span>)
+            <span class="kw">val</span> cipherCode = adData.copyOfRange(<span class="nm">4</span>, <span class="nm">8</span>)
+            <span class="kw">val</span> plain = decryptPairingCode(bleBroadcastKey, iv, cipherCode)
+            <span class="kw">if</span> (plain != <span class="kw">null</span>) connectToDevice(result.device)
+        }
+    }
+}
+
+<span class="cm">// AES-128-CTR 解密配对码</span>
+<span class="kw">fun</span> decryptPairingCode(key: ByteArray, iv: ByteArray, cipher: ByteArray): ByteArray? {
+    <span class="kw">val</span> nonce = MessageDigest.getInstance(<span class="st">"SHA-256"</span>).digest(iv).copyOfRange(<span class="nm">0</span>, <span class="nm">12</span>)
+    <span class="kw">val</span> spec = IvParameterSpec(nonce + ByteArray(<span class="nm">4</span>)) <span class="cm">// CTR 初始计数器</span>
+    <span class="kw">val</span> cipher128 = Cipher.getInstance(<span class="st">"AES/CTR/NoPadding"</span>)
+    cipher128.init(Cipher.DECRYPT_MODE, SecretKeySpec(key, <span class="st">"AES"</span>), spec)
+    <span class="kw">return</span> cipher128.doFinal(cipher)
+}</code></pre>
+
+  <h2>Android — 认证回复消息构建（Type=0x02）</h2>
+<pre><code><span class="cm">// 构建 7F2D 认证回复帧</span>
+<span class="kw">fun</span> buildAuthReply(
+    keyId: ByteArray,       <span class="cm">// 16B, tag 89h</span>
+    vehicleCmd: ByteArray,  <span class="cm">// 控车指令 tag 57h (包含 7F70/7F73等)</span>
+    vehicleNonce: ByteArray,<span class="cm">// 车端随机数 16B, tag 8Ah</span>
+    appNonce: ByteArray     <span class="cm">// 安全应用随机数 16B, tag 9Ch</span>
+): ByteArray {
+    <span class="cm">// 1. 拼接签名输入</span>
+    <span class="kw">val</span> signInput = tlv(<span class="nm">0x89</span>, keyId) + tlv(<span class="nm">0x57</span>, vehicleCmd) +
+                    tlv(<span class="nm">0x8A</span>, vehicleNonce) + tlv(<span class="nm">0x9C</span>, appNonce)
+
+    <span class="cm">// 2. TEE 签名（私钥不出 SE）</span>
+    <span class="kw">val</span> sig = teeSigning.signECDSA(keyId, signInput) <span class="cm">// 64B, ECDSA-P256</span>
+
+    <span class="cm">// 3. 组装 7F2D TLV</span>
+    <span class="kw">val</span> replyData = tlv(<span class="nm">0x89</span>, keyId) + tlv(<span class="nm">0x57</span>, vehicleCmd) +
+                    tlv(<span class="nm">0x9E</span>, sig) + tlv(<span class="nm">0x9C</span>, appNonce)
+    <span class="kw">val</span> payload = tlv(<span class="nm">0x7F2D</span>, replyData)
+
+    <span class="cm">// 4. 封装 BLE 帧头</span>
+    <span class="kw">return</span> buildBleFrame(version=<span class="nm">0x01</span>, type=<span class="nm">0x02</span>, status=<span class="nm">0x0000</span>, data=payload)
+}
+
+<span class="kw">fun</span> buildBleFrame(version: Byte, type: Byte, status: Short, data: ByteArray): ByteArray {
+    <span class="kw">val</span> buf = ByteBuffer.allocate(<span class="nm">6</span> + data.size).order(ByteOrder.BIG_ENDIAN)
+    buf.put(version); buf.put(type); buf.putShort(status)
+    buf.putShort(data.size.toShort()); buf.put(data)
+    <span class="kw">return</span> buf.array()
+}</code></pre>
+
+  <h2>iOS (Swift) — GATT 连接与 CCCD 订阅</h2>
+<pre><code><span class="kw">class</span> DKBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
+    <span class="kw">let</span> DK_SERVICE_UUID = CBUUID(string: <span class="st">"FCD1"</span>)
+    <span class="kw">let</span> DK_DATA_IN_UUID = CBUUID(string: <span class="st">"FFF1"</span>)
+    <span class="kw">let</span> DK_DATA_OUT_UUID = CBUUID(string: <span class="st">"FFF2"</span>)
+
+    <span class="kw">func</span> peripheral(_ peripheral: CBPeripheral,
+                    didDiscoverCharacteristicsFor service: CBService, error: Error?) {
+        <span class="kw">for</span> char <span class="kw">in</span> service.characteristics ?? [] {
+            <span class="kw">switch</span> char.uuid {
+            <span class="kw">case</span> DK_DATA_OUT_UUID:
+                <span class="cm">// 启用 Notification（CCCD）— 触发车端首次标准认证</span>
+                peripheral.setNotifyValue(<span class="kw">true</span>, for: char)
+                dataOutChar = char
+            <span class="kw">case</span> DK_DATA_IN_UUID:
+                dataInChar = char
+            <span class="kw">default</span>: <span class="kw">break</span>
+            }
+        }
+    }
+
+    <span class="kw">func</span> sendFrame(_ frame: Data) {
+        <span class="kw">guard let</span> char = dataInChar <span class="kw">else</span> { <span class="kw">return</span> }
+        <span class="cm">// 按 MTU 分包发送</span>
+        <span class="kw">let</span> mtu = connectedPeripheral?.maximumWriteValueLength(for: .withResponse) ?? <span class="nm">200</span>
+        <span class="kw">var</span> offset = <span class="nm">0</span>
+        <span class="kw">while</span> offset &lt; frame.count {
+            <span class="kw">let</span> chunk = frame.subdata(in: offset ..&lt; min(offset + mtu, frame.count))
+            connectedPeripheral?.writeValue(chunk, for: char, type: .withResponse)
+            offset += mtu
+        }
+    }
+}</code></pre>
+
+  <div class="info-box" style="margin-top:24px">
+    <strong>安全建议：</strong>生产环境中，所有涉及数字钥匙私钥的操作（ECDSA 签名、ECDH 密钥协商）必须在 <strong>TEE TA</strong> 或 <strong>SE Applet</strong> 内执行，私钥严禁导出到普通内存。bleBroadcastKey 和 IRK 也应通过 TEE KeyStore 或 SE 加密保护。
+  </div>
+</div>
+</section>
+
+<div style="background:#f1f0ea;padding:20px 0;text-align:center;font-size:12px;color:#888780;margin-top:0">
+  基于 ICCOA/T 002（2025年12月版）规范整理 · 仅供技术参考，实际实现以原始规范文档为准
+</div>
+
+<script>
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-inner a');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 80) current = s.id;
+    });
+    navLinks.forEach(a => {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+  });
+</script>
