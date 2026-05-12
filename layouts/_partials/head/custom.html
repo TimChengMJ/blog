@@ -1,41 +1,15 @@
 <style>
-/* Hide sidebar on article pages for full-width content */
-body.article-page .left-sidebar {
-    display: none !important;
-}
-body.article-page .right-sidebar {
-    display: none !important;
-}
-body.article-page .main-container {
-    max-width: 100% !important;
-}
-body.article-page main.main {
-    max-width: 1060px;
-    margin: 0 auto;
+/* Maximize iframe article width */
+.article-content iframe {
     width: 100%;
-    padding: 0 20px;
+    min-height: 600px;
+    border: none;
 }
-
-/* Global table overflow */
-.article-content table {
-    display: block;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+/* Give article pages more content width */
+body.article-page .main-container.extended {
     max-width: 100%;
 }
-
-/* Prevent long strings from breaking layout */
-.article-content code,
-.article-content .ref,
-.article-content .msgid,
-.article-content .cmd {
-    word-break: break-all;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    body.article-page main.main {
-        padding: 0 12px;
-    }
+body.article-page main.main {
+    max-width: 1200px;
 }
 </style>
