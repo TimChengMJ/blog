@@ -1,15 +1,36 @@
 <style>
-/* Maximize iframe article width */
-.article-content iframe {
-    width: 100%;
-    min-height: 600px;
-    border: none;
-}
-/* Give article pages more content width */
+/* Give article pages maximum content width with sidebar */
 body.article-page .main-container.extended {
     max-width: 100%;
 }
 body.article-page main.main {
-    max-width: 1200px;
+    max-width: 960px;
+    width: 100%;
+}
+/* Ensure article content doesn't overflow */
+.article-content {
+    overflow: hidden;
+}
+.article-content img {
+    max-width: 100%;
+    height: auto;
+}
+/* Table horizontal scroll */
+.article-content table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+}
+/* Prevent long technical strings from breaking layout */
+.article-content code {
+    word-break: break-all;
+}
+/* Responsive */
+@media (max-width: 768px) {
+    body.article-page main.main {
+        max-width: 100%;
+        padding: 0 8px;
+    }
 }
 </style>
