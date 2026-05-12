@@ -14,12 +14,12 @@
     [[sidebar.links.main]]
       name = "GitHub"
       icon = "brands fa-github"
-      url = "https://github.com/timcheng"
+      url = "https://github.com/TimChengMJ"
       weight = 1
     [[sidebar.links.main]]
       name = "Email"
       icon = "solid fa-envelope"
-      url = "mailto:tim@example.com"
+      url = "mailto:734398377@qq.com"
       weight = 2
 
 [article]

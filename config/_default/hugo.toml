@@ -1,5 +1,5 @@
 # Hugo 核心配置
-baseURL = "https://example.com/"
+baseURL = "https://timchengmj.github.io/blog/"
 languageCode = "zh-cn"
 title = "Tim's Lab"
 theme = "hugo-theme-stack"
