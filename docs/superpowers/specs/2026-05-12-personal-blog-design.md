@@ -18,7 +18,7 @@
 | 自动部署 | GitHub Actions | 免费 |
 | 网页托管 | GitHub Pages | 免费 |
 | CDN + DNS | Cloudflare（可选） | 免费 |
-| 域名 | TBD（Namecheap / 阿里云 / 腾讯云） | ~50-80 元/年 |
+| 域名 | 待购买（将配置 CNAME + Cloudflare） | ~50-80 元/年 |
 
 **总成本：仅域名年费 50-80 元。**
 
