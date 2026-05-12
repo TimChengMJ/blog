@@ -1,34 +1,43 @@
 [[main]]
-  name = "文章"
-  url = "/posts/"
-  weight = 1
-  [main.params]
-    icon = "solid fa-newspaper"
+    identifier = "posts"
+    name       = "文章"
+    url        = "/posts/"
+    weight     = 1
 
 [[main]]
-  name = "项目"
-  url = "/projects/"
-  weight = 2
-  [main.params]
-    icon = "solid fa-microchip"
+    identifier = "projects"
+    name       = "项目"
+    url        = "/projects/"
+    weight     = 2
 
 [[main]]
-  name = "归档"
-  url = "/archives/"
-  weight = 3
-  [main.params]
-    icon = "solid fa-archive"
+    identifier = "archives"
+    name       = "归档"
+    url        = "/archives/"
+    weight     = 3
 
 [[main]]
-  name = "搜索"
-  url = "/search/"
-  weight = 4
-  [main.params]
-    icon = "solid fa-search"
+    identifier = "search"
+    name       = "搜索"
+    url        = "/search/"
+    weight     = 4
 
 [[main]]
-  name = "关于"
-  url = "/about/"
-  weight = 5
-  [main.params]
-    icon = "solid fa-user"
+    identifier = "about"
+    name       = "关于"
+    url        = "/about/"
+    weight     = 5
+
+[[social]]
+    identifier = "github"
+    name       = "GitHub"
+    url        = "https://github.com/TimChengMJ"
+    [social.params]
+        icon = "brand-github"
+
+[[social]]
+    identifier = "email"
+    name       = "Email"
+    url        = "mailto:734398377@qq.com"
+    [social.params]
+        icon = "messages"

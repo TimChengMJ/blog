@@ -1,0 +1,7 @@
+[zh]
+    label  = "简体中文"
+    title  = "Tim's Lab"
+    weight = 1
+
+    [zh.params.sidebar]
+        subtitle = "嵌入式工程师，热爱底层开发与开源硬件。"

@@ -1,20 +1,13 @@
-# Hugo 核心配置
-baseURL = "https://timchengmj.github.io/blog/"
-languageCode = "zh-cn"
-title = "Tim's Lab"
-theme = "hugo-theme-stack"
-hasCJKLanguage = true
-enableEmoji = true
-paginate = 10
+baseURL                = "https://timchengmj.github.io/blog/"
+locale                 = "zh-cn"
+title                  = "Tim's Lab"
+defaultContentLanguage = "zh"
+hasCJKLanguage         = true
+theme                  = "hugo-theme-stack"
+
+[pagination]
+    pagerSize = 10
 
 [permalinks]
-  posts = "/posts/:slug/"
-  projects = "/projects/:slug/"
-
-[markup]
-  [markup.highlight]
-    noClasses = false
-    style = "monokailight"
-  [markup.tableOfContents]
-    startLevel = 2
-    endLevel = 4
+    posts = "/posts/:slug/"
+    page = "/:slug/"
