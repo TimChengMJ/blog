@@ -1,0 +1,43 @@
+[main]
+  title = "Tim's Lab"
+  subtitle = "嵌入式开发 · 技术笔记 · 项目记录"
+  description = "嵌入式软件开发工程师的技术博客"
+
+[sidebar]
+  [sidebar.avatar]
+    src = "/images/avatar.png"
+    width = 120
+    height = 120
+  [sidebar.subtitle]
+    content = "嵌入式工程师，热爱底层开发与开源硬件。"
+  [sidebar.links]
+    [[sidebar.links.main]]
+      name = "GitHub"
+      icon = "brands fa-github"
+      url = "https://github.com/timcheng"
+      weight = 1
+    [[sidebar.links.main]]
+      name = "Email"
+      icon = "solid fa-envelope"
+      url = "mailto:tim@example.com"
+      weight = 2
+
+[article]
+  [article.license]
+    enabled = false
+  [article.math]
+    enabled = false
+  [article.toc]
+    enabled = true
+
+[widgets]
+  enabled = ["search", "archives", "categories", "tag-cloud"]
+  [widgets.categories]
+    [widgets.categories.params]
+      limit = 10
+  [widgets.tag-cloud]
+    [widgets.tag-cloud.params]
+      limit = 10
+  [widgets.archives]
+    [widgets.archives.params]
+      limit = 5

@@ -1,0 +1,34 @@
+[[main]]
+  name = "文章"
+  url = "/posts/"
+  weight = 1
+  [main.params]
+    icon = "solid fa-newspaper"
+
+[[main]]
+  name = "项目"
+  url = "/projects/"
+  weight = 2
+  [main.params]
+    icon = "solid fa-microchip"
+
+[[main]]
+  name = "归档"
+  url = "/archives/"
+  weight = 3
+  [main.params]
+    icon = "solid fa-archive"
+
+[[main]]
+  name = "搜索"
+  url = "/search/"
+  weight = 4
+  [main.params]
+    icon = "solid fa-search"
+
+[[main]]
+  name = "关于"
+  url = "/about/"
+  weight = 5
+  [main.params]
+    icon = "solid fa-user"
