@@ -1,13 +1,19 @@
 <style>
-/* Full-width articles with no sidebar */
+/* Hide sidebar on article pages for full-width content */
+body.article-page .left-sidebar {
+    display: none !important;
+}
+body.article-page .right-sidebar {
+    display: none !important;
+}
 body.article-page .main-container {
-    max-width: 100%;
+    max-width: 100% !important;
 }
 body.article-page main.main {
-    max-width: 1100px;
+    max-width: 1060px;
     margin: 0 auto;
     width: 100%;
-    padding: 0 24px;
+    padding: 0 20px;
 }
 
 /* Global table overflow */
