@@ -1,4 +1,4 @@
-﻿---
+---
 title: "CCC Digital Key — BLE 实现流程（双版本对照）"
 description: "CCC-TS-101 BLE协议交互设计流程，覆盖R3 vs v4.1.0版本差异、Owner Pairing与Passive Entry场景"
 date: 2026-05-12T08:00:00+08:00
@@ -7,7 +7,9 @@ tags: ["CCC", "Digital Key", "BLE", "UWB", "车联网"]
 draft: false
 ---
 
-<style>:root{--navy:#0d2137;--blue:#1a5fa8;--blue-lt:#3a87d4;--pale:#e8f2fc;--faint:#f4f8fd;--green:#16a34a;--green-pale:#dcfce7;--amber:#b45309;--amber-pale:#fef3c7;--red:#b91c1c;--red-pale:#fee2e2;--purple:#7c3aed;--purple-pale:#ede9fe;--teal:#0d9488;--gray:#64748b;--gray-lt:#f1f5f9;--border:#e2e8f0;--text:#1e293b;--mono:'Courier New',monospace}.hdr{background:linear-gradient(135deg,var(--navy) 0%,#1a3f6f 60%,var(--blue) 100%);color:#fff;padding:40px 48px 32px}
+<style>
+:root{--navy:#0d2137;--blue:#1a5fa8;--blue-lt:#3a87d4;--pale:#e8f2fc;--faint:#f4f8fd;--green:#16a34a;--green-pale:#dcfce7;--amber:#b45309;--amber-pale:#fef3c7;--red:#b91c1c;--red-pale:#fee2e2;--purple:#7c3aed;--purple-pale:#ede9fe;--teal:#0d9488;--gray:#64748b;--gray-lt:#f1f5f9;--border:#e2e8f0;--text:#1e293b;--mono:'Courier New',monospace}
+.hdr{background:linear-gradient(135deg,var(--navy) 0%,#1a3f6f 60%,var(--blue) 100%);color:#fff;padding:40px 48px 32px}
 .hdr .badge{display:inline-block;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:4px 14px;font-size:12px;margin-bottom:14px}
 .hdr h1{font-size:26px;font-weight:700;margin-bottom:6px}
 .hdr p{font-size:14px;opacity:.75}
@@ -86,257 +88,258 @@ draft: false
 .flow-arrow{text-align:center;color:var(--gray);font-size:22px;margin:-6px 0;line-height:1}
 @media(max-width:768px){.ov-grid{grid-template-columns:1fr}.con-grid{grid-template-columns:1fr 1fr}.hdr{padding:24px 20px}.wrap{padding:20px 16px 48px}}
 </style>
+
 <div class="hdr">
-  <div class="badge">CCC-TS-101 路 BLE 瀹炵幇鎸囧崡</div>
-  <h1>BLE 鍗忚浜や簰璁捐娴佺▼锛堝弻鐗堟湰瀵圭収锛?/h1>
-  <p>R3 v1.0.0 | v4.1.0 路 搂19 Bluetooth LE Interface 路 瑕嗙洊 Owner Pairing + Passive Entry</p>
+  <div class="badge">CCC-TS-101 · BLE 实现指南</div>
+  <h1>BLE 协议交互设计流程（双版本对照）</h1>
+  <p>R3 v1.0.0 | v4.1.0 · §19 Bluetooth LE Interface · 覆盖 Owner Pairing + Passive Entry</p>
   <div class="meta">
-    <span>R3: 搂19 p.293鈥?76</span><span>v4: 搂19 p.436鈥?67</span><span>馃數 鍏辨湁 &nbsp;馃煛 v4鏈夊樊寮?&nbsp;馃煝 v4鏂板</span>
+    <span>R3: §19 p.293–376</span><span>v4: §19 p.436–567</span><span>🔵 共有 &nbsp;🟡 v4有差异 &nbsp;🟢 v4新增</span>
   </div>
 </div>
 
 <div class="wrap">
 
 <div class="ov-grid">
-  <div class="ov-card"><h3>鍦烘櫙涓€锛歄wner Pairing</h3><p>杞︿富棣栨缁戝畾鎵嬫満涓庤溅杈嗭紝瀹屾垚瀵嗛挜浜ゆ崲涓?UWB 浼氳瘽鍒濆鍖栥€?/p><span class="ref">搂19.2.1 路 搂19.5.1 路 搂6</span></div>
-  <div class="ov-card"><h3>鍦烘櫙浜岋細Passive Entry</h3><p>閰嶅瀹屾垚鍚庢瘡娆℃帴杩戣溅杈嗘椂鎵ц锛孉UTH0/AUTH1 璁よ瘉鍚庤В閿併€?/p><span class="ref">搂19.2.3 路 搂19.5.5</span></div>
+  <div class="ov-card"><h3>场景一：Owner Pairing</h3><p>车主首次绑定手机与车辆，完成密钥交换与 UWB 会话初始化。</p><span class="ref">§19.2.1 · §19.5.1 · §6</span></div>
+  <div class="ov-card"><h3>场景二：Passive Entry</h3><p>配对完成后每次接近车辆时执行，AUTH0/AUTH1 认证后解锁。</p><span class="ref">§19.2.3 · §19.5.5</span></div>
 </div>
 
-<!-- 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲 OWNER PAIRING 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲 -->
-<div class="sec-hdr">鍦烘櫙涓€锛歄wner Pairing 棣栨閰嶅</div>
+<!-- ══════════ OWNER PAIRING ══════════ -->
+<div class="sec-hdr">场景一：Owner Pairing 首次配对</div>
 
 <!-- Phase 0 -->
 <div class="phase">
-  <div class="phase-hdr"><div class="phase-num c1">0</div><div class="info"><h2>骞挎挱寤虹珛 &amp; 杩炴帴</h2><p>杞﹁締骞挎挱锛屾墜鏈烘壂鎻忓苟寤虹珛 LL 杩炴帴锛堜袱鐗堟湰鐩稿悓锛?/p></div><span class="sec-pill">搂19.2.1.1 路 搂19.2.1.3 路 Figure 19-1</span></div>
+  <div class="phase-hdr"><div class="phase-num c1">0</div><div class="info"><h2>广播建立 &amp; 连接</h2><p>车辆广播，手机扫描并建立 LL 连接（两版本相同）</p></div><span class="sec-pill">§19.2.1.1 · §19.2.1.3 · Figure 19-1</span></div>
   <div class="phase-body">
     <table class="tbl">
-      <thead><tr><th>#</th><th>鏂瑰悜</th><th>鎸囦护/娑堟伅</th><th>鍏抽敭鍙傛暟</th><th>R3 浣嶇疆</th><th>v4 浣嶇疆</th><th>鍙樻洿</th></tr></thead>
+      <thead><tr><th>#</th><th>方向</th><th>指令/消息</th><th>关键参数</th><th>R3 位置</th><th>v4 位置</th><th>变更</th></tr></thead>
       <tbody>
-        <tr><td>1</td><td>杞﹁締 LL</td><td><span class="cmd">LE Set Advertising Params</span></td><td class="params">PHY: Legacy LE 1M only锛汦vent: ADV_IND</td><td><span class="ref">搂19.2.1.3 p.297</span></td><td><span class="ref">搂19.2.1.3 p.441</span></td><td><span class="same">馃數 涓嶅彉</span></td></tr>
-        <tr><td>2</td><td>杞﹁締 鈫?绌哄彛</td><td><span class="cmd">ADV_IND</span></td><td class="params"><code>UUID=0xFFF5</code>, <code>IntentConfig=0x01</code>, <code>VehicleMfr=0x0000</code><br>ServiceData UUID: <code>5810bbc0-b499-11e9-a2a3-2a2ae2dbcce4</code></td><td><span class="ref">Table 19-2 p.298</span></td><td><span class="ref">Table 19-4 p.441</span></td><td><span class="same">馃數 涓嶅彉</span></td></tr>
-        <tr><td>3</td><td>鎵嬫満 LL</td><td><span class="cmd">LE Set Scan Enable</span></td><td class="params">Passive scan锛宎ccept all</td><td><span class="ref">搂19.2.1.1</span></td><td><span class="ref">搂19.2.1.1</span></td><td><span class="same">馃數 涓嶅彉</span></td></tr>
-        <tr><td>4</td><td>鎵嬫満 Host</td><td>妫€鏌?<code>CCC_DK_UUID</code>锛岄€氱煡鐢ㄦ埛</td><td class="params">Bit[0] IntentConfig: 0=杞﹁締涓诲姩瑙﹀彂</td><td><span class="ref">Table 19-3</span></td><td><span class="ref">Table 19-3</span></td><td><span class="same">馃數 涓嶅彉</span></td></tr>
-        <tr><td>5</td><td>鎵嬫満 鈫?杞﹁締</td><td><span class="cmd">CONNECT_IND</span></td><td class="params">鎺ㄨ崘杩炴帴闂撮殧: <code>30 ms</code></td><td><span class="ref">搂19.2.1.1</span></td><td><span class="ref">搂19.2.1.1</span></td><td><span class="same">馃數 涓嶅彉</span></td></tr>
+        <tr><td>1</td><td>车辆 LL</td><td><span class="cmd">LE Set Advertising Params</span></td><td class="params">PHY: Legacy LE 1M only；Event: ADV_IND</td><td><span class="ref">§19.2.1.3 p.297</span></td><td><span class="ref">§19.2.1.3 p.441</span></td><td><span class="same">🔵 不变</span></td></tr>
+        <tr><td>2</td><td>车辆 → 空口</td><td><span class="cmd">ADV_IND</span></td><td class="params"><code>UUID=0xFFF5</code>, <code>IntentConfig=0x01</code>, <code>VehicleMfr=0x0000</code><br>ServiceData UUID: <code>5810bbc0-b499-11e9-a2a3-2a2ae2dbcce4</code></td><td><span class="ref">Table 19-2 p.298</span></td><td><span class="ref">Table 19-4 p.441</span></td><td><span class="same">🔵 不变</span></td></tr>
+        <tr><td>3</td><td>手机 LL</td><td><span class="cmd">LE Set Scan Enable</span></td><td class="params">Passive scan，accept all</td><td><span class="ref">§19.2.1.1</span></td><td><span class="ref">§19.2.1.1</span></td><td><span class="same">🔵 不变</span></td></tr>
+        <tr><td>4</td><td>手机 Host</td><td>检查 <code>CCC_DK_UUID</code>，通知用户</td><td class="params">Bit[0] IntentConfig: 0=车辆主动触发</td><td><span class="ref">Table 19-3</span></td><td><span class="ref">Table 19-3</span></td><td><span class="same">🔵 不变</span></td></tr>
+        <tr><td>5</td><td>手机 → 车辆</td><td><span class="cmd">CONNECT_IND</span></td><td class="params">推荐连接间隔: <code>30 ms</code></td><td><span class="ref">§19.2.1.1</span></td><td><span class="ref">§19.2.1.1</span></td><td><span class="same">🔵 不变</span></td></tr>
       </tbody>
     </table>
   </div>
 </div>
-<div class="flow-arrow">鈫?/div>
+<div class="flow-arrow">↓</div>
 
 <!-- Phase 1 -->
 <div class="phase">
-  <div class="phase-hdr"><div class="phase-num c2">1</div><div class="info"><h2>GATT 鏈嶅姟鍙戠幇 + L2CAP 寤虹珛</h2><p>v4 鏂板鐗堟湰鍗忓晢鐗瑰緛锛汻3 浠呰鍗曚竴 SPSM</p></div><span class="sec-pill">搂19.2.1.7鈥?9.2.1.10 路 p.444</span></div>
+  <div class="phase-hdr"><div class="phase-num c2">1</div><div class="info"><h2>GATT 服务发现 + L2CAP 建立</h2><p>v4 新增版本协商特征；R3 仅读单一 SPSM</p></div><span class="sec-pill">§19.2.1.7–19.2.1.10 · p.444</span></div>
   <div class="phase-body">
-    <div class="callout warn"><span class="ico">馃煛</span><div><strong>v4 宸紓锛?/strong>v4 鏂板 <code>UUID_SPSM_VDBT_VERSION</code> 鐗瑰緛锛堝惈鐗堟湰鍒楄〃+SPSM锛夛紝鑻ヤ笉鏀寔鍒欏洖閫€璇?<code>UUID_SPSM</code>銆傝澶囪繕闇€鍐欏叆 <code>UUID_DEVICE_VDBT_VERSION</code> 纭閫夊畾鐗堟湰銆?/div></div>
+    <div class="callout warn"><span class="ico">🟡</span><div><strong>v4 差异：</strong>v4 新增 <code>UUID_SPSM_VDBT_VERSION</code> 特征（含版本列表+SPSM），若不支持则回退读 <code>UUID_SPSM</code>。设备还需写入 <code>UUID_DEVICE_VDBT_VERSION</code> 确认选定版本。</div></div>
     <table class="tbl">
-      <thead><tr><th>#</th><th>鏂瑰悜</th><th>鎸囦护/娑堟伅</th><th>鍏抽敭鍙傛暟</th><th>R3 浣嶇疆</th><th>v4 浣嶇疆</th><th>鍙樻洿</th></tr></thead>
+      <thead><tr><th>#</th><th>方向</th><th>指令/消息</th><th>关键参数</th><th>R3 位置</th><th>v4 位置</th><th>变更</th></tr></thead>
       <tbody>
-        <tr><td>1</td><td>鎵嬫満 鈫?杞﹁締</td><td>璇?<span class="cmd">UUID_SPSM_VDBT_VERSION</span></td><td class="params">UUID: <code>AE285B91-6D23-23F1-CA12-6B1EE5B780A3</code></td><td>鈥旓紙浠呰 SPSM锛?/td><td><span class="ref">Table 19-9 p.444</span></td><td><span class="chg">馃煛 v4鏂板</span></td></tr>
-        <tr><td>2a</td><td>杞﹁締 鈫?鎵嬫満</td><td>杩斿洖 SPSM + V-D-BT 鐗堟湰鍒楄〃</td><td class="params"><code>SPSM</code>(2B) + <code>V-D-BT-vehicleList</code> + <code>Features_Supported</code>(kB)</td><td>鈥?/td><td><span class="ref">Table 19-13 p.445</span></td><td><span class="chg">馃煛 v4鏂板</span></td></tr>
-        <tr><td>2b</td><td>杞﹁締 鈫?鎵嬫満</td><td>鎴栧洖閫€锛氳 <span class="cmd">UUID_SPSM</span></td><td class="params">UUID: <code>D3B5A130-9E23-4B3A-8BE4-6B1EE5F980A3</code></td><td><span class="ref">Table 19-7 p.300</span></td><td><span class="ref">Table 19-7 p.444</span></td><td><span class="same">馃數 鍏煎</span></td></tr>
-        <tr><td>3</td><td>鎵嬫満 鈫?杞﹁締</td><td>鍐欏叆 <span class="cmd">UUID_DEVICE_VDBT_VERSION</span></td><td class="params"><code>V-D-BT-agreedVersion</code>锛堟渶楂樺叕鍏辩増鏈級+ <code>Features_Supported</code></td><td>鈥?/td><td><span class="ref">Table 19-14 p.445</span></td><td><span class="chg">馃煛 v4鏂板</span></td></tr>
-        <tr><td>4</td><td>鎵嬫満 鈫?杞﹁締</td><td>寤虹珛 <span class="cmd">L2CAP CoC</span></td><td class="params">浣跨敤 SPSM 鍊硷紙鑼冨洿 <code>0x0080鈥?x00FF</code>锛?/td><td><span class="ref">BT Core Vol3 Part A</span></td><td><span class="ref">BT Core Vol3 Part A</span></td><td><span class="same">馃數 涓嶅彉</span></td></tr>
+        <tr><td>1</td><td>手机 → 车辆</td><td>读 <span class="cmd">UUID_SPSM_VDBT_VERSION</span></td><td class="params">UUID: <code>AE285B91-6D23-23F1-CA12-6B1EE5B780A3</code></td><td>—（仅读 SPSM）</td><td><span class="ref">Table 19-9 p.444</span></td><td><span class="chg">🟡 v4新增</span></td></tr>
+        <tr><td>2a</td><td>车辆 → 手机</td><td>返回 SPSM + V-D-BT 版本列表</td><td class="params"><code>SPSM</code>(2B) + <code>V-D-BT-vehicleList</code> + <code>Features_Supported</code>(kB)</td><td>—</td><td><span class="ref">Table 19-13 p.445</span></td><td><span class="chg">🟡 v4新增</span></td></tr>
+        <tr><td>2b</td><td>车辆 → 手机</td><td>或回退：读 <span class="cmd">UUID_SPSM</span></td><td class="params">UUID: <code>D3B5A130-9E23-4B3A-8BE4-6B1EE5F980A3</code></td><td><span class="ref">Table 19-7 p.300</span></td><td><span class="ref">Table 19-7 p.444</span></td><td><span class="same">🔵 兼容</span></td></tr>
+        <tr><td>3</td><td>手机 → 车辆</td><td>写入 <span class="cmd">UUID_DEVICE_VDBT_VERSION</span></td><td class="params"><code>V-D-BT-agreedVersion</code>（最高公共版本）+ <code>Features_Supported</code></td><td>—</td><td><span class="ref">Table 19-14 p.445</span></td><td><span class="chg">🟡 v4新增</span></td></tr>
+        <tr><td>4</td><td>手机 → 车辆</td><td>建立 <span class="cmd">L2CAP CoC</span></td><td class="params">使用 SPSM 值（范围 <code>0x0080–0x00FF</code>）</td><td><span class="ref">BT Core Vol3 Part A</span></td><td><span class="ref">BT Core Vol3 Part A</span></td><td><span class="same">🔵 不变</span></td></tr>
       </tbody>
     </table>
-    <div class="callout info"><span class="ico">鈩癸笍</span><div>v4 褰撳墠鐗堟湰鍊硷細<strong>V-D-BT 3.1 = <code>0x0301h</code></strong>锛涢涓敮鎸佺増鏈?= <code>0x0100h</code>锛圴-D-BT 1.0锛?/div></div>
+    <div class="callout info"><span class="ico">ℹ️</span><div>v4 当前版本值：<strong>V-D-BT 3.1 = <code>0x0301h</code></strong>；首个支持版本 = <code>0x0100h</code>（V-D-BT 1.0）</div></div>
   </div>
 </div>
-<div class="flow-arrow">鈫?/div>
+<div class="flow-arrow">↓</div>
 
 <!-- Phase 2 -->
 <div class="phase">
-  <div class="phase-hdr"><div class="phase-num c3">2</div><div class="info"><h2>BLE OOB 閰嶅 + 鍔犲瘑寤虹珛</h2><p>涓ょ増鏈畬鍏ㄧ浉鍚岋紝SPAKE2+ OOB 鏁版嵁棰勫厛閫氳繃 NFC 浜ゆ崲</p></div><span class="sec-pill">搂19.2.1.2 路 搂19.2.1.4/5 路 Figure 19-3</span></div>
+  <div class="phase-hdr"><div class="phase-num c3">2</div><div class="info"><h2>BLE OOB 配对 + 加密建立</h2><p>两版本完全相同，SPAKE2+ OOB 数据预先通过 NFC 交换</p></div><span class="sec-pill">§19.2.1.2 · §19.2.1.4/5 · Figure 19-3</span></div>
   <div class="phase-body">
     <table class="tbl">
-      <thead><tr><th>#</th><th>鏂瑰悜</th><th>鎸囦护/娑堟伅</th><th>鍏抽敭鍙傛暟</th><th>浣嶇疆锛圧3=v4锛?/th></tr></thead>
+      <thead><tr><th>#</th><th>方向</th><th>指令/消息</th><th>关键参数</th><th>位置（R3=v4）</th></tr></thead>
       <tbody>
-        <tr><td>1</td><td>鎵嬫満鈫掕溅杈?/td><td><span class="cmd">Pairing Request</span></td><td class="params"><code>OOB flag=1</code>, <code>AuthReq=1</code>(Bonding), <code>IO Cap=0x00鈥?xFF</code></td><td><span class="ref">Table 19-4/5</span></td></tr>
-        <tr><td>2</td><td>杞﹁締鈫掓墜鏈?/td><td><span class="cmd">Pairing Response</span></td><td class="params"><code>OOB=1</code>, <code>AuthReq=1</code>, <code>MaxKeySize=0x10</code>, <code>InitKeyDist=0xF0</code>, <code>RespKeyDist=0xF0</code></td><td><span class="ref">Table 19-5/6</span></td></tr>
-        <tr><td>3鈥?</td><td>鍙屽悜</td><td><span class="cmd">Pairing Public Key</span> (PKa / PKb)</td><td class="params">256-bit ECDH 鍏挜浜ゆ崲</td><td><span class="ref">Figure 19-3</span></td></tr>
-        <tr><td>5</td><td>鍙屾柟</td><td>楠岃瘉 OOB Confirm锛圕a / Cb锛?/td><td class="params">鏉ヨ嚜 NFC SPAKE2+ 淇￠亾</td><td><span class="ref">搂19.2.1.2</span></td></tr>
-        <tr><td>6鈥?</td><td>鍙屽悜</td><td><span class="cmd">Pairing Random</span> (Na / Nb)</td><td class="params">128-bit nonce</td><td><span class="ref">Figure 19-3</span></td></tr>
-        <tr><td>8</td><td>鍙屾柟</td><td>璁＄畻 <strong>LTK</strong></td><td class="params">DHKey + Na + Nb 鈫?LTK锛圔T Core Vol3 Part H 搂2.3.5.6.5锛?/td><td><span class="ref">搂19.2.1.2</span></td></tr>
-        <tr><td>9鈥?0</td><td>鍙屽悜</td><td><span class="cmd">Pairing DHKey Check</span> (Ea / Eb)</td><td class="params">浜掗獙閫氳繃鍚庨厤瀵瑰畬鎴?/td><td><span class="ref">Figure 19-3</span></td></tr>
-        <tr><td>11</td><td>鎵嬫満</td><td><strong>Encryption Enable</strong>锛圠TK 鐢熸晥锛?/td><td class="params">BT Core Vol6 Part D</td><td><span class="ref">搂19.2.1.2</span></td></tr>
-        <tr><td>12</td><td>鍙屾柟</td><td>鍔犲叆 <strong>Resolving List</strong></td><td class="params">浜ゆ崲 IRK锛孷ol6 Part B 搂4.7</td><td><span class="ref">搂19.2.1.2</span></td></tr>
+        <tr><td>1</td><td>手机→车辆</td><td><span class="cmd">Pairing Request</span></td><td class="params"><code>OOB flag=1</code>, <code>AuthReq=1</code>(Bonding), <code>IO Cap=0x00–0xFF</code></td><td><span class="ref">Table 19-4/5</span></td></tr>
+        <tr><td>2</td><td>车辆→手机</td><td><span class="cmd">Pairing Response</span></td><td class="params"><code>OOB=1</code>, <code>AuthReq=1</code>, <code>MaxKeySize=0x10</code>, <code>InitKeyDist=0xF0</code>, <code>RespKeyDist=0xF0</code></td><td><span class="ref">Table 19-5/6</span></td></tr>
+        <tr><td>3–4</td><td>双向</td><td><span class="cmd">Pairing Public Key</span> (PKa / PKb)</td><td class="params">256-bit ECDH 公钥交换</td><td><span class="ref">Figure 19-3</span></td></tr>
+        <tr><td>5</td><td>双方</td><td>验证 OOB Confirm（Ca / Cb）</td><td class="params">来自 NFC SPAKE2+ 信道</td><td><span class="ref">§19.2.1.2</span></td></tr>
+        <tr><td>6–7</td><td>双向</td><td><span class="cmd">Pairing Random</span> (Na / Nb)</td><td class="params">128-bit nonce</td><td><span class="ref">Figure 19-3</span></td></tr>
+        <tr><td>8</td><td>双方</td><td>计算 <strong>LTK</strong></td><td class="params">DHKey + Na + Nb → LTK（BT Core Vol3 Part H §2.3.5.6.5）</td><td><span class="ref">§19.2.1.2</span></td></tr>
+        <tr><td>9–10</td><td>双向</td><td><span class="cmd">Pairing DHKey Check</span> (Ea / Eb)</td><td class="params">互验通过后配对完成</td><td><span class="ref">Figure 19-3</span></td></tr>
+        <tr><td>11</td><td>手机</td><td><strong>Encryption Enable</strong>（LTK 生效）</td><td class="params">BT Core Vol6 Part D</td><td><span class="ref">§19.2.1.2</span></td></tr>
+        <tr><td>12</td><td>双方</td><td>加入 <strong>Resolving List</strong></td><td class="params">交换 IRK，Vol6 Part B §4.7</td><td><span class="ref">§19.2.1.2</span></td></tr>
       </tbody>
     </table>
-    <div class="callout warn"><span class="ico">馃敀</span><div><strong>鍔犲瘑绾︽潫锛堜袱鐗堟湰鐩稿悓锛夛細</strong>L2CAP 杩炴帴鍓嶅繀椤诲畬鎴愬姞瀵嗭紙Owner Pairing / First Approach 渚嬪锛夈€? 绉掕秴鏃跺悗杞﹁締寮哄埗鏂紑銆?/div></div>
+    <div class="callout warn"><span class="ico">🔒</span><div><strong>加密约束（两版本相同）：</strong>L2CAP 连接前必须完成加密（Owner Pairing / First Approach 例外）。5 秒超时后车辆强制断开。</div></div>
   </div>
 </div>
-<div class="flow-arrow">鈫?/div>
+<div class="flow-arrow">↓</div>
 
 <!-- Phase 3 -->
 <div class="phase">
-  <div class="phase-hdr"><div class="phase-num c4">3</div><div class="info"><h2>First Approach 鈥?OOB 鏁版嵁浜ゆ崲</h2><p>涓ょ増鏈浉鍚岋紝BLE 鍔犲瘑淇￠亾浜ゆ崲 BLE Secure OOB 閰嶅鏁版嵁</p></div><span class="sec-pill">搂19.3.4 路 Table 19-44/46 路 p.317/461</span></div>
+  <div class="phase-hdr"><div class="phase-num c4">3</div><div class="info"><h2>First Approach — OOB 数据交换</h2><p>两版本相同，BLE 加密信道交换 BLE Secure OOB 配对数据</p></div><span class="sec-pill">§19.3.4 · Table 19-44/46 · p.317/461</span></div>
   <div class="phase-body">
     <table class="tbl">
-      <thead><tr><th>#</th><th>鏂瑰悜</th><th>娑堟伅</th><th>ID</th><th>鍏抽敭鍙傛暟</th><th>R3 浣嶇疆</th><th>v4 浣嶇疆</th></tr></thead>
+      <thead><tr><th>#</th><th>方向</th><th>消息</th><th>ID</th><th>关键参数</th><th>R3 位置</th><th>v4 位置</th></tr></thead>
       <tbody>
-        <tr><td>1</td><td>鎵嬫満鈫掕溅杈?/td><td><span class="cmd">First_Approach_RQ</span></td><td><span class="msgid">0x0E</span></td><td class="params"><code>E1_Payload</code>(8B, AES-CCM/Kble_intro, DK_Identifier) + <code>IV1</code>(8B) + <code>Tag1</code>(4B)<br><code>E2_Payload</code>(38B, AES-CCM/Kble_oob, BTAddrA鈥朇a鈥杛a) + <code>IV2</code>(8B) + <code>Tag2</code>(4B)</td><td><span class="ref">Table 19-44/45 p.317</span></td><td><span class="ref">Table 19-44/45 p.461</span></td></tr>
-        <tr><td>2</td><td>杞﹁締鈫掓墜鏈?/td><td><span class="cmd">First_Approach_RS</span></td><td><span class="msgid">0x0F</span></td><td class="params"><code>E_Payload</code>(38B, AES-CCM/Kble_oob, BTAddrB鈥朇b鈥杛b) + <code>IV</code>(8B) + <code>Tag</code>(4B)</td><td><span class="ref">Table 19-46/47 p.318</span></td><td><span class="ref">Table 19-46/47 p.462</span></td></tr>
+        <tr><td>1</td><td>手机→车辆</td><td><span class="cmd">First_Approach_RQ</span></td><td><span class="msgid">0x0E</span></td><td class="params"><code>E1_Payload</code>(8B, AES-CCM/Kble_intro, DK_Identifier) + <code>IV1</code>(8B) + <code>Tag1</code>(4B)<br><code>E2_Payload</code>(38B, AES-CCM/Kble_oob, BTAddrA‖Ca‖ra) + <code>IV2</code>(8B) + <code>Tag2</code>(4B)</td><td><span class="ref">Table 19-44/45 p.317</span></td><td><span class="ref">Table 19-44/45 p.461</span></td></tr>
+        <tr><td>2</td><td>车辆→手机</td><td><span class="cmd">First_Approach_RS</span></td><td><span class="msgid">0x0F</span></td><td class="params"><code>E_Payload</code>(38B, AES-CCM/Kble_oob, BTAddrB‖Cb‖rb) + <code>IV</code>(8B) + <code>Tag</code>(4B)</td><td><span class="ref">Table 19-46/47 p.318</span></td><td><span class="ref">Table 19-46/47 p.462</span></td></tr>
       </tbody>
     </table>
   </div>
 </div>
-<div class="flow-arrow">鈫?/div>
+<div class="flow-arrow">↓</div>
 
 <!-- Phase 4 -->
 <div class="phase">
-  <div class="phase-hdr"><div class="phase-num c5">4</div><div class="info"><h2>SPAKE2+ Owner Pairing APDU 浜ゆ崲</h2><p>涓ょ増鏈浉鍚岋紝Framework/SE 娑堟伅灏佽 APDU锛岀粡 L2CAP CoC 浼犺緭</p></div><span class="sec-pill">搂19.3.2 路 搂5.1 路 Table 19-23/p.455</span></div>
+  <div class="phase-hdr"><div class="phase-num c5">4</div><div class="info"><h2>SPAKE2+ Owner Pairing APDU 交换</h2><p>两版本相同，Framework/SE 消息封装 APDU，经 L2CAP CoC 传输</p></div><span class="sec-pill">§19.3.2 · §5.1 · Table 19-23/p.455</span></div>
   <div class="phase-body">
-    <div class="callout info"><span class="ico">馃摝</span><div>DK 娑堟伅鏍煎紡锛?code>[Byte0: MsgHeader(Type|MsgType)] [Byte1: PayloadHeader(MsgID)] [Byte2-3: Length BE] [Data]</code></div></div>
+    <div class="callout info"><span class="ico">📦</span><div>DK 消息格式：<code>[Byte0: MsgHeader(Type|MsgType)] [Byte1: PayloadHeader(MsgID)] [Byte2-3: Length BE] [Data]</code></div></div>
     <table class="tbl">
-      <thead><tr><th>#</th><th>APDU</th><th>Msg Type</th><th>ID</th><th>鏂瑰悜</th><th>浣嶇疆</th></tr></thead>
+      <thead><tr><th>#</th><th>APDU</th><th>Msg Type</th><th>ID</th><th>方向</th><th>位置</th></tr></thead>
       <tbody>
-        <tr><td>1</td><td><span class="cmd">SELECT</span> (AID: A000000809434343444B417631)</td><td><span class="badge-type bt-se">SE(1)/FW(0)</span></td><td><span class="msgid">0x0B</span></td><td>鎵嬫満鈫掕溅杈?/td><td><span class="ref">搂5.1 p.117 / 搂19.3.2.1</span></td></tr>
-        <tr><td>2</td><td><span class="cmd">SPAKE2+ REQUEST</span></td><td><span class="badge-type bt-fw">Framework(0)</span></td><td><span class="msgid">0x0B</span></td><td>鎵嬫満鈫掕溅杈?/td><td><span class="ref">搂5.1 Table 5-1</span></td></tr>
-        <tr><td>3</td><td><span class="cmd">SPAKE2+ VERIFY</span></td><td><span class="badge-type bt-fw">Framework(0)</span></td><td><span class="msgid">0x0B</span></td><td>鎵嬫満鈫掕溅杈?/td><td><span class="ref">搂5.1</span></td></tr>
-        <tr><td>4</td><td><span class="cmd">WRITE DATA</span></td><td><span class="badge-type bt-fw">Framework(0)</span></td><td><span class="msgid">0x0B</span></td><td>鎵嬫満鈫掕溅杈?/td><td><span class="ref">搂5.1</span></td></tr>
-        <tr><td>5</td><td><span class="cmd">GET DATA / GET RESPONSE</span></td><td><span class="badge-type bt-fw">Framework(0)</span></td><td><span class="msgid">0x0B</span></td><td>鎵嬫満鈫掕溅杈?/td><td><span class="ref">搂5.1</span></td></tr>
-        <tr><td>*</td><td><em>鎵€鏈?APDU 鍝嶅簲</em></td><td>鈥?/td><td><span class="msgid">0x0C DK_APDU_RS</span></td><td>杞﹁締鈫掓墜鏈?/td><td><span class="ref">Table 19-40 p.315/464</span></td></tr>
+        <tr><td>1</td><td><span class="cmd">SELECT</span> (AID: A000000809434343444B417631)</td><td><span class="badge-type bt-se">SE(1)/FW(0)</span></td><td><span class="msgid">0x0B</span></td><td>手机→车辆</td><td><span class="ref">§5.1 p.117 / §19.3.2.1</span></td></tr>
+        <tr><td>2</td><td><span class="cmd">SPAKE2+ REQUEST</span></td><td><span class="badge-type bt-fw">Framework(0)</span></td><td><span class="msgid">0x0B</span></td><td>手机→车辆</td><td><span class="ref">§5.1 Table 5-1</span></td></tr>
+        <tr><td>3</td><td><span class="cmd">SPAKE2+ VERIFY</span></td><td><span class="badge-type bt-fw">Framework(0)</span></td><td><span class="msgid">0x0B</span></td><td>手机→车辆</td><td><span class="ref">§5.1</span></td></tr>
+        <tr><td>4</td><td><span class="cmd">WRITE DATA</span></td><td><span class="badge-type bt-fw">Framework(0)</span></td><td><span class="msgid">0x0B</span></td><td>手机→车辆</td><td><span class="ref">§5.1</span></td></tr>
+        <tr><td>5</td><td><span class="cmd">GET DATA / GET RESPONSE</span></td><td><span class="badge-type bt-fw">Framework(0)</span></td><td><span class="msgid">0x0B</span></td><td>手机→车辆</td><td><span class="ref">§5.1</span></td></tr>
+        <tr><td>*</td><td><em>所有 APDU 响应</em></td><td>—</td><td><span class="msgid">0x0C DK_APDU_RS</span></td><td>车辆→手机</td><td><span class="ref">Table 19-40 p.315/464</span></td></tr>
       </tbody>
     </table>
   </div>
 </div>
-<div class="flow-arrow">鈫?/div>
+<div class="flow-arrow">↓</div>
 
 <!-- Phase 5 -->
 <div class="phase">
-  <div class="phase-hdr"><div class="phase-num c6">5</div><div class="info"><h2>鑳藉姏浜ゆ崲 + 娴嬭窛浼氳瘽寤虹珛</h2><p>v4 RC-RQ/RS 鍙傛暟瀛楁鍚嶆湁鏇存柊锛涗細璇濆缓绔嬫楠や袱鐗堟湰鐩稿悓</p></div><span class="sec-pill">搂19.3.1 路 p.306/456</span></div>
+  <div class="phase-hdr"><div class="phase-num c6">5</div><div class="info"><h2>能力交换 + 测距会话建立</h2><p>v4 RC-RQ/RS 参数字段名有更新；会话建立步骤两版本相同</p></div><span class="sec-pill">§19.3.1 · p.306/456</span></div>
   <div class="phase-body">
-    <div class="callout warn"><span class="ico">馃煛</span><div><strong>v4 瀛楁鍚嶅彉鏇达細</strong>RC-RQ 涓?<code>Supported_DK_Protocol_Version</code> 鈫?<code>V-D-BT-vehicleList</code>锛堟敮鎸佸鐗堟湰鍒楄〃锛夛紱RC-RS 涓?<code>Selected_DK_Protocol_Version</code> 鈫?<code>V-D-BT-agreedVersion</code>銆傚叾浣欏弬鏁扮粨鏋勪笉鍙樸€?/div></div>
+    <div class="callout warn"><span class="ico">🟡</span><div><strong>v4 字段名变更：</strong>RC-RQ 中 <code>Supported_DK_Protocol_Version</code> → <code>V-D-BT-vehicleList</code>（支持多版本列表）；RC-RS 中 <code>Selected_DK_Protocol_Version</code> → <code>V-D-BT-agreedVersion</code>。其余参数结构不变。</div></div>
     <table class="tbl">
-      <thead><tr><th>#</th><th>鏂瑰悜</th><th>娑堟伅</th><th>ID</th><th>鍏抽敭鍙傛暟</th><th>R3 浣嶇疆</th><th>v4 浣嶇疆</th><th>鍙樻洿</th></tr></thead>
+      <thead><tr><th>#</th><th>方向</th><th>消息</th><th>ID</th><th>关键参数</th><th>R3 位置</th><th>v4 位置</th><th>变更</th></tr></thead>
       <tbody>
-        <tr><td>1</td><td>杞﹁締鈫掓墜鏈?/td><td><span class="cmd">Ranging_Capability_RQ</span></td><td><span class="msgid">0x01</span></td><td class="params">R3: <code>DK_Protocol_Version</code>鍒楄〃<br>v4: <code>V-D-BT-vehicleList</code> + UWB Config IDs + PulseShape</td><td><span class="ref">Table 19-14 p.306</span></td><td><span class="ref">Table 19-24 p.456</span></td><td><span class="chg">馃煛瀛楁鍚?/span></td></tr>
-        <tr><td>2</td><td>鎵嬫満鈫掕溅杈?/td><td><span class="cmd">Ranging_Capability_RS</span></td><td><span class="msgid">0x02</span></td><td class="params">R3: <code>Selected_DK_Protocol_Version</code><br>v4: <code>V-D-BT-agreedVersion</code> + Config + PulseShape</td><td><span class="ref">Table 19-16 p.307</span></td><td><span class="ref">Table 19-26 p.457</span></td><td><span class="chg">馃煛瀛楁鍚?/span></td></tr>
-        <tr><td>3</td><td>杞﹁締鈫掓墜鏈?/td><td><span class="cmd">Ranging_Session_RQ</span></td><td><span class="msgid">0x03</span></td><td class="params"><code>UWB_Session_Id</code>(4B) + <code>Channel_Bitmask</code>(1B: 0x01=ch5, 0x02=ch9)</td><td><span class="ref">Table 19-18 p.308</span></td><td><span class="ref">Table 19-28 p.457</span></td><td><span class="same">馃數 涓嶅彉</span></td></tr>
-        <tr><td>4</td><td>鎵嬫満鈫掕溅杈?/td><td><span class="cmd">Ranging_Session_RS</span></td><td><span class="msgid">0x04</span></td><td class="params"><code>RAN_Multiplier</code> + <code>Slot_BitMask</code> + <code>SYNC_Code_BitMask</code>(4B) + <code>Selected_UWB_Channel</code> + <code>Hopping_Config_Bitmask</code></td><td><span class="ref">Table 19-20 p.309</span></td><td><span class="ref">Table 19-30 p.458</span></td><td><span class="same">馃數 涓嶅彉</span></td></tr>
-        <tr><td>5</td><td>杞﹁締鈫掓墜鏈?/td><td><span class="cmd">Ranging_Session_Setup_RQ</span></td><td><span class="msgid">0x05</span></td><td class="params"><code>Session_RAN_Multiplier</code> + <code>Number_Chaps_per_Slot</code>(3/4/6/8/9/12) + <code>Number_Responder_Nodes</code> + <code>Number_Slots_per_Round</code> + <code>SYNC_Code_Index</code>(4B) + <code>Hopping_Config_Bitmask</code></td><td><span class="ref">Table 19-22 p.310</span></td><td><span class="ref">Table 19-34 p.461</span></td><td><span class="same">馃數 涓嶅彉</span></td></tr>
-        <tr><td>6</td><td>鎵嬫満鈫掕溅杈?/td><td><span class="cmd">Ranging_Session_Setup_RS</span></td><td><span class="msgid">0x06</span></td><td class="params"><code>STS_Index0</code>(4B, 0鈥?x3FFFFFFF) + <code>UWB_Time0</code>(8B, 渭s) + <code>HOP_Mode_Key</code>(4B) + <code>SYNC_Code_Index</code>(1B, 1鈥?2)</td><td><span class="ref">Table 19-24 p.311</span></td><td><span class="ref">Table 19-36 p.462</span></td><td><span class="same">馃數 涓嶅彉</span></td></tr>
+        <tr><td>1</td><td>车辆→手机</td><td><span class="cmd">Ranging_Capability_RQ</span></td><td><span class="msgid">0x01</span></td><td class="params">R3: <code>DK_Protocol_Version</code>列表<br>v4: <code>V-D-BT-vehicleList</code> + UWB Config IDs + PulseShape</td><td><span class="ref">Table 19-14 p.306</span></td><td><span class="ref">Table 19-24 p.456</span></td><td><span class="chg">🟡字段名</span></td></tr>
+        <tr><td>2</td><td>手机→车辆</td><td><span class="cmd">Ranging_Capability_RS</span></td><td><span class="msgid">0x02</span></td><td class="params">R3: <code>Selected_DK_Protocol_Version</code><br>v4: <code>V-D-BT-agreedVersion</code> + Config + PulseShape</td><td><span class="ref">Table 19-16 p.307</span></td><td><span class="ref">Table 19-26 p.457</span></td><td><span class="chg">🟡字段名</span></td></tr>
+        <tr><td>3</td><td>车辆→手机</td><td><span class="cmd">Ranging_Session_RQ</span></td><td><span class="msgid">0x03</span></td><td class="params"><code>UWB_Session_Id</code>(4B) + <code>Channel_Bitmask</code>(1B: 0x01=ch5, 0x02=ch9)</td><td><span class="ref">Table 19-18 p.308</span></td><td><span class="ref">Table 19-28 p.457</span></td><td><span class="same">🔵 不变</span></td></tr>
+        <tr><td>4</td><td>手机→车辆</td><td><span class="cmd">Ranging_Session_RS</span></td><td><span class="msgid">0x04</span></td><td class="params"><code>RAN_Multiplier</code> + <code>Slot_BitMask</code> + <code>SYNC_Code_BitMask</code>(4B) + <code>Selected_UWB_Channel</code> + <code>Hopping_Config_Bitmask</code></td><td><span class="ref">Table 19-20 p.309</span></td><td><span class="ref">Table 19-30 p.458</span></td><td><span class="same">🔵 不变</span></td></tr>
+        <tr><td>5</td><td>车辆→手机</td><td><span class="cmd">Ranging_Session_Setup_RQ</span></td><td><span class="msgid">0x05</span></td><td class="params"><code>Session_RAN_Multiplier</code> + <code>Number_Chaps_per_Slot</code>(3/4/6/8/9/12) + <code>Number_Responder_Nodes</code> + <code>Number_Slots_per_Round</code> + <code>SYNC_Code_Index</code>(4B) + <code>Hopping_Config_Bitmask</code></td><td><span class="ref">Table 19-22 p.310</span></td><td><span class="ref">Table 19-34 p.461</span></td><td><span class="same">🔵 不变</span></td></tr>
+        <tr><td>6</td><td>手机→车辆</td><td><span class="cmd">Ranging_Session_Setup_RS</span></td><td><span class="msgid">0x06</span></td><td class="params"><code>STS_Index0</code>(4B, 0–0x3FFFFFFF) + <code>UWB_Time0</code>(8B, μs) + <code>HOP_Mode_Key</code>(4B) + <code>SYNC_Code_Index</code>(1B, 1–32)</td><td><span class="ref">Table 19-24 p.311</span></td><td><span class="ref">Table 19-36 p.462</span></td><td><span class="same">🔵 不变</span></td></tr>
       </tbody>
     </table>
   </div>
 </div>
-<div class="flow-arrow">鈫?/div>
+<div class="flow-arrow">↓</div>
 
 <!-- Phase 6 -->
 <div class="phase">
-  <div class="phase-hdr"><div class="phase-num c7">6</div><div class="info"><h2>BLE 鏃堕棿鍚屾锛圱imesync锛?/h2><p>涓ょ増鏈弬鏁板畬鍏ㄧ浉鍚?/p></div><span class="sec-pill">搂19.3.3 路 搂19.4 路 Table 19-42/52</span></div>
+  <div class="phase-hdr"><div class="phase-num c7">6</div><div class="info"><h2>BLE 时间同步（Timesync）</h2><p>两版本参数完全相同</p></div><span class="sec-pill">§19.3.3 · §19.4 · Table 19-42/52</span></div>
   <div class="phase-body">
     <table class="tbl">
-      <thead><tr><th>Procedure</th><th>瑙﹀彂鏉′欢</th><th>娑堟伅</th><th>ID</th><th>鍏抽敭鍙傛暟</th><th>R3 浣嶇疆</th><th>v4 浣嶇疆</th></tr></thead>
+      <thead><tr><th>Procedure</th><th>触发条件</th><th>消息</th><th>ID</th><th>关键参数</th><th>R3 位置</th><th>v4 位置</th></tr></thead>
       <tbody>
-        <tr><td><strong>Proc 0</strong></td><td>BLE 杩炴帴鍚庤嚜鍔?/td><td><span class="cmd">Time_Sync</span></td><td><span class="msgid">0x0D</span></td><td class="params"><code>DeviceEventCount鈮?</code>, <code>UWB_Device_Time</code>(8B,渭s), <code>Success=1</code></td><td><span class="ref">搂19.4.4.1 p.337</span></td><td><span class="ref">搂19.4.4.1 p.508</span></td></tr>
-        <tr><td><strong>Proc 1</strong></td><td>杞﹁締鍙?<code>LE Set PHY</code></td><td><span class="cmd">Time_Sync</span></td><td><span class="msgid">0x0D</span></td><td class="params"><code>DeviceEventCount</code>=杩炴帴浜嬩欢璁℃暟, <code>UWB_Device_Time1</code>, <code>Success=1</code>, <code>RetryDelay</code>(2B)</td><td><span class="ref">搂19.4.4.2 p.338</span></td><td><span class="ref">搂19.4.4.2 p.509</span></td></tr>
+        <tr><td><strong>Proc 0</strong></td><td>BLE 连接后自动</td><td><span class="cmd">Time_Sync</span></td><td><span class="msgid">0x0D</span></td><td class="params"><code>DeviceEventCount≈0</code>, <code>UWB_Device_Time</code>(8B,μs), <code>Success=1</code></td><td><span class="ref">§19.4.4.1 p.337</span></td><td><span class="ref">§19.4.4.1 p.508</span></td></tr>
+        <tr><td><strong>Proc 1</strong></td><td>车辆发 <code>LE Set PHY</code></td><td><span class="cmd">Time_Sync</span></td><td><span class="msgid">0x0D</span></td><td class="params"><code>DeviceEventCount</code>=连接事件计数, <code>UWB_Device_Time1</code>, <code>Success=1</code>, <code>RetryDelay</code>(2B)</td><td><span class="ref">§19.4.4.2 p.338</span></td><td><span class="ref">§19.4.4.2 p.509</span></td></tr>
       </tbody>
     </table>
-    <div class="callout info"><span class="ico">鈴憋笍</span><div>鍚屾鍋忕Щ锛堝悓涓€杩炴帴浜嬩欢锛? <code>SyncOffset = UWBDeviceTime1 鈥?UWBVehicleTime1</code><br>涓嶅悓杩炴帴浜嬩欢: <code>SyncOffset = UWBDeviceTime1 + (VehicleEventCount鈥揇eviceEventCount) 脳 ConnInterval 鈥?UWBVehicleTime1</code></div></div>
+    <div class="callout info"><span class="ico">⏱️</span><div>同步偏移（同一连接事件）: <code>SyncOffset = UWBDeviceTime1 – UWBVehicleTime1</code><br>不同连接事件: <code>SyncOffset = UWBDeviceTime1 + (VehicleEventCount–DeviceEventCount) × ConnInterval – UWBVehicleTime1</code></div></div>
   </div>
 </div>
-<div class="flow-arrow">鈫?/div>
+<div class="flow-arrow">↓</div>
 
 <!-- Phase 7 (v4 only) -->
 <div class="phase">
-  <div class="phase-hdr"><div class="phase-num" style="background:var(--purple)">7</div><div class="info"><h2>UWB Final Data over BLE <span class="new-tag">v4 鏂板</span></h2><p>璁惧閫氳繃 BLE 鍐椾綑鍙戦€?UWB Final_Data锛堝姞瀵嗭級锛屼粎 v4.1.0</p></div><span class="sec-pill">搂19.3.6 路 Table 19-60 路 p.469</span></div>
+  <div class="phase-hdr"><div class="phase-num" style="background:var(--purple)">7</div><div class="info"><h2>UWB Final Data over BLE <span class="new-tag">v4 新增</span></h2><p>设备通过 BLE 冗余发送 UWB Final_Data（加密），仅 v4.1.0</p></div><span class="sec-pill">§19.3.6 · Table 19-60 · p.469</span></div>
   <div class="phase-body">
     <table class="tbl">
-      <thead><tr><th>#</th><th>鏂瑰悜</th><th>娑堟伅</th><th>ID</th><th>鏉′欢</th><th>鍏抽敭鍙傛暟</th><th>v4 浣嶇疆</th></tr></thead>
+      <thead><tr><th>#</th><th>方向</th><th>消息</th><th>ID</th><th>条件</th><th>关键参数</th><th>v4 位置</th></tr></thead>
       <tbody>
-        <tr><td>1</td><td>鎵嬫満鈫掕溅杈?/td><td><span class="cmd">UWB_Final_Data</span></td><td><span class="msgid">0x19</span></td><td>Feature Bitmap Bit5=1 鏃跺彲閫?/td><td class="params"><code>UWB_Session_ID</code>(8B) + <code>Ranging_Block</code>(2B) + <code>Encrypted_Final_Data</code>锛堝彉闀匡紝AES 搂22.1.2锛?/td><td><span class="ref">Table 19-60/61 p.469</span></td></tr>
+        <tr><td>1</td><td>手机→车辆</td><td><span class="cmd">UWB_Final_Data</span></td><td><span class="msgid">0x19</span></td><td>Feature Bitmap Bit5=1 时可选</td><td class="params"><code>UWB_Session_ID</code>(8B) + <code>Ranging_Block</code>(2B) + <code>Encrypted_Final_Data</code>（变长，AES §22.1.2）</td><td><span class="ref">Table 19-60/61 p.469</span></td></tr>
       </tbody>
     </table>
-    <div class="callout new"><span class="ico">馃煝</span><div>璁惧椤诲湪娴嬭窛杞粨鏉熷悗 <strong>3 涓繛鎺ヤ簨浠跺唴</strong>鍙戦€侊紱杞﹁締鍦?UWB 鏈敹鍒?Final_Data 鏃跺彲绛夊緟 3 涓繛鎺ヤ簨浠跺悗浠?BLE 鎺ユ敹銆傚姞瀵嗗瘑閽ョ敱 UWB_Session_ID + Ranging_Block 纭畾銆?/div></div>
+    <div class="callout new"><span class="ico">🟢</span><div>设备须在测距轮结束后 <strong>3 个连接事件内</strong>发送；车辆在 UWB 未收到 Final_Data 时可等待 3 个连接事件后从 BLE 接收。加密密钥由 UWB_Session_ID + Ranging_Block 确定。</div></div>
   </div>
 </div>
 
-<!-- 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲 PASSIVE ENTRY 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲 -->
-<div class="sec-hdr">鍦烘櫙浜岋細Passive Entry 琚姩杩涘叆</div>
+<!-- ══════════ PASSIVE ENTRY ══════════ -->
+<div class="sec-hdr">场景二：Passive Entry 被动进入</div>
 
 <div class="phase">
-  <div class="phase-hdr"><div class="phase-num ca">A</div><div class="info"><h2>RPA 骞挎挱 + 閲嶈繛 + L2CAP</h2><p>v4 琚姩杩涘叆鏃堕澶栭渶璇诲彇鐗堟湰鐗瑰緛</p></div><span class="sec-pill">搂19.2.3 路 Figure 19-4 路 p.301/449</span></div>
+  <div class="phase-hdr"><div class="phase-num ca">A</div><div class="info"><h2>RPA 广播 + 重连 + L2CAP</h2><p>v4 被动进入时额外需读取版本特征</p></div><span class="sec-pill">§19.2.3 · Figure 19-4 · p.301/449</span></div>
   <div class="phase-body">
     <table class="tbl">
-      <thead><tr><th>#</th><th>鏂瑰悜</th><th>鎸囦护/娑堟伅</th><th>鍏抽敭鍙傛暟</th><th>R3 浣嶇疆</th><th>v4 浣嶇疆</th><th>鍙樻洿</th></tr></thead>
+      <thead><tr><th>#</th><th>方向</th><th>指令/消息</th><th>关键参数</th><th>R3 位置</th><th>v4 位置</th><th>变更</th></tr></thead>
       <tbody>
-        <tr><td>1</td><td>杞﹁締 LL</td><td><span class="cmd">ADV_IND</span>锛圧PA 鍦板潃锛?/td><td class="params">LE 1M PHY 闂撮殧 <strong>42.5ms</strong>锛汱E Coded PHY 闂撮殧 <strong>84ms</strong>锛?em>AdvData 涓虹┖</em></td><td><span class="ref">搂19.2.3.1 p.302</span></td><td><span class="ref">搂19.2.3.1 p.449</span></td><td><span class="same">馃數 涓嶅彉</span></td></tr>
-        <tr><td>2</td><td>鎵嬫満 LL</td><td>瑙ｆ瀽 RPA 鈫?<span class="cmd">CONNECT_IND</span></td><td class="params">浣跨敤 InitA RPA</td><td><span class="ref">Figure 19-4</span></td><td><span class="ref">Figure 19-4</span></td><td><span class="same">馃數 涓嶅彉</span></td></tr>
-        <tr><td>3</td><td>鎵嬫満</td><td><strong>Encryption Enable</strong>锛堝厛浜?L2CAP锛?/td><td class="params">浣跨敤宸插瓨 LTK</td><td><span class="ref">搂19.2.1.2</span></td><td><span class="ref">搂19.2.1.2</span></td><td><span class="same">馃數 涓嶅彉</span></td></tr>
-        <tr><td>4</td><td>鎵嬫満 鈫?杞﹁締</td><td>璇诲彇鐗堟湰/SPSM 鐗瑰緛</td><td class="params">R3: 璇?SPSM锛泇4: 璇?UUID_SPSM_VDBT_VERSION 骞跺啓鍏?UUID_DEVICE_VDBT_VERSION</td><td><span class="ref">搂19.2.3.2</span></td><td><span class="ref">搂19.2.3.2</span></td><td><span class="chg">馃煛 v4澧炴</span></td></tr>
-        <tr><td>5</td><td>鎵嬫満</td><td>寤虹珛 <span class="cmd">L2CAP CoC</span></td><td class="params">鈥?/td><td><span class="ref">搂19.2.3.2</span></td><td><span class="ref">搂19.2.3.2</span></td><td><span class="same">馃數 涓嶅彉</span></td></tr>
-        <tr><td>6</td><td>鏉′欢瑙﹀彂</td><td><strong>Capability Exchange</strong>锛堝彲閫夛級</td><td class="params">鐗堟湰鏈夋洿鏂板垯瑙﹀彂</td><td><span class="ref">搂19.5.1</span></td><td><span class="ref">搂19.5.1</span></td><td><span class="same">馃數 涓嶅彉</span></td></tr>
+        <tr><td>1</td><td>车辆 LL</td><td><span class="cmd">ADV_IND</span>（RPA 地址）</td><td class="params">LE 1M PHY 间隔 <strong>42.5ms</strong>；LE Coded PHY 间隔 <strong>84ms</strong>；<em>AdvData 为空</em></td><td><span class="ref">§19.2.3.1 p.302</span></td><td><span class="ref">§19.2.3.1 p.449</span></td><td><span class="same">🔵 不变</span></td></tr>
+        <tr><td>2</td><td>手机 LL</td><td>解析 RPA → <span class="cmd">CONNECT_IND</span></td><td class="params">使用 InitA RPA</td><td><span class="ref">Figure 19-4</span></td><td><span class="ref">Figure 19-4</span></td><td><span class="same">🔵 不变</span></td></tr>
+        <tr><td>3</td><td>手机</td><td><strong>Encryption Enable</strong>（先于 L2CAP）</td><td class="params">使用已存 LTK</td><td><span class="ref">§19.2.1.2</span></td><td><span class="ref">§19.2.1.2</span></td><td><span class="same">🔵 不变</span></td></tr>
+        <tr><td>4</td><td>手机 → 车辆</td><td>读取版本/SPSM 特征</td><td class="params">R3: 读 SPSM；v4: 读 UUID_SPSM_VDBT_VERSION 并写入 UUID_DEVICE_VDBT_VERSION</td><td><span class="ref">§19.2.3.2</span></td><td><span class="ref">§19.2.3.2</span></td><td><span class="chg">🟡 v4增步</span></td></tr>
+        <tr><td>5</td><td>手机</td><td>建立 <span class="cmd">L2CAP CoC</span></td><td class="params">—</td><td><span class="ref">§19.2.3.2</span></td><td><span class="ref">§19.2.3.2</span></td><td><span class="same">🔵 不变</span></td></tr>
+        <tr><td>6</td><td>条件触发</td><td><strong>Capability Exchange</strong>（可选）</td><td class="params">版本有更新则触发</td><td><span class="ref">§19.5.1</span></td><td><span class="ref">§19.5.1</span></td><td><span class="same">🔵 不变</span></td></tr>
       </tbody>
     </table>
   </div>
 </div>
-<div class="flow-arrow">鈫?/div>
+<div class="flow-arrow">↓</div>
 
 <div class="phase">
-  <div class="phase-hdr"><div class="phase-num cb">B</div><div class="info"><h2>鏍囧噯浜嬪姟璁よ瘉 AUTH0/AUTH1</h2><p>涓ょ増鏈畬鍏ㄧ浉鍚岋紝SE 娑堟伅璁よ瘉娴佺▼</p></div><span class="sec-pill">搂19.5.5 路 搂15.3.2 路 Figure 19-27</span></div>
+  <div class="phase-hdr"><div class="phase-num cb">B</div><div class="info"><h2>标准事务认证 AUTH0/AUTH1</h2><p>两版本完全相同，SE 消息认证流程</p></div><span class="sec-pill">§19.5.5 · §15.3.2 · Figure 19-27</span></div>
   <div class="phase-body">
     <table class="tbl">
-      <thead><tr><th>#</th><th>鏂瑰悜</th><th>APDU</th><th>ID</th><th>璇存槑</th><th>浣嶇疆锛圧3=v4锛?/th></tr></thead>
+      <thead><tr><th>#</th><th>方向</th><th>APDU</th><th>ID</th><th>说明</th><th>位置（R3=v4）</th></tr></thead>
       <tbody>
-        <tr><td>1</td><td>鎵嬫満鈫掕溅杈?/td><td><span class="cmd">SELECT</span></td><td><span class="msgid">0x0B</span></td><td>閫?Applet锛孲E Message Type=1</td><td><span class="ref">搂15.3.2.1</span></td></tr>
-        <tr><td>2</td><td>鎵嬫満鈫掕溅杈?/td><td><span class="cmd">AUTH0</span></td><td><span class="msgid">0x0B</span></td><td>鍙戣捣璁よ瘉锛屽惈鍏挜 hash</td><td><span class="ref">搂15.3.2</span></td></tr>
-        <tr><td>3</td><td>杞﹁締鈫掓墜鏈?/td><td>AUTH0 鍝嶅簲</td><td><span class="msgid">0x0C</span></td><td>杩斿洖 Challenge锛堥殢鏈烘暟锛?/td><td><span class="ref">搂19.3.2.2</span></td></tr>
-        <tr><td>4</td><td>鎵嬫満鈫掕溅杈?/td><td><span class="cmd">AUTH1</span></td><td><span class="msgid">0x0B</span></td><td>SE 绉侀挜绛惧悕 Challenge锛屽惈璇佷功閾?/td><td><span class="ref">搂15.3.2</span></td></tr>
-        <tr><td>5</td><td>杞﹁締鈫掓墜鏈?/td><td>AUTH1 鍝嶅簲</td><td><span class="msgid">0x0C</span></td><td>杞﹁締楠岀 鈫?<strong>瑙ｉ攣/鍚姩</strong></td><td><span class="ref">搂19.3.2.2</span></td></tr>
+        <tr><td>1</td><td>手机→车辆</td><td><span class="cmd">SELECT</span></td><td><span class="msgid">0x0B</span></td><td>选 Applet，SE Message Type=1</td><td><span class="ref">§15.3.2.1</span></td></tr>
+        <tr><td>2</td><td>手机→车辆</td><td><span class="cmd">AUTH0</span></td><td><span class="msgid">0x0B</span></td><td>发起认证，含公钥 hash</td><td><span class="ref">§15.3.2</span></td></tr>
+        <tr><td>3</td><td>车辆→手机</td><td>AUTH0 响应</td><td><span class="msgid">0x0C</span></td><td>返回 Challenge（随机数）</td><td><span class="ref">§19.3.2.2</span></td></tr>
+        <tr><td>4</td><td>手机→车辆</td><td><span class="cmd">AUTH1</span></td><td><span class="msgid">0x0B</span></td><td>SE 私钥签名 Challenge，含证书链</td><td><span class="ref">§15.3.2</span></td></tr>
+        <tr><td>5</td><td>车辆→手机</td><td>AUTH1 响应</td><td><span class="msgid">0x0C</span></td><td>车辆验签 → <strong>解锁/启动</strong></td><td><span class="ref">§19.3.2.2</span></td></tr>
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲 FULL MSG TABLE 鈺愨晲鈺愨晲鈺愨晲鈺愨晲鈺愨晲 -->
-<div class="sec-hdr">鍏ㄩ儴 DK 娑堟伅瀵圭収琛紙鍚増鏈樊寮傦級</div>
+<!-- ══════════ FULL MSG TABLE ══════════ -->
+<div class="sec-hdr">全部 DK 消息对照表（含版本差异）</div>
 <table class="full-tbl">
-  <thead><tr><th>ID</th><th>娑堟伅鍚?/th><th>绫诲瀷</th><th>鏂瑰悜</th><th>R3 浣嶇疆</th><th>v4 浣嶇疆</th><th>鍙樻洿</th></tr></thead>
+  <thead><tr><th>ID</th><th>消息名</th><th>类型</th><th>方向</th><th>R3 位置</th><th>v4 位置</th><th>变更</th></tr></thead>
   <tbody>
-    <tr><td><span class="msgid">0x01</span></td><td><code>Ranging_Capability_RQ</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>杞﹁締鈫掓墜鏈?/td><td><span class="ref">Table 19-14 p.306</span></td><td><span class="ref">Table 19-24 p.456</span></td><td><span class="chg">馃煛瀛楁鍚?/span></td></tr>
-    <tr><td><span class="msgid">0x02</span></td><td><code>Ranging_Capability_RS</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>鎵嬫満鈫掕溅杈?/td><td><span class="ref">Table 19-16 p.307</span></td><td><span class="ref">Table 19-26 p.457</span></td><td><span class="chg">馃煛瀛楁鍚?/span></td></tr>
-    <tr><td><span class="msgid">0x03</span></td><td><code>Ranging_Session_RQ</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>杞﹁締鈫掓墜鏈?/td><td><span class="ref">Table 19-18 p.308</span></td><td><span class="ref">Table 19-28 p.457</span></td><td><span class="same">馃數涓嶅彉</span></td></tr>
-    <tr><td><span class="msgid">0x04</span></td><td><code>Ranging_Session_RS</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>鎵嬫満鈫掕溅杈?/td><td><span class="ref">Table 19-20 p.309</span></td><td><span class="ref">Table 19-30 p.458</span></td><td><span class="same">馃數涓嶅彉</span></td></tr>
-    <tr><td><span class="msgid">0x05</span></td><td><code>Ranging_Session_Setup_RQ</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>杞﹁締鈫掓墜鏈?/td><td><span class="ref">Table 19-22 p.310</span></td><td><span class="ref">Table 19-34 p.461</span></td><td><span class="same">馃數涓嶅彉</span></td></tr>
-    <tr><td><span class="msgid">0x06</span></td><td><code>Ranging_Session_Setup_RS</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>鎵嬫満鈫掕溅杈?/td><td><span class="ref">Table 19-24 p.311</span></td><td><span class="ref">Table 19-36 p.462</span></td><td><span class="same">馃數涓嶅彉</span></td></tr>
-    <tr><td><span class="msgid">0x07</span></td><td><code>Ranging_Suspend_RQ</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>杞﹁締鈫掓墜鏈?/td><td><span class="ref">Table 19-26 p.312</span></td><td><span class="ref">p.463</span></td><td><span class="same">馃數涓嶅彉</span></td></tr>
-    <tr><td><span class="msgid">0x08</span></td><td><code>Ranging_Suspend_RS</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>鎵嬫満鈫掕溅杈?/td><td><span class="ref">Table 19-28</span></td><td><span class="ref">p.463</span></td><td><span class="same">馃數涓嶅彉</span></td></tr>
-    <tr><td><span class="msgid">0x09</span></td><td><code>Ranging_Recovery_RQ</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>杞﹁締鈫掓墜鏈?/td><td><span class="ref">Table 19-30 p.313</span></td><td><span class="ref">p.463</span></td><td><span class="same">馃數涓嶅彉</span></td></tr>
-    <tr><td><span class="msgid">0x0A</span></td><td><code>Ranging_Recovery_RS</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>鎵嬫満鈫掕溅杈?/td><td><span class="ref">Table 19-32</span></td><td><span class="ref">p.463</span></td><td><span class="same">馃數涓嶅彉</span></td></tr>
-    <tr><td><span class="msgid">0x0B</span></td><td><code>DK_APDU_RQ</code></td><td><span class="badge-type bt-fw">FW(0)</span>/<span class="badge-type bt-se">SE(1)</span></td><td>鎵嬫満鈫掕溅杈?/td><td><span class="ref">Table 19-38 p.314</span></td><td><span class="ref">Table 19-38 p.463</span></td><td><span class="same">馃數涓嶅彉</span></td></tr>
-    <tr><td><span class="msgid">0x0C</span></td><td><code>DK_APDU_RS</code></td><td><span class="badge-type bt-fw">FW(0)</span>/<span class="badge-type bt-se">SE(1)</span></td><td>杞﹁締鈫掓墜鏈?/td><td><span class="ref">Table 19-40 p.315</span></td><td><span class="ref">Table 19-40 p.464</span></td><td><span class="same">馃數涓嶅彉</span></td></tr>
-    <tr><td><span class="msgid">0x0D</span></td><td><code>Time_Sync</code></td><td><span class="badge-type bt-sup">Supp(5)</span></td><td>鎵嬫満鈫掕溅杈?/td><td><span class="ref">Table 19-42 p.315</span></td><td><span class="ref">Table 19-52 p.464</span></td><td><span class="same">馃數鐩稿悓</span></td></tr>
-    <tr><td><span class="msgid">0x0E</span></td><td><code>First_Approach_RQ</code></td><td><span class="badge-type bt-sup">Supp(5)</span></td><td>鎵嬫満鈫掕溅杈?/td><td><span class="ref">Table 19-44 p.317</span></td><td><span class="ref">Table 19-44 p.461</span></td><td><span class="same">馃數涓嶅彉</span></td></tr>
-    <tr><td><span class="msgid">0x0F</span></td><td><code>First_Approach_RS</code></td><td><span class="badge-type bt-sup">Supp(5)</span></td><td>杞﹁締鈫掓墜鏈?/td><td><span class="ref">Table 19-46 p.318</span></td><td><span class="ref">Table 19-46 p.462</span></td><td><span class="same">馃數涓嶅彉</span></td></tr>
-    <tr><td><span class="msgid">0x10</span></td><td><code>Pass_Through</code></td><td><span class="badge-type bt-oem">OEM(4)</span></td><td>鍙屽悜</td><td><span class="ref">搂19.3.6 p.319</span></td><td><span class="ref">Table 19-62 p.470</span></td><td><span class="chg">馃煛 v4鍔犳秷鎭昂瀵搁檺鍒?/span></td></tr>
-    <tr><td><span class="msgid">0x11</span></td><td><code>DK Event Notification</code></td><td><span class="badge-type bt-ev">Event(3)</span></td><td>鍙屽悜</td><td><span class="ref">搂19.3.8 p.321</span></td><td><span class="ref">搂19.3.9 p.471</span></td><td><span class="chg">馃煛 v4鏂板PDR SubEvent</span></td></tr>
-    <tr><td><span class="msgid">0x12</span></td><td><code>Configurable_Ranging_Recovery_RQ</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>杞﹁締鈫掓墜鏈?/td><td><span class="ref">Table 19-34 p.313</span></td><td><span class="ref">p.464</span></td><td><span class="same">馃數涓嶅彉</span></td></tr>
-    <tr><td><span class="msgid">0x13</span></td><td><code>Configurable_Ranging_Recovery_RS</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>鎵嬫満鈫掕溅杈?/td><td><span class="ref">Table 19-36</span></td><td><span class="ref">p.464</span></td><td><span class="same">馃數涓嶅彉</span></td></tr>
-    <tr><td><span class="msgid">0x14</span></td><td><code>RKE_Auth_RQ</code></td><td><span class="badge-type bt-sup">Supp(5)</span></td><td>杞﹁締鈫掓墜鏈?/td><td><span class="ref">Table 19-48 p.318</span></td><td><span class="ref">p.465</span></td><td><span class="same">馃數涓嶅彉</span></td></tr>
-    <tr><td><span class="msgid">0x15</span></td><td><code>RKE_Auth_RS</code></td><td><span class="badge-type bt-sup">Supp(5)</span></td><td>鎵嬫満鈫掕溅杈?/td><td><span class="ref">搂19.3.5.2</span></td><td><span class="ref">p.465</span></td><td><span class="same">馃數涓嶅彉</span></td></tr>
-    <tr><td><span class="msgid">0x16</span></td><td><code>Head_Unit_Pairing_Preparation</code></td><td><span class="badge-type bt-hu">HU(6)</span></td><td>杞﹁締鈫掓墜鏈?/td><td><span class="ref">Table 19-53 p.319</span></td><td><span class="ref">Table 19-64 p.471</span></td><td><span class="chg">馃煛 v4鍔燱ired Carplay浣?/span></td></tr>
-    <tr><td><span class="msgid">0x17</span></td><td><code>Head_Unit_Pairing_RQ</code></td><td><span class="badge-type bt-hu">HU(6)</span></td><td>鎵嬫満鈫掕溅杈?/td><td><span class="ref">Table 19-55 p.320</span></td><td><span class="ref">Table 19-66 p.471</span></td><td><span class="same">馃數涓嶅彉</span></td></tr>
-    <tr><td><span class="msgid">0x18</span></td><td><code>Head_Unit_Pairing_RS</code></td><td><span class="badge-type bt-hu">HU(6)</span></td><td>杞﹁締鈫掓墜鏈?/td><td><span class="ref">Table 19-57 p.321</span></td><td><span class="ref">Table 19-68 p.473</span></td><td><span class="same">馃數涓嶅彉</span></td></tr>
-    <tr style="background:#f3e8ff"><td><span class="msgid">0x19</span></td><td><code>UWB_Final_Data</code></td><td><span class="badge-type bt-sup">Supp(5)</span></td><td>鎵嬫満鈫掕溅杈?/td><td>鉂?R3鏃?/td><td><span class="ref">Table 19-60 p.469</span></td><td><span class="new-tag">馃煝 v4鏂板</span></td></tr>
-    <tr style="background:#f3e8ff"><td><span class="msgid">0x1A</span></td><td><code>BTCS_Ranging_Procedure_Results_Start</code></td><td><span class="badge-type bt-btcs">BTCS(7)</span></td><td>鍙屽悜</td><td>鉂?R3鏃?/td><td><span class="ref">Table 19-100 p.499</span></td><td><span class="new-tag">馃煝 v4鏂板</span></td></tr>
-    <tr style="background:#f3e8ff"><td><span class="msgid">0x1B</span></td><td><code>BTCS_Ranging_Procedure_Results_Continue</code></td><td><span class="badge-type bt-btcs">BTCS(7)</span></td><td>鍙屽悜</td><td>鉂?R3鏃?/td><td><span class="ref">Table 19-102 p.500</span></td><td><span class="new-tag">馃煝 v4鏂板</span></td></tr>
-    <tr style="background:#f3e8ff"><td><span class="msgid">0x1C</span></td><td><code>BTCS_Ranging_Procedure_Results_Config</code></td><td><span class="badge-type bt-btcs">BTCS(7)</span></td><td>鍙屽悜</td><td>鉂?R3鏃?/td><td><span class="ref">Table 19-104 p.500</span></td><td><span class="new-tag">馃煝 v4鏂板</span></td></tr>
+    <tr><td><span class="msgid">0x01</span></td><td><code>Ranging_Capability_RQ</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>车辆→手机</td><td><span class="ref">Table 19-14 p.306</span></td><td><span class="ref">Table 19-24 p.456</span></td><td><span class="chg">🟡字段名</span></td></tr>
+    <tr><td><span class="msgid">0x02</span></td><td><code>Ranging_Capability_RS</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>手机→车辆</td><td><span class="ref">Table 19-16 p.307</span></td><td><span class="ref">Table 19-26 p.457</span></td><td><span class="chg">🟡字段名</span></td></tr>
+    <tr><td><span class="msgid">0x03</span></td><td><code>Ranging_Session_RQ</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>车辆→手机</td><td><span class="ref">Table 19-18 p.308</span></td><td><span class="ref">Table 19-28 p.457</span></td><td><span class="same">🔵不变</span></td></tr>
+    <tr><td><span class="msgid">0x04</span></td><td><code>Ranging_Session_RS</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>手机→车辆</td><td><span class="ref">Table 19-20 p.309</span></td><td><span class="ref">Table 19-30 p.458</span></td><td><span class="same">🔵不变</span></td></tr>
+    <tr><td><span class="msgid">0x05</span></td><td><code>Ranging_Session_Setup_RQ</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>车辆→手机</td><td><span class="ref">Table 19-22 p.310</span></td><td><span class="ref">Table 19-34 p.461</span></td><td><span class="same">🔵不变</span></td></tr>
+    <tr><td><span class="msgid">0x06</span></td><td><code>Ranging_Session_Setup_RS</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>手机→车辆</td><td><span class="ref">Table 19-24 p.311</span></td><td><span class="ref">Table 19-36 p.462</span></td><td><span class="same">🔵不变</span></td></tr>
+    <tr><td><span class="msgid">0x07</span></td><td><code>Ranging_Suspend_RQ</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>车辆→手机</td><td><span class="ref">Table 19-26 p.312</span></td><td><span class="ref">p.463</span></td><td><span class="same">🔵不变</span></td></tr>
+    <tr><td><span class="msgid">0x08</span></td><td><code>Ranging_Suspend_RS</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>手机→车辆</td><td><span class="ref">Table 19-28</span></td><td><span class="ref">p.463</span></td><td><span class="same">🔵不变</span></td></tr>
+    <tr><td><span class="msgid">0x09</span></td><td><code>Ranging_Recovery_RQ</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>车辆→手机</td><td><span class="ref">Table 19-30 p.313</span></td><td><span class="ref">p.463</span></td><td><span class="same">🔵不变</span></td></tr>
+    <tr><td><span class="msgid">0x0A</span></td><td><code>Ranging_Recovery_RS</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>手机→车辆</td><td><span class="ref">Table 19-32</span></td><td><span class="ref">p.463</span></td><td><span class="same">🔵不变</span></td></tr>
+    <tr><td><span class="msgid">0x0B</span></td><td><code>DK_APDU_RQ</code></td><td><span class="badge-type bt-fw">FW(0)</span>/<span class="badge-type bt-se">SE(1)</span></td><td>手机→车辆</td><td><span class="ref">Table 19-38 p.314</span></td><td><span class="ref">Table 19-38 p.463</span></td><td><span class="same">🔵不变</span></td></tr>
+    <tr><td><span class="msgid">0x0C</span></td><td><code>DK_APDU_RS</code></td><td><span class="badge-type bt-fw">FW(0)</span>/<span class="badge-type bt-se">SE(1)</span></td><td>车辆→手机</td><td><span class="ref">Table 19-40 p.315</span></td><td><span class="ref">Table 19-40 p.464</span></td><td><span class="same">🔵不变</span></td></tr>
+    <tr><td><span class="msgid">0x0D</span></td><td><code>Time_Sync</code></td><td><span class="badge-type bt-sup">Supp(5)</span></td><td>手机→车辆</td><td><span class="ref">Table 19-42 p.315</span></td><td><span class="ref">Table 19-52 p.464</span></td><td><span class="same">🔵相同</span></td></tr>
+    <tr><td><span class="msgid">0x0E</span></td><td><code>First_Approach_RQ</code></td><td><span class="badge-type bt-sup">Supp(5)</span></td><td>手机→车辆</td><td><span class="ref">Table 19-44 p.317</span></td><td><span class="ref">Table 19-44 p.461</span></td><td><span class="same">🔵不变</span></td></tr>
+    <tr><td><span class="msgid">0x0F</span></td><td><code>First_Approach_RS</code></td><td><span class="badge-type bt-sup">Supp(5)</span></td><td>车辆→手机</td><td><span class="ref">Table 19-46 p.318</span></td><td><span class="ref">Table 19-46 p.462</span></td><td><span class="same">🔵不变</span></td></tr>
+    <tr><td><span class="msgid">0x10</span></td><td><code>Pass_Through</code></td><td><span class="badge-type bt-oem">OEM(4)</span></td><td>双向</td><td><span class="ref">§19.3.6 p.319</span></td><td><span class="ref">Table 19-62 p.470</span></td><td><span class="chg">🟡 v4加消息尺寸限制</span></td></tr>
+    <tr><td><span class="msgid">0x11</span></td><td><code>DK Event Notification</code></td><td><span class="badge-type bt-ev">Event(3)</span></td><td>双向</td><td><span class="ref">§19.3.8 p.321</span></td><td><span class="ref">§19.3.9 p.471</span></td><td><span class="chg">🟡 v4新增PDR SubEvent</span></td></tr>
+    <tr><td><span class="msgid">0x12</span></td><td><code>Configurable_Ranging_Recovery_RQ</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>车辆→手机</td><td><span class="ref">Table 19-34 p.313</span></td><td><span class="ref">p.464</span></td><td><span class="same">🔵不变</span></td></tr>
+    <tr><td><span class="msgid">0x13</span></td><td><code>Configurable_Ranging_Recovery_RS</code></td><td><span class="badge-type bt-uwb">UWB(2)</span></td><td>手机→车辆</td><td><span class="ref">Table 19-36</span></td><td><span class="ref">p.464</span></td><td><span class="same">🔵不变</span></td></tr>
+    <tr><td><span class="msgid">0x14</span></td><td><code>RKE_Auth_RQ</code></td><td><span class="badge-type bt-sup">Supp(5)</span></td><td>车辆→手机</td><td><span class="ref">Table 19-48 p.318</span></td><td><span class="ref">p.465</span></td><td><span class="same">🔵不变</span></td></tr>
+    <tr><td><span class="msgid">0x15</span></td><td><code>RKE_Auth_RS</code></td><td><span class="badge-type bt-sup">Supp(5)</span></td><td>手机→车辆</td><td><span class="ref">§19.3.5.2</span></td><td><span class="ref">p.465</span></td><td><span class="same">🔵不变</span></td></tr>
+    <tr><td><span class="msgid">0x16</span></td><td><code>Head_Unit_Pairing_Preparation</code></td><td><span class="badge-type bt-hu">HU(6)</span></td><td>车辆→手机</td><td><span class="ref">Table 19-53 p.319</span></td><td><span class="ref">Table 19-64 p.471</span></td><td><span class="chg">🟡 v4加Wired Carplay位</span></td></tr>
+    <tr><td><span class="msgid">0x17</span></td><td><code>Head_Unit_Pairing_RQ</code></td><td><span class="badge-type bt-hu">HU(6)</span></td><td>手机→车辆</td><td><span class="ref">Table 19-55 p.320</span></td><td><span class="ref">Table 19-66 p.471</span></td><td><span class="same">🔵不变</span></td></tr>
+    <tr><td><span class="msgid">0x18</span></td><td><code>Head_Unit_Pairing_RS</code></td><td><span class="badge-type bt-hu">HU(6)</span></td><td>车辆→手机</td><td><span class="ref">Table 19-57 p.321</span></td><td><span class="ref">Table 19-68 p.473</span></td><td><span class="same">🔵不变</span></td></tr>
+    <tr style="background:#f3e8ff"><td><span class="msgid">0x19</span></td><td><code>UWB_Final_Data</code></td><td><span class="badge-type bt-sup">Supp(5)</span></td><td>手机→车辆</td><td>❌ R3无</td><td><span class="ref">Table 19-60 p.469</span></td><td><span class="new-tag">🟢 v4新增</span></td></tr>
+    <tr style="background:#f3e8ff"><td><span class="msgid">0x1A</span></td><td><code>BTCS_Ranging_Procedure_Results_Start</code></td><td><span class="badge-type bt-btcs">BTCS(7)</span></td><td>双向</td><td>❌ R3无</td><td><span class="ref">Table 19-100 p.499</span></td><td><span class="new-tag">🟢 v4新增</span></td></tr>
+    <tr style="background:#f3e8ff"><td><span class="msgid">0x1B</span></td><td><code>BTCS_Ranging_Procedure_Results_Continue</code></td><td><span class="badge-type bt-btcs">BTCS(7)</span></td><td>双向</td><td>❌ R3无</td><td><span class="ref">Table 19-102 p.500</span></td><td><span class="new-tag">🟢 v4新增</span></td></tr>
+    <tr style="background:#f3e8ff"><td><span class="msgid">0x1C</span></td><td><code>BTCS_Ranging_Procedure_Results_Config</code></td><td><span class="badge-type bt-btcs">BTCS(7)</span></td><td>双向</td><td>❌ R3无</td><td><span class="ref">Table 19-104 p.500</span></td><td><span class="new-tag">🟢 v4新增</span></td></tr>
   </tbody>
 </table>
 
 <!-- Constraints -->
-<div class="sec-hdr">璁捐绾︽潫閫熸煡</div>
+<div class="sec-hdr">设计约束速查</div>
 <div class="con-grid">
-  <div class="con-card"><div class="lbl">Owner Pairing 骞挎挱 PHY</div><div class="val">Legacy 1M</div><div class="src">搂19.2.1.3锛堜袱鐗堟湰锛?/div></div>
-  <div class="con-card"><div class="lbl">Passive Entry 骞挎挱闂撮殧锛?M锛?/div><div class="val">42.5 ms</div><div class="src">搂19.2.3.1锛堜袱鐗堟湰锛?/div></div>
-  <div class="con-card"><div class="lbl">Passive Entry 骞挎挱闂撮殧锛圕oded锛?/div><div class="val">84 ms</div><div class="src">搂19.2.3.1锛堜袱鐗堟湰锛?/div></div>
-  <div class="con-card"><div class="lbl">鎺ㄨ崘 BLE 杩炴帴闂撮殧</div><div class="val">30 ms</div><div class="src">搂19.1锛堜袱鐗堟湰锛?/div></div>
-  <div class="con-card"><div class="lbl">鍔犲瘑瓒呮椂鏂紑</div><div class="val">5 绉?/div><div class="src">搂19.2.1.2锛堜袱鐗堟湰锛?/div></div>
-  <div class="con-card"><div class="lbl">瀹夊叏妯″紡</div><div class="val">Mode 1/L4</div><div class="src">搂19.1锛堜袱鐗堟湰锛?/div></div>
-  <div class="con-card"><div class="lbl">SPSM 鑼冨洿</div><div class="val">0x0080鈥揊F</div><div class="src">搂19.2.1.7锛堜袱鐗堟湰锛?/div></div>
-  <div class="con-card"><div class="lbl">Proc 1 鏈€灏忛棿闅?/div><div class="val">60 绉?/div><div class="src">搂19.4.6锛堜袱鐗堟湰锛?/div></div>
-  <div class="con-card"><div class="lbl">V-D-BT 褰撳墠鐗堟湰锛坴4锛?/div><div class="val">0x0301</div><div class="src">Table 19-13 p.445锛坴4锛?/div></div>
-  <div class="con-card"><div class="lbl">UWB Final BLE 寤惰繜锛坴4锛?/div><div class="val">鈮? CE</div><div class="src">搂19.3.6 p.469锛坴4锛?/div></div>
+  <div class="con-card"><div class="lbl">Owner Pairing 广播 PHY</div><div class="val">Legacy 1M</div><div class="src">§19.2.1.3（两版本）</div></div>
+  <div class="con-card"><div class="lbl">Passive Entry 广播间隔（1M）</div><div class="val">42.5 ms</div><div class="src">§19.2.3.1（两版本）</div></div>
+  <div class="con-card"><div class="lbl">Passive Entry 广播间隔（Coded）</div><div class="val">84 ms</div><div class="src">§19.2.3.1（两版本）</div></div>
+  <div class="con-card"><div class="lbl">推荐 BLE 连接间隔</div><div class="val">30 ms</div><div class="src">§19.1（两版本）</div></div>
+  <div class="con-card"><div class="lbl">加密超时断开</div><div class="val">5 秒</div><div class="src">§19.2.1.2（两版本）</div></div>
+  <div class="con-card"><div class="lbl">安全模式</div><div class="val">Mode 1/L4</div><div class="src">§19.1（两版本）</div></div>
+  <div class="con-card"><div class="lbl">SPSM 范围</div><div class="val">0x0080–FF</div><div class="src">§19.2.1.7（两版本）</div></div>
+  <div class="con-card"><div class="lbl">Proc 1 最小间隔</div><div class="val">60 秒</div><div class="src">§19.4.6（两版本）</div></div>
+  <div class="con-card"><div class="lbl">V-D-BT 当前版本（v4）</div><div class="val">0x0301</div><div class="src">Table 19-13 p.445（v4）</div></div>
+  <div class="con-card"><div class="lbl">UWB Final BLE 延迟（v4）</div><div class="val">≤3 CE</div><div class="src">§19.3.6 p.469（v4）</div></div>
 </div>
 
 </div>
